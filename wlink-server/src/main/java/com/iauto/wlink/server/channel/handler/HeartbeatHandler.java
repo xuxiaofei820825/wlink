@@ -17,15 +17,17 @@ public class HeartbeatHandler extends SimpleChannelInboundHandler<String> {
 	public void userEventTriggered( ChannelHandlerContext ctx, Object evt )
 			throws Exception {
 
+		// 判断当前事件是否为IdleStateEvent
 		if ( evt instanceof IdleStateEvent ) {
 			IdleStateEvent event = (IdleStateEvent) evt;
+
+			// 通道(Channel)上读空闲，终端未发送心跳包维持连接，或者物理链路已经断开
 			if ( event.state().equals( IdleState.READER_IDLE ) ) {
-				// Channel读空闲
 
 				// log
-				logger.info( "Reader is idle, close the channel." );
+				logger.info( "The channel is idle, closing the channel..." );
 
-				// 关闭Channel
+				// 关闭通道
 				ctx.channel().close();
 			}
 		}

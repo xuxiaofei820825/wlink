@@ -50,9 +50,8 @@ public class DefaultServerBootstrap {
 	}
 
 	public void start() throws Exception {
-
 		// log
-		logger.info( "Starting the terminal communication service." );
+		logger.info( "Starting the wlink server..." );
 
 		try {
 
@@ -100,7 +99,7 @@ public class DefaultServerBootstrap {
 			ChannelFuture future = b.bind( config.getPort() ).sync();
 			if ( future.isSuccess() ) {
 				// log
-				logger.info( "Succeed to start service. port:{}", config.getPort() );
+				logger.info( "Succeed to start wlink server. listening in port: {}", config.getPort() );
 			}
 
 			future.channel().closeFuture().sync();

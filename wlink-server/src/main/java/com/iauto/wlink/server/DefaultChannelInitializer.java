@@ -38,6 +38,8 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 	@Override
 	protected void initChannel( SocketChannel channel ) throws Exception {
+		// log
+		logger.info( "Initialing the channel..." );
 
 		ChannelPipeline pipeline = channel.pipeline();
 
