@@ -6,34 +6,35 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StateStatisticsHandler extends ChannelInboundHandlerAdapter {
+import com.iauto.wlink.server.ServerStateStatistics;
 
-	private ThreadLocal<Integer> number;
+public class StateStatisticsHandler extends ChannelInboundHandlerAdapter {
 
 	// logger
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
-	public StateStatisticsHandler( ThreadLocal<Integer> number ) {
-		this.number = number;
+	/** 状态统计 */
+	private ServerStateStatistics statistics;
+
+	public StateStatisticsHandler( ServerStateStatistics statistics ) {
+		this.statistics = statistics;
 	}
 
 	@Override
 	public void channelInactive( ChannelHandlerContext ctx ) throws Exception {
 
-		// log
-		logger.info( "Thread ID: {}", Thread.currentThread().getId() );
-		
-		Integer currentNum = number.get();
+		// 对当前线程管理的客户端进行计数
+		Integer currentNum = statistics.getClientsOfCurrentThread().get();
+
+		// 通道失效时，客户端计数减1
 		if ( currentNum == null ) {
 			currentNum = new Integer( 0 );
 		} else {
 			int cnt = currentNum.intValue();
 			currentNum = new Integer( cnt - 1 );
 		}
-		
-		number.set( currentNum );
-		
-		logger.info( "Thread ID: {}, Number of channel: {}", Thread.currentThread().getId(), currentNum );
+
+		statistics.getClientsOfCurrentThread().set( currentNum );
 
 		// info
 		logger.info( "A channel is closed. {}", ctx.channel() );
@@ -44,7 +45,10 @@ public class StateStatisticsHandler extends ChannelInboundHandlerAdapter {
 		// info
 		logger.info( "A channel is active. {}", ctx.channel() );
 
-		Integer currentNum = number.get();
+		// 对当前线程管理的客户端进行计数
+		Integer currentNum = statistics.getClientsOfCurrentThread().get();
+
+		// 通道有效时，客户端计数加1
 		if ( currentNum == null ) {
 			currentNum = new Integer( 1 );
 		} else {
@@ -52,10 +56,6 @@ public class StateStatisticsHandler extends ChannelInboundHandlerAdapter {
 			currentNum = new Integer( cnt + 1 );
 		}
 
-		number.set( currentNum );
-
-		logger.info( "Thread ID: {}, Number of channel: {}", Thread.currentThread().getId(), currentNum );
-
-
+		statistics.getClientsOfCurrentThread().set( currentNum );
 	}
 }

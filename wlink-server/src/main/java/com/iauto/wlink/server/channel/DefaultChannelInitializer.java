@@ -1,4 +1,4 @@
-package com.iauto.wlink.server;
+package com.iauto.wlink.server.channel;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -11,6 +11,8 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.server.AppConfig;
+import com.iauto.wlink.server.ServerStateStatistics;
 import com.iauto.wlink.server.channel.handler.HeartbeatHandler;
 import com.iauto.wlink.server.channel.handler.StateStatisticsHandler;
 
@@ -24,8 +26,9 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 	/** SSL Context */
 	private SslContext sslCtx;
-
-	private final ThreadLocal<Integer> number = new ThreadLocal<Integer>();
+	
+	/** 服务器状态统计 */
+	private ServerStateStatistics statistics;
 
 	public DefaultChannelInitializer( SslContext sslCtx, AppConfig config ) {
 		this.config = config;
@@ -39,7 +42,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	@Override
 	protected void initChannel( SocketChannel channel ) throws Exception {
 		// log
-		logger.info( "Initialing the channel..." );
+		logger.info( "Initialing the channel......" );
 
 		ChannelPipeline pipeline = channel.pipeline();
 
@@ -58,6 +61,6 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 			.addLast( "heartbeat", new HeartbeatHandler() );
 
 		// 服务器监控
-		pipeline.addLast( new StateStatisticsHandler( number ) );
+		pipeline.addLast( new StateStatisticsHandler( statistics ) );
 	}
 }
