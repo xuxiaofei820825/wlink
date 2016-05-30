@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.comm.codec.CommunicationDecoder;
 import com.iauto.wlink.server.AppConfig;
 import com.iauto.wlink.server.ServerStateStatistics;
 import com.iauto.wlink.server.channel.handler.HeartbeatHandler;
@@ -26,7 +27,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 	/** SSL Context */
 	private SslContext sslCtx;
-	
+
 	/** 服务器状态统计 */
 	private ServerStateStatistics statistics;
 
@@ -54,13 +55,16 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 			pipeline.addLast( sslCtx.newHandler( channel.alloc() ) );
 		}
 
-		// 心跳检测
+		// 设置心跳检测
 		IdleStateHandler idleStateHandler = new IdleStateHandler(
 			config.getHeartbeatInterval(), 0, 0, TimeUnit.SECONDS );
 		pipeline.addLast( "idle", idleStateHandler )
 			.addLast( "heartbeat", new HeartbeatHandler() );
 
-		// 服务器监控
+		// 设置通讯包解码器
+		pipeline.addLast( "comm", new CommunicationDecoder() );
+
+		// 设置服务器监控
 		pipeline.addLast( new StateStatisticsHandler( statistics ) );
 	}
 }

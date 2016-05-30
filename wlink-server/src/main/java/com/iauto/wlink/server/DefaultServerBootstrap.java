@@ -53,7 +53,7 @@ public class DefaultServerBootstrap {
 
 	public void start() throws Exception {
 		// log
-		logger.info( "Starting the wlink server..." );
+		logger.info( "Starting the wlink server......" );
 
 		try {
 
@@ -63,7 +63,7 @@ public class DefaultServerBootstrap {
 				// 如果需要通信加密
 
 				// log
-				logger.info( "Setting the SSL context." );
+				logger.info( "Setting the SSL context......" );
 
 				// 加载证书和密匙文件
 				URL crtFileUrl = this.getClass().getClassLoader().getResource( config.getCerFile() );
@@ -71,11 +71,11 @@ public class DefaultServerBootstrap {
 
 				if ( crtFileUrl == null )
 					// log
-					logger.error( "Failed to load certificate file." );
+					logger.warn( "Failed to load certificate file." );
 
 				if ( keyFileUrl == null )
 					// log
-					logger.error( "Failed to load key file." );
+					logger.warn( "Failed to load key file." );
 
 				SslContext sslCtx = SslContextBuilder
 					.forServer( new File( crtFileUrl.toURI() ), new File( keyFileUrl.toURI() ), config.getKeyPassword() )
