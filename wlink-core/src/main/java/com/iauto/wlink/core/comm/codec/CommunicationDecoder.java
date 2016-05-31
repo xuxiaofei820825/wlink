@@ -102,7 +102,7 @@ public class CommunicationDecoder extends ByteToMessageDecoder {
 				return;
 
 			// 读取Body，并处理
-			ByteBuf data = in.readBytes( bodyLen );
+			byte[] data = in.readBytes( bodyLen ).array();
 
 			// 通讯体读取结束
 			out.add( data );
