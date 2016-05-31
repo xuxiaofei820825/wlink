@@ -2,8 +2,18 @@ package com.iauto.wlink.core.message.worker;
 
 import io.netty.channel.ChannelHandlerContext;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.iauto.wlink.core.message.codec.AuthMessageDecoder;
+import com.iauto.wlink.core.session.SessionContext;
+
 public class AuthWorker implements Runnable {
 
+	// logger
+	private final Logger logger = LoggerFactory.getLogger( getClass() );
+
+	/** 通道处理上下文 */
 	private final ChannelHandlerContext ctx;
 
 	public AuthWorker( ChannelHandlerContext ctx, String ticket ) {
@@ -11,6 +21,9 @@ public class AuthWorker implements Runnable {
 	}
 
 	public void run() {
+
+		// log
+		logger.info( "Processing the authentication......" );
 
 		// 模拟耗时的网络请求
 		try {
@@ -20,6 +33,10 @@ public class AuthWorker implements Runnable {
 			// ignore
 		}
 
-		this.ctx.fireChannelRead( new String( "Success" ) );
+		// log
+		logger.info( "Finished to process the authentication." );
+
+		AuthMessageDecoder authHandler = (AuthMessageDecoder) this.ctx.pipeline().get( "auth" );
+		authHandler.finish( new SessionContext() );
 	}
 }

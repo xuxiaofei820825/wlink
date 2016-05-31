@@ -12,6 +12,6 @@ public class App
 		DefaultClient client = new DefaultClient( "localhost", 2391 );
 		client.connect();
 
-		// client.auth( "ticket_AAAA" );
+		client.auth( "ticket_AAAA" );
 	}
 }

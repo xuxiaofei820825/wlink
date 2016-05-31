@@ -27,9 +27,6 @@ public class CommunicationDecoder extends ByteToMessageDecoder {
 	/** 实体内容长度 */
 	private int bodyLen = 0;
 
-	/** 通讯头 */
-	private CommunicationHeader header;
-
 	/**
 	 * 报文解析状态
 	 */
@@ -59,10 +56,6 @@ public class CommunicationDecoder extends ByteToMessageDecoder {
 			// 获取通讯头长度
 			headerLen = in.readShort();
 
-			// debug
-			logger.info( "RECV: [header: {} bytes]. {}",
-				this.headerLen, ctx.channel() );
-
 			// 否则状态迁移到解析Header
 			currentState = State.HEADER;
 		case HEADER:
@@ -78,13 +71,17 @@ public class CommunicationDecoder extends ByteToMessageDecoder {
 				return;
 
 			// 读取Header
-			this.header = CommunicationHeader.parseFrom( in.readBytes( headerLen ).array() );
+			CommunicationHeader header = CommunicationHeader.parseFrom( in.readBytes( headerLen ).array() );
 
-			// debug
-			logger.debug( "Content type: {}, length: {}", header.getType(), header.getContentLength() );
+			// info
+			logger.info( "Channel:{}, Receive a package:[Content-Type: {}, Content-Length: {}]",
+				ctx.channel(), header.getType(), header.getContentLength() );
+
+			// 获取内容长度
+			this.bodyLen = header.getContentLength();
 
 			// 通讯头读取结束
-			out.add( this.header );
+			out.add( header );
 
 			// 状态迁移到解析Body
 			currentState = State.BODY;
@@ -121,7 +118,5 @@ public class CommunicationDecoder extends ByteToMessageDecoder {
 		currentState = State.INIT;
 		headerLen = 0;
 		bodyLen = 0;
-
-		this.header = null;
 	}
 }

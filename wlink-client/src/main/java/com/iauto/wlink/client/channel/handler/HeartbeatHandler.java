@@ -18,7 +18,7 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
 	@Override
 	public void userEventTriggered( ChannelHandlerContext ctx, Object evt )
 			throws Exception {
-
+		
 		// 判定是否为写空闲
 		// 如果是写空闲，则立即发送一条心跳消息维持TCP连接
 		if ( evt instanceof IdleStateEvent ) {
@@ -39,7 +39,5 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
 				ctx.channel().writeAndFlush( header );
 			}
 		}
-		
-		ctx.fireUserEventTriggered( evt );
 	}
 }

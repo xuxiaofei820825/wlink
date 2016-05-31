@@ -62,6 +62,6 @@ public class DefaultClient {
 			.build();
 
 		// 发送认证消息
-		channel.write( authMsg );
+		channel.writeAndFlush( authMsg );
 	}
 }

@@ -5,13 +5,19 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HeartbeatHandler extends SimpleChannelInboundHandler<String> {
+import com.iauto.wlink.core.comm.proto.CommunicationHeaderProto.CommunicationHeader;
+
+public class HeartbeatHandler extends SimpleChannelInboundHandler<CommunicationHeader> {
 
 	// logger
 	private final static Logger logger = LoggerFactory.getLogger( HeartbeatHandler.class );
+
+	public HeartbeatHandler() {
+	}
 
 	@Override
 	public void userEventTriggered( ChannelHandlerContext ctx, Object evt )
@@ -25,7 +31,7 @@ public class HeartbeatHandler extends SimpleChannelInboundHandler<String> {
 			if ( event.state().equals( IdleState.READER_IDLE ) ) {
 
 				// log
-				logger.info( "The channel is idle, closing the channel..." );
+				logger.info( "The channel{} is idle, closing the channel......", ctx.channel() );
 
 				// 关闭通道
 				ctx.channel().close();
@@ -36,8 +42,12 @@ public class HeartbeatHandler extends SimpleChannelInboundHandler<String> {
 	}
 
 	@Override
-	protected void channelRead0( ChannelHandlerContext ctx, String msg ) throws Exception {
-		// log
-		logger.debug( "Receive heartbeat message: {}.", msg );
+	protected void channelRead0( ChannelHandlerContext ctx, CommunicationHeader msg ) throws Exception {
+		if ( StringUtils.equals( "heartbeat", msg.getType() ) ) {
+			// log
+			logger.info( "Receive a heartbeat message! Channel:{}", ctx.channel() );
+		} else {
+			ctx.fireChannelRead( msg );
+		}
 	}
 }

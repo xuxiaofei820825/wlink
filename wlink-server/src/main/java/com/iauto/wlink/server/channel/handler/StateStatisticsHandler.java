@@ -58,4 +58,15 @@ public class StateStatisticsHandler extends ChannelInboundHandlerAdapter {
 
 		statistics.getClientsOfCurrentThread().set( currentNum );
 	}
+
+	@Override
+	public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception {
+		// do noting
+	}
+
+	@Override
+	public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
+			throws Exception {
+		logger.error( "A error occured!", cause );
+	}
 }
