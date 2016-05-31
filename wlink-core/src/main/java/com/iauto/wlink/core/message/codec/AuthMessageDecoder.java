@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang.StringUtils;
 
 import com.iauto.wlink.core.comm.proto.CommunicationHeaderProto.CommunicationHeader;
+import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
 import com.iauto.wlink.core.message.worker.AuthWorker;
 import com.iauto.wlink.core.session.SessionContext;
 
@@ -56,8 +57,10 @@ public class AuthMessageDecoder extends MessageToMessageDecoder<Object> {
 			if ( msg instanceof byte[] ) {
 				// 否则，尝试解码认证信息
 
+				AuthMessage authMsg = AuthMessage.parseFrom( (byte[]) msg );
+
 				// 进行用户身份验证
-				executor.execute( new AuthWorker( ctx ) );
+				executor.execute( new AuthWorker( ctx, authMsg.getTicket() ) );
 
 				break;
 			}

@@ -13,7 +13,7 @@ public class Launcher {
 		AppConfig config = AppConfig.Builder.newBuilder()
 			.port( 2391 )
 			.useSSL( false )
-			.heartbeatInterval( 10 )
+			.heartbeatInterval( 60 )
 			.cerFile( "ntc-server.crt" )
 			.keyFile( "ntc-server.key" )
 			.keyPassword( "suntec" )

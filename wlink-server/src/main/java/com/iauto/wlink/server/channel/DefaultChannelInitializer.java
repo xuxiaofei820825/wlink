@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.comm.codec.CommunicationDecoder;
-import com.iauto.wlink.core.message.codec.AuthMessageDecoder;
 import com.iauto.wlink.server.AppConfig;
 import com.iauto.wlink.server.ServerStateStatistics;
 import com.iauto.wlink.server.channel.handler.HeartbeatHandler;
@@ -30,7 +29,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	private SslContext sslCtx;
 
 	/** 服务器状态统计 */
-	private ServerStateStatistics statistics;
+	private static final ServerStateStatistics statistics = new ServerStateStatistics();
 
 	public DefaultChannelInitializer( SslContext sslCtx, AppConfig config ) {
 		this.config = config;
@@ -66,7 +65,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		pipeline.addLast( "comm", new CommunicationDecoder() );
 
 		// 设置认证信息解码器
-		pipeline.addLast( "auth", new AuthMessageDecoder() );
+		//pipeline.addLast( "auth", new AuthMessageDecoder() );
 
 		// 设置服务器监控
 		pipeline.addLast( new StateStatisticsHandler( statistics ) );

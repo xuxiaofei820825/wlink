@@ -10,4 +10,13 @@
   <artifactId>wlink-client</artifactId>
   <name>wlink-client</name>
   <url>http://maven.apache.org</url>
+  
+  <dependencies>
+		<!-- wlink-core -->
+		<dependency>
+			<groupId>com.iauto</groupId>
+			<artifactId>wlink-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+	</dependencies>
 </project>

@@ -78,7 +78,7 @@ public class CommunicationDecoder extends ByteToMessageDecoder {
 				return;
 
 			// 读取Header
-			CommunicationHeader header = CommunicationHeader.parseFrom( in.readBytes( headerLen ).array() );
+			this.header = CommunicationHeader.parseFrom( in.readBytes( headerLen ).array() );
 
 			// debug
 			logger.debug( "Content type: {}, length: {}", header.getType(), header.getContentLength() );

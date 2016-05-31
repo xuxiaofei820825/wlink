@@ -6,7 +6,7 @@ public class AuthWorker implements Runnable {
 
 	private final ChannelHandlerContext ctx;
 
-	public AuthWorker( ChannelHandlerContext ctx ) {
+	public AuthWorker( ChannelHandlerContext ctx, String ticket ) {
 		this.ctx = ctx;
 	}
 
