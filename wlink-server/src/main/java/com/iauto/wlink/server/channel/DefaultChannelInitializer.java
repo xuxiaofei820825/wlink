@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.comm.codec.CommunicationDecoder;
 import com.iauto.wlink.core.message.codec.AuthMessageDecoder;
+import com.iauto.wlink.core.message.codec.TextMessageDecoder;
 import com.iauto.wlink.server.AppConfig;
 import com.iauto.wlink.server.ServerStateStatistics;
 import com.iauto.wlink.server.channel.handler.HeartbeatHandler;
@@ -67,6 +68,8 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 		// 设置认证信息解码器
 		pipeline.addLast( "auth", new AuthMessageDecoder() );
+		
+		pipeline.addLast( "text", new TextMessageDecoder() );
 
 		// 设置服务器监控
 		pipeline.addLast( new StateStatisticsHandler( statistics ) );

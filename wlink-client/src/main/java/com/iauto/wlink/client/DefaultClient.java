@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.client.channel.DefaultClientChannelInitializer;
 import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
+import com.iauto.wlink.core.message.proto.TextMessageProto.TextMessage;
 
 public class DefaultClient {
 
@@ -63,5 +64,16 @@ public class DefaultClient {
 
 		// 发送认证消息
 		channel.writeAndFlush( authMsg );
+	}
+
+	public void sendText( final String message ) {
+		TextMessage txtMsg = TextMessage.newBuilder()
+			.setFrom( "xuxiaofei" )
+			.setTo( "xuhongjuan" )
+			.setText( message )
+			.build();
+
+		// 发送文本消息
+		channel.writeAndFlush( txtMsg );
 	}
 }

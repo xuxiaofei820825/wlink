@@ -37,6 +37,6 @@ public class AuthWorker implements Runnable {
 		logger.info( "Finished to process the authentication." );
 
 		AuthMessageDecoder authHandler = (AuthMessageDecoder) this.ctx.pipeline().get( "auth" );
-		authHandler.finish( new SessionContext() );
+		authHandler.finish( new SessionContext( "xiaofei.xu" ) );
 	}
 }

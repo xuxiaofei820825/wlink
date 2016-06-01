@@ -13,5 +13,13 @@ public class App
 		client.connect();
 
 		client.auth( "ticket_AAAA" );
+
+		
+		while (true) {
+
+		Thread.sleep( 20000 );
+
+		client.sendText( "woaijuanjuan2" );
+		}
 	}
 }

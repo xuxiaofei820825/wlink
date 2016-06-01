@@ -5,8 +5,8 @@ public class SessionContext {
 	/** 用户编号 */
 	private String userId;
 
-	public SessionContext() {
-
+	public SessionContext( final String userId ) {
+		this.userId = userId;
 	}
 
 	// =====================================================

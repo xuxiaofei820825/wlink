@@ -9,6 +9,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.comm.CommunicationPackage;
 import com.iauto.wlink.core.comm.proto.CommunicationHeaderProto.CommunicationHeader;
 
 public class CommunicationDecoder extends ByteToMessageDecoder {
@@ -26,6 +27,9 @@ public class CommunicationDecoder extends ByteToMessageDecoder {
 
 	/** 实体内容长度 */
 	private int bodyLen = 0;
+
+	/** 通讯包 */
+	private CommunicationPackage commPackage;
 
 	/**
 	 * 报文解析状态
@@ -80,8 +84,13 @@ public class CommunicationDecoder extends ByteToMessageDecoder {
 			// 获取内容长度
 			this.bodyLen = header.getContentLength();
 
+			// 创建通讯包实例
+			this.commPackage = new CommunicationPackage();
+			this.commPackage.setType( header.getType() );
+			this.commPackage.setLength( header.getContentLength() );
+
 			// 通讯头读取结束
-			out.add( header );
+			// out.add( header );
 
 			// 状态迁移到解析Body
 			currentState = State.BODY;
@@ -98,11 +107,13 @@ public class CommunicationDecoder extends ByteToMessageDecoder {
 			if ( in.readableBytes() < bodyLen )
 				return;
 
-			// 读取Body，并处理
-			byte[] data = in.readBytes( bodyLen ).array();
+			// 这里采用零复制，但是以后的Handler需要release
+			// 增加计数，防止被释放
+			in.retain();
+			this.commPackage.setBody( in );
 
 			// 通讯体读取结束
-			out.add( data );
+			out.add( this.commPackage );
 
 			// 报文解析完毕，初始化状态，等待解析下一段报文
 			init();
@@ -116,7 +127,9 @@ public class CommunicationDecoder extends ByteToMessageDecoder {
 	 */
 	private void init() {
 		currentState = State.INIT;
-		headerLen = 0;
-		bodyLen = 0;
+
+		this.headerLen = 0;
+		this.bodyLen = 0;
+		this.commPackage = null;
 	}
 }

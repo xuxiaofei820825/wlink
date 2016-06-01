@@ -5,7 +5,7 @@
 		<!-- 日志文件的输出目录 -->
 		<property name="LOG_HOME">/Users/xuxiaofei/log</property>
 		<!-- 服务名 -->
-		<property name="SERVICE_NAME">NTC</property>
+		<property name="SERVICE_NAME">WLINK</property>
 		<!-- 默认消息格式 -->
 		<property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss} [%5p] ${SERVICE_NAME} %F:%L "%m"%n</property>
 		<!-- SYSLOG消息格式 -->
