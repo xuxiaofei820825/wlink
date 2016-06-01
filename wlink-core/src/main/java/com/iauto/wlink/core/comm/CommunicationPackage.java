@@ -1,17 +1,12 @@
 package com.iauto.wlink.core.comm;
 
-import io.netty.buffer.ByteBuf;
-
 public class CommunicationPackage {
 
 	/** 数据包类型 */
 	private String type;
 
-	/** 数据体长度 */
-	private int length;
-
 	/** 数据体 */
-	private ByteBuf body;
+	private byte[] body;
 
 	public CommunicationPackage() {
 	}
@@ -27,19 +22,11 @@ public class CommunicationPackage {
 		this.type = type;
 	}
 
-	public int getLength() {
-		return length;
-	}
-
-	public void setLength( int length ) {
-		this.length = length;
-	}
-
-	public ByteBuf getBody() {
+	public byte[] getBody() {
 		return body;
 	}
 
-	public void setBody( ByteBuf body ) {
+	public void setBody( byte[] body ) {
 		this.body = body;
 	}
 

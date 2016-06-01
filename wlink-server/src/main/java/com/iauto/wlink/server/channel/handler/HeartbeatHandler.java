@@ -9,9 +9,9 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iauto.wlink.core.comm.proto.CommunicationHeaderProto.CommunicationHeader;
+import com.iauto.wlink.core.comm.CommunicationPackage;
 
-public class HeartbeatHandler extends SimpleChannelInboundHandler<CommunicationHeader> {
+public class HeartbeatHandler extends SimpleChannelInboundHandler<CommunicationPackage> {
 
 	// logger
 	private final static Logger logger = LoggerFactory.getLogger( HeartbeatHandler.class );
@@ -42,7 +42,7 @@ public class HeartbeatHandler extends SimpleChannelInboundHandler<CommunicationH
 	}
 
 	@Override
-	protected void channelRead0( ChannelHandlerContext ctx, CommunicationHeader msg ) throws Exception {
+	protected void channelRead0( ChannelHandlerContext ctx, CommunicationPackage msg ) throws Exception {
 		if ( StringUtils.equals( "heartbeat", msg.getType() ) ) {
 			// log
 			logger.info( "Receive a heartbeat message! Channel:{}", ctx.channel() );

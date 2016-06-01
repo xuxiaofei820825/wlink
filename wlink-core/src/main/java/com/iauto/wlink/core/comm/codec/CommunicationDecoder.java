@@ -87,30 +87,23 @@ public class CommunicationDecoder extends ByteToMessageDecoder {
 			// 创建通讯包实例
 			this.commPackage = new CommunicationPackage();
 			this.commPackage.setType( header.getType() );
-			this.commPackage.setLength( header.getContentLength() );
 
 			// 通讯头读取结束
-			// out.add( header );
-
 			// 状态迁移到解析Body
 			currentState = State.BODY;
 		case BODY:
 
-			if ( bodyLen == 0 ) {
-				// 如果Body的长度为0，
-				// 则报文解析完毕，初始化状态，等待解析下一段报文
-				init();
-				return;
+			if ( bodyLen != 0 ) {
+				// 如果Buffer的可读字节数不够读取Body，等待下次通道可读时继续解析
+				if ( in.readableBytes() < bodyLen )
+					return;
+
+				// 读取消息体
+				byte[] body = new byte[bodyLen];
+				in.readBytes( body );
+
+				this.commPackage.setBody( body );
 			}
-
-			// 如果Buffer的可读字节数不够读取Body，等待下次通道可读时继续解析
-			if ( in.readableBytes() < bodyLen )
-				return;
-
-			// 这里采用零复制，但是以后的Handler需要release
-			// 增加计数，防止被释放
-			in.retain();
-			this.commPackage.setBody( in );
 
 			// 通讯体读取结束
 			out.add( this.commPackage );
@@ -130,6 +123,5 @@ public class CommunicationDecoder extends ByteToMessageDecoder {
 
 		this.headerLen = 0;
 		this.bodyLen = 0;
-		this.commPackage = null;
 	}
 }
