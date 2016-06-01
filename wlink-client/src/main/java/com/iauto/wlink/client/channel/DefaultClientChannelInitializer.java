@@ -25,7 +25,7 @@ public class DefaultClientChannelInitializer extends ChannelInitializer<SocketCh
 		ChannelPipeline pipeline = ch.pipeline();
 
 		// 心跳保活
-		pipeline.addLast( new IdleStateHandler( 0, 10, 0, TimeUnit.SECONDS ) )
+		pipeline.addLast( new IdleStateHandler( 0, 55, 0, TimeUnit.SECONDS ) )
 			.addLast( "heartbeat", new HeartbeatHandler() );
 
 		// 设置通讯编码器

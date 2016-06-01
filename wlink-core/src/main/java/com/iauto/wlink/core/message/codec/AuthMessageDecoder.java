@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -25,6 +26,9 @@ public class AuthMessageDecoder extends MessageToMessageDecoder<CommunicationPac
 	/** 当前会话上下文 */
 	private SessionContext sessionContext;
 
+	/** 表示是否已做身份认证 */
+	private AtomicBoolean isAuthenticated = new AtomicBoolean( false );
+
 	/** 业务线程池 */
 	private static final ThreadPoolExecutor executor = new ThreadPoolExecutor( 5, 10, 30L, TimeUnit.SECONDS,
 		new ArrayBlockingQueue<Runnable>( 100 ) );
@@ -32,7 +36,7 @@ public class AuthMessageDecoder extends MessageToMessageDecoder<CommunicationPac
 	@Override
 	protected void decode( ChannelHandlerContext ctx, CommunicationPackage msg, List<Object> out ) throws Exception {
 
-		if ( this.sessionContext != null ) {
+		if ( isAuthenticated.get() ) {
 			// 该通道已完成了用户身份验证
 
 			// info
@@ -73,6 +77,7 @@ public class AuthMessageDecoder extends MessageToMessageDecoder<CommunicationPac
 	}
 
 	public void finish( final SessionContext sessionContext ) {
+		this.isAuthenticated.set( true );
 		this.sessionContext = sessionContext;
 	}
 
