@@ -56,6 +56,6 @@ public class TextMessageCodec extends MessageToMessageCodec<CommunicationPackage
 		TextMessage txtMsg = TextMessage.parseFrom( msg.getBody() );
 
 		// 异步执行
-		executor.execute( new TextMessageWorker( txtMsg ) );
+		executor.execute( new TextMessageWorker( ctx, txtMsg ) );
 	}
 }

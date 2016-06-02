@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
 import com.iauto.wlink.core.message.codec.AuthenticationMessageCodec;
 import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
+import com.iauto.wlink.core.message.codec.MessageAcknowledgeCodec;
 import com.iauto.wlink.core.message.codec.TextMessageCodec;
 import com.iauto.wlink.server.AppConfig;
 import com.iauto.wlink.server.ServerStateStatistics;
@@ -69,13 +70,17 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 		// 设置认证信息解码器
 		pipeline.addLast( "auth", new AuthenticationMessageCodec() );
-		
+
+		// 设置错误响应编码器
 		pipeline.addLast( "error", new ErrorMessageCodec() );
+
+		// 设置消息确认响应编码器
+		pipeline.addLast( "message_ack", new MessageAcknowledgeCodec() );
 
 		// 设置文本消息解码器
 		pipeline.addLast( "text", new TextMessageCodec() );
 
-		// 设置服务器监控
+		// 设置服务器监控处理器
 		pipeline.addLast( new StateStatisticsHandler( statistics ) );
 	}
 }

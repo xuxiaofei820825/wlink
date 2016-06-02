@@ -11,6 +11,7 @@ import com.iauto.wlink.client.channel.handler.HeartbeatHandler;
 import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
 import com.iauto.wlink.core.message.codec.AuthenticationMessageCodec;
 import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
+import com.iauto.wlink.core.message.codec.MessageAcknowledgeCodec;
 import com.iauto.wlink.core.message.codec.TextMessageCodec;
 
 /**
@@ -31,8 +32,12 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 		// 设置通讯包编解码器
 		pipeline.addLast( "comm", new CommunicationPackageCodec() );
-		
+
+		// 设置错误响应解码器
 		pipeline.addLast( "error", new ErrorMessageCodec() );
+
+		// 设置消息确认响应解码器
+		pipeline.addLast( "message_ack", new MessageAcknowledgeCodec() );
 
 		// 设置文本消息编解码器
 		pipeline.addLast( "text", new TextMessageCodec() );
