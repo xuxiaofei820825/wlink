@@ -9,8 +9,9 @@ import java.util.concurrent.TimeUnit;
 
 import com.iauto.wlink.client.channel.handler.HeartbeatHandler;
 import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
-import com.iauto.wlink.core.message.codec.AuthMessageEncoder;
-import com.iauto.wlink.core.message.codec.TextMessageEncoder;
+import com.iauto.wlink.core.message.codec.AuthenticationMessageCodec;
+import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
+import com.iauto.wlink.core.message.codec.TextMessageCodec;
 
 /**
  * 实现一个默认的客户端通道初始化器
@@ -18,7 +19,7 @@ import com.iauto.wlink.core.message.codec.TextMessageEncoder;
  * @author xiaofei.xu
  * 
  */
-public class DefaultClientChannelInitializer extends ChannelInitializer<SocketChannel> {
+public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel> {
 
 	@Override
 	protected void initChannel( SocketChannel ch ) throws Exception {
@@ -30,10 +31,13 @@ public class DefaultClientChannelInitializer extends ChannelInitializer<SocketCh
 
 		// 设置通讯包编解码器
 		pipeline.addLast( "comm", new CommunicationPackageCodec() );
+		
+		pipeline.addLast( "error", new ErrorMessageCodec() );
 
-		pipeline.addLast( "text", new TextMessageEncoder() );
+		// 设置文本消息编解码器
+		pipeline.addLast( "text", new TextMessageCodec() );
 
-		// 设置身份认证编码器
-		pipeline.addLast( "auth", new AuthMessageEncoder() );
+		// 设置身份认证编解码器
+		pipeline.addLast( "auth", new AuthenticationMessageCodec() );
 	}
 }

@@ -1,7 +1,7 @@
 package com.iauto.wlink.core.message.codec;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -16,7 +16,7 @@ import com.iauto.wlink.core.comm.CommunicationPackage;
 import com.iauto.wlink.core.message.proto.TextMessageProto.TextMessage;
 import com.iauto.wlink.core.message.worker.TextMessageWorker;
 
-public class TextMessageDecoder extends MessageToMessageDecoder<CommunicationPackage> {
+public class TextMessageCodec extends MessageToMessageCodec<CommunicationPackage, TextMessage> {
 
 	// logger
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
@@ -26,8 +26,20 @@ public class TextMessageDecoder extends MessageToMessageDecoder<CommunicationPac
 		new ArrayBlockingQueue<Runnable>( 100 ) );
 
 	@Override
-	protected void decode( ChannelHandlerContext ctx, CommunicationPackage msg, List<Object> out ) throws Exception {
+	protected void encode( ChannelHandlerContext ctx, TextMessage msg, List<Object> out ) throws Exception {
+		// 获取文本消息的ProtoBuffer编码
+		byte[] txtMsgBytes = msg.toByteArray();
 
+		CommunicationPackage comm = new CommunicationPackage();
+		comm.setType( "text" );
+		comm.setBody( txtMsgBytes );
+
+		// 传递到下一个处理器
+		out.add( comm );
+	}
+
+	@Override
+	protected void decode( ChannelHandlerContext ctx, CommunicationPackage msg, List<Object> out ) throws Exception {
 		// 获取数据包类型
 		String type = msg.getType();
 
@@ -40,8 +52,10 @@ public class TextMessageDecoder extends MessageToMessageDecoder<CommunicationPac
 		// log
 		logger.info( "Decoding the text message......" );
 
+		// 解码消息体
 		TextMessage txtMsg = TextMessage.parseFrom( msg.getBody() );
 
+		// 异步执行
 		executor.execute( new TextMessageWorker( txtMsg ) );
 	}
 }

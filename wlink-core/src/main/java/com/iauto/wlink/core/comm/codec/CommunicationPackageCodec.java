@@ -49,6 +49,10 @@ public class CommunicationPackageCodec extends ByteToMessageCodec<CommunicationP
 			.setContentLength( msg.getBody().length )
 			.build();
 
+		// log
+		logger.info( "Encoding a message package. [type: {}, content-length: {}]",
+			msg.getType(), msg.getBody().length );
+
 		byte[] header_bytes = header.toByteArray();
 
 		// 输出消息头的长度

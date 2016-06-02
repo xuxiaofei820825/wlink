@@ -1,7 +1,7 @@
 package com.iauto.wlink.core.message.codec;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -15,12 +15,13 @@ import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.comm.CommunicationPackage;
 import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
+import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
 import com.iauto.wlink.core.message.worker.AuthWorker;
 import com.iauto.wlink.core.session.SessionContext;
 
-public class AuthMessageDecoder extends MessageToMessageDecoder<CommunicationPackage> {
+public class AuthenticationMessageCodec extends MessageToMessageCodec<CommunicationPackage, AuthMessage> {
 
-	// logger
+// logger
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 	/** 当前会话上下文 */
@@ -34,8 +35,20 @@ public class AuthMessageDecoder extends MessageToMessageDecoder<CommunicationPac
 		new ArrayBlockingQueue<Runnable>( 100 ) );
 
 	@Override
-	protected void decode( ChannelHandlerContext ctx, CommunicationPackage msg, List<Object> out ) throws Exception {
+	protected void encode( ChannelHandlerContext ctx, AuthMessage msg, List<Object> out ) throws Exception {
+		// 获取认证消息的ProtoBuffer编码
+		byte[] authMsgBytes = msg.toByteArray();
 
+		CommunicationPackage comm = new CommunicationPackage();
+		comm.setType( "auth" );
+		comm.setBody( authMsgBytes );
+
+		// 传递到下一个处理器
+		out.add( comm );
+	}
+
+	@Override
+	protected void decode( ChannelHandlerContext ctx, CommunicationPackage msg, List<Object> out ) throws Exception {
 		if ( isAuthenticated.get() ) {
 			// 该通道已完成了用户身份验证
 
@@ -59,6 +72,11 @@ public class AuthMessageDecoder extends MessageToMessageDecoder<CommunicationPac
 			logger.info( "Session has not been created, ignore the message." );
 
 			// TODO 否则，发送错误响应
+			ErrorMessage error = ErrorMessage.newBuilder()
+				.setError( "UNAUTHENTICATED" )
+				.build();
+			ctx.channel().writeAndFlush( error );
+
 			return;
 		}
 
@@ -74,17 +92,11 @@ public class AuthMessageDecoder extends MessageToMessageDecoder<CommunicationPac
 
 		// 异步进行用户身份验证
 		executor.execute( new AuthWorker( ctx, authMsg.getTicket() ) );
+
 	}
 
 	public void finish( final SessionContext sessionContext ) {
 		this.isAuthenticated.set( true );
 		this.sessionContext = sessionContext;
-	}
-
-	// ============================================================================
-	// setter/getter
-
-	public SessionContext getSessionContext() {
-		return sessionContext;
 	}
 }

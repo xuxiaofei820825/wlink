@@ -11,7 +11,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iauto.wlink.client.channel.DefaultClientChannelInitializer;
+import com.iauto.wlink.client.channel.DefaultChannelInitializer;
 import com.iauto.wlink.core.comm.CommunicationPackage;
 import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
 import com.iauto.wlink.core.message.proto.TextMessageProto.TextMessage;
@@ -43,7 +43,7 @@ public class DefaultClient {
 			.channel( NioSocketChannel.class )
 			.option( ChannelOption.SO_KEEPALIVE, true )
 			.remoteAddress( this.host, this.port )
-			.handler( new DefaultClientChannelInitializer() );
+			.handler( new DefaultChannelInitializer() );
 
 		// info
 		logger.info( "Connecting to wlink server......" );
@@ -78,11 +78,7 @@ public class DefaultClient {
 			.setText( message )
 			.build();
 
-		CommunicationPackage comm = new CommunicationPackage();
-		comm.setType( "text" );
-		comm.setBody( txtMsg.toByteArray() );
-
 		// 发送文本消息
-		channel.writeAndFlush( comm );
+		channel.writeAndFlush( txtMsg );
 	}
 }

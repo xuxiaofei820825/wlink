@@ -5,7 +5,7 @@ import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iauto.wlink.core.message.codec.AuthMessageDecoder;
+import com.iauto.wlink.core.message.codec.AuthenticationMessageCodec;
 import com.iauto.wlink.core.session.SessionContext;
 
 public class AuthWorker implements Runnable {
@@ -36,7 +36,7 @@ public class AuthWorker implements Runnable {
 		// log
 		logger.info( "Finished to process the authentication." );
 
-		AuthMessageDecoder authHandler = (AuthMessageDecoder) this.ctx.pipeline().get( "auth" );
+		AuthenticationMessageCodec authHandler = (AuthenticationMessageCodec) this.ctx.pipeline().get( "auth" );
 		authHandler.finish( new SessionContext( "xiaofei.xu" ) );
 	}
 }

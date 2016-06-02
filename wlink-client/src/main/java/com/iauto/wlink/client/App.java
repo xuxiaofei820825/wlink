@@ -18,7 +18,7 @@ public class App
 
 		while ( true ) {
 			client.sendText( "woaijuanjuan2" );
-			Thread.sleep( 5000 );
+			Thread.sleep( 20000 );
 		}
 	}
 }

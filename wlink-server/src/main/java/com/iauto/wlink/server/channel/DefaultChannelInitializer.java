@@ -12,8 +12,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
-import com.iauto.wlink.core.message.codec.AuthMessageDecoder;
-import com.iauto.wlink.core.message.codec.TextMessageDecoder;
+import com.iauto.wlink.core.message.codec.AuthenticationMessageCodec;
+import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
+import com.iauto.wlink.core.message.codec.TextMessageCodec;
 import com.iauto.wlink.server.AppConfig;
 import com.iauto.wlink.server.ServerStateStatistics;
 import com.iauto.wlink.server.channel.handler.HeartbeatHandler;
@@ -67,10 +68,12 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 			.addLast( "heartbeat", new HeartbeatHandler() );
 
 		// 设置认证信息解码器
-		pipeline.addLast( "auth", new AuthMessageDecoder() );
+		pipeline.addLast( "auth", new AuthenticationMessageCodec() );
+		
+		pipeline.addLast( "error", new ErrorMessageCodec() );
 
 		// 设置文本消息解码器
-		pipeline.addLast( "text", new TextMessageDecoder() );
+		pipeline.addLast( "text", new TextMessageCodec() );
 
 		// 设置服务器监控
 		pipeline.addLast( new StateStatisticsHandler( statistics ) );
