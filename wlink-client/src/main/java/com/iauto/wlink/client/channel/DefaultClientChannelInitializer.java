@@ -8,7 +8,7 @@ import io.netty.handler.timeout.IdleStateHandler;
 import java.util.concurrent.TimeUnit;
 
 import com.iauto.wlink.client.channel.handler.HeartbeatHandler;
-import com.iauto.wlink.core.comm.codec.CommunicationEncoder;
+import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
 import com.iauto.wlink.core.message.codec.AuthMessageEncoder;
 import com.iauto.wlink.core.message.codec.TextMessageEncoder;
 
@@ -28,8 +28,8 @@ public class DefaultClientChannelInitializer extends ChannelInitializer<SocketCh
 		pipeline.addLast( new IdleStateHandler( 0, 55, 0, TimeUnit.SECONDS ) )
 			.addLast( "heartbeat", new HeartbeatHandler() );
 
-		// 设置通讯编码器
-		pipeline.addLast( "comm", new CommunicationEncoder() );
+		// 设置通讯包编解码器
+		pipeline.addLast( "comm", new CommunicationPackageCodec() );
 
 		pipeline.addLast( "text", new TextMessageEncoder() );
 

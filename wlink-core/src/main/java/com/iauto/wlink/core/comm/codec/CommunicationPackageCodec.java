@@ -2,7 +2,7 @@ package com.iauto.wlink.core.comm.codec;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.handler.codec.ByteToMessageCodec;
 
 import java.util.List;
 
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.iauto.wlink.core.comm.CommunicationPackage;
 import com.iauto.wlink.core.comm.proto.CommunicationHeaderProto.CommunicationHeader;
 
-public class CommunicationDecoder extends ByteToMessageDecoder {
+public class CommunicationPackageCodec extends ByteToMessageCodec<CommunicationPackage> {
 
 	// logger
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
@@ -41,8 +41,28 @@ public class CommunicationDecoder extends ByteToMessageDecoder {
 	}
 
 	@Override
-	protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out ) throws Exception {
+	protected void encode( ChannelHandlerContext ctx, CommunicationPackage msg, ByteBuf out ) throws Exception {
 
+		// 创建消息头
+		CommunicationHeader header = CommunicationHeader.newBuilder()
+			.setType( msg.getType() )
+			.setContentLength( msg.getBody().length )
+			.build();
+
+		byte[] header_bytes = header.toByteArray();
+
+		// 输出消息头的长度
+		out.writeShort( header_bytes.length );
+
+		// 输出消息头
+		out.writeBytes( header_bytes );
+
+		// 输出消息体
+		out.writeBytes( msg.getBody() );
+	}
+
+	@Override
+	protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out ) throws Exception {
 		// ================================================================
 		// 数据包为以下结构：
 		// ------------------------------------------------------
@@ -113,13 +133,15 @@ public class CommunicationDecoder extends ByteToMessageDecoder {
 		default:
 			break;
 		}
+
 	}
 
 	/**
 	 * 初始化解码状态
 	 */
 	private void init() {
-		currentState = State.INIT;
+		// 恢复初始状态
+		this.currentState = State.INIT;
 
 		this.headerLen = 0;
 		this.bodyLen = 0;

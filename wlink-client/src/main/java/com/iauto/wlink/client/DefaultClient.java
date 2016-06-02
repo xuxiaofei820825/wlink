@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.client.channel.DefaultClientChannelInitializer;
+import com.iauto.wlink.core.comm.CommunicationPackage;
 import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
 import com.iauto.wlink.core.message.proto.TextMessageProto.TextMessage;
 
@@ -62,8 +63,12 @@ public class DefaultClient {
 			.setTicket( ticket )
 			.build();
 
+		CommunicationPackage comm = new CommunicationPackage();
+		comm.setType( "auth" );
+		comm.setBody( authMsg.toByteArray() );
+
 		// 发送认证消息
-		channel.writeAndFlush( authMsg );
+		channel.writeAndFlush( comm );
 	}
 
 	public void sendText( final String message ) {
@@ -73,7 +78,11 @@ public class DefaultClient {
 			.setText( message )
 			.build();
 
+		CommunicationPackage comm = new CommunicationPackage();
+		comm.setType( "text" );
+		comm.setBody( txtMsg.toByteArray() );
+
 		// 发送文本消息
-		channel.writeAndFlush( txtMsg );
+		channel.writeAndFlush( comm );
 	}
 }

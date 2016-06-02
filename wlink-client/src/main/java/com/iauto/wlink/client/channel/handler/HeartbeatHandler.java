@@ -8,7 +8,7 @@ import io.netty.handler.timeout.IdleStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iauto.wlink.core.comm.proto.CommunicationHeaderProto.CommunicationHeader;
+import com.iauto.wlink.core.comm.CommunicationPackage;
 
 public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
 
@@ -18,7 +18,7 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
 	@Override
 	public void userEventTriggered( ChannelHandlerContext ctx, Object evt )
 			throws Exception {
-		
+
 		// 判定是否为写空闲
 		// 如果是写空闲，则立即发送一条心跳消息维持TCP连接
 		if ( evt instanceof IdleStateEvent ) {
@@ -29,14 +29,13 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
 				// debug
 				logger.info( "Channel is idle, send a hearbeat message." );
 
-				CommunicationHeader header = CommunicationHeader.newBuilder()
-					.setType( "heartbeat" )
-					.setContentLength( 0 )
-					.build();
+				CommunicationPackage comm = new CommunicationPackage();
+				comm.setType( "heartbeat" );
+				comm.setBody( new byte[] {} );
 
 				// 发送一个无消息体的数据包
 				// 这里必须调用writeAndFlush方法，立即发送一条消息
-				ctx.channel().writeAndFlush( header );
+				ctx.channel().writeAndFlush( comm );
 			}
 		}
 	}

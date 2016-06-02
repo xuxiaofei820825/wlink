@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iauto.wlink.core.comm.codec.CommunicationDecoder;
+import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
 import com.iauto.wlink.core.message.codec.AuthMessageDecoder;
 import com.iauto.wlink.core.message.codec.TextMessageDecoder;
 import com.iauto.wlink.server.AppConfig;
@@ -57,18 +57,19 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 			pipeline.addLast( sslCtx.newHandler( channel.alloc() ) );
 		}
 
-		// 设置心跳检测
+		// 设置通讯包编解码器
+		pipeline.addLast( "comm", new CommunicationPackageCodec() );
+
+		// 设置心跳检测处理器
 		IdleStateHandler idleStateHandler = new IdleStateHandler(
 			config.getHeartbeatInterval(), 0, 0, TimeUnit.SECONDS );
-		pipeline.addLast( "idle", idleStateHandler );
-
-		// 设置通讯包解码器
-		pipeline.addLast( "comm", new CommunicationDecoder() )
+		pipeline.addLast( "idle", idleStateHandler )
 			.addLast( "heartbeat", new HeartbeatHandler() );
 
 		// 设置认证信息解码器
 		pipeline.addLast( "auth", new AuthMessageDecoder() );
-		
+
+		// 设置文本消息解码器
 		pipeline.addLast( "text", new TextMessageDecoder() );
 
 		// 设置服务器监控

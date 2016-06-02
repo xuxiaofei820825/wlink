@@ -10,12 +10,18 @@ public class TextMessageWorker implements Runnable {
 	// logger
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
+	private TextMessage txtMsg;
+
 	public TextMessageWorker( final TextMessage txtMsg ) {
+		this.txtMsg = txtMsg;
 	}
 
 	public void run() {
 		// log
 		logger.info( "Processing the text message......" );
+
+		logger.debug( "Message: [from:{}, to:{}, text:{}]",
+			this.txtMsg.getFrom(), txtMsg.getTo(), txtMsg.getText() );
 
 		// 模拟耗时的网络请求
 		try {
