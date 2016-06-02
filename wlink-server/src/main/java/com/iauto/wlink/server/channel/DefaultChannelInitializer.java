@@ -62,14 +62,8 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		// 设置通讯包编解码器
 		pipeline.addLast( "comm", new CommunicationPackageCodec() );
 
-		// 设置心跳检测处理器
-		IdleStateHandler idleStateHandler = new IdleStateHandler(
-			config.getHeartbeatInterval(), 0, 0, TimeUnit.SECONDS );
-		pipeline.addLast( "idle", idleStateHandler )
-			.addLast( "heartbeat", new HeartbeatHandler() );
-
-		// 设置认证信息解码器
-		pipeline.addLast( "auth", new AuthenticationMessageCodec() );
+		// ===========================================================
+		// 1.以下设置编码器
 
 		// 设置错误响应编码器
 		pipeline.addLast( "error", new ErrorMessageCodec() );
@@ -77,10 +71,22 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		// 设置消息确认响应编码器
 		pipeline.addLast( "message_ack", new MessageAcknowledgeCodec() );
 
+		// 2.设置心跳检测处理器
+		IdleStateHandler idleStateHandler = new IdleStateHandler(
+			config.getHeartbeatInterval(), 0, 0, TimeUnit.SECONDS );
+		pipeline.addLast( "idle", idleStateHandler )
+			.addLast( "heartbeat", new HeartbeatHandler() );
+
+		// ===========================================================
+		// 3.以下设置解码器
+
+		// 设置认证信息解码器
+		pipeline.addLast( "auth", new AuthenticationMessageCodec() );
+
 		// 设置文本消息解码器
 		pipeline.addLast( "text", new TextMessageCodec() );
 
-		// 设置服务器监控处理器
+		// 4.设置服务器监控处理器
 		pipeline.addLast( new StateStatisticsHandler( statistics ) );
 	}
 }
