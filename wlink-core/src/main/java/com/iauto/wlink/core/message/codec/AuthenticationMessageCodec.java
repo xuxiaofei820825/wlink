@@ -71,7 +71,7 @@ public class AuthenticationMessageCodec extends MessageToMessageCodec<Communicat
 			// log
 			logger.info( "Session has not been created, ignore the message." );
 
-			// TODO 否则，发送错误响应
+			// 否则，发送错误响应
 			ErrorMessage error = ErrorMessage.newBuilder()
 				.setError( "UNAUTHENTICATED" )
 				.build();

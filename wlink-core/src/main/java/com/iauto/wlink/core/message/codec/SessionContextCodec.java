@@ -10,10 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.comm.CommunicationPackage;
-import com.iauto.wlink.core.message.proto.SessionContextProto.SessionContext;
+import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
 import com.iauto.wlink.core.message.worker.MessageWorker;
 
-public class SessionContextCodec extends MessageToMessageCodec<CommunicationPackage, SessionContext> {
+public class SessionContextCodec extends MessageToMessageCodec<CommunicationPackage, SessionMessage> {
 
 	// logger
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
@@ -26,7 +26,7 @@ public class SessionContextCodec extends MessageToMessageCodec<CommunicationPack
 	}
 
 	@Override
-	protected void encode( ChannelHandlerContext ctx, SessionContext msg, List<Object> out ) throws Exception {
+	protected void encode( ChannelHandlerContext ctx, SessionMessage msg, List<Object> out ) throws Exception {
 		// 获取会话消息的ProtoBuffer编码
 		byte[] sessionBytes = msg.toByteArray();
 
