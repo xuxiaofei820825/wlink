@@ -4,9 +4,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.lang.StringUtils;
@@ -16,12 +13,12 @@ import org.slf4j.LoggerFactory;
 import com.iauto.wlink.core.comm.CommunicationPackage;
 import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
-import com.iauto.wlink.core.message.worker.AuthWorker;
+import com.iauto.wlink.core.message.worker.MessageWorker;
 import com.iauto.wlink.core.session.SessionContext;
 
 public class AuthenticationMessageCodec extends MessageToMessageCodec<CommunicationPackage, AuthMessage> {
 
-// logger
+	// logger
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 	/** 当前会话上下文 */
@@ -30,9 +27,12 @@ public class AuthenticationMessageCodec extends MessageToMessageCodec<Communicat
 	/** 表示是否已做身份认证 */
 	private AtomicBoolean isAuthenticated = new AtomicBoolean( false );
 
-	/** 业务线程池 */
-	private static final ThreadPoolExecutor executor = new ThreadPoolExecutor( 5, 10, 30L, TimeUnit.SECONDS,
-		new ArrayBlockingQueue<Runnable>( 100 ) );
+	/** 消息处理器 */
+	private final MessageWorker worker;
+
+	public AuthenticationMessageCodec( MessageWorker worker ) {
+		this.worker = worker;
+	}
 
 	@Override
 	protected void encode( ChannelHandlerContext ctx, AuthMessage msg, List<Object> out ) throws Exception {
@@ -81,18 +81,7 @@ public class AuthenticationMessageCodec extends MessageToMessageCodec<Communicat
 		}
 
 		// 以下处理身份认证
-		// log
-		logger.info( "Decoding the authentication message......" );
-
-		// 否则，尝试解码认证信息
-		AuthMessage authMsg = AuthMessage.parseFrom( msg.getBody() );
-
-		// log
-		logger.info( "Channel: {}, Ticket: {}", ctx.channel(), authMsg.getTicket() );
-
-		// 异步进行用户身份验证
-		executor.execute( new AuthWorker( ctx, authMsg.getTicket() ) );
-
+		worker.process( ctx, msg.getBody() );
 	}
 
 	public void finish( final SessionContext sessionContext ) {

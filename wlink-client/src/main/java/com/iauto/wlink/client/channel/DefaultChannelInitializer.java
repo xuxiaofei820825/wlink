@@ -40,9 +40,9 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		pipeline.addLast( "message_ack", new MessageAcknowledgeCodec() );
 
 		// 设置文本消息编解码器
-		pipeline.addLast( "text", new TextMessageCodec() );
+		pipeline.addLast( "text", new TextMessageCodec( null ) );
 
 		// 设置身份认证编解码器
-		pipeline.addLast( "auth", new AuthenticationMessageCodec() );
+		pipeline.addLast( "auth", new AuthenticationMessageCodec( null ) );
 	}
 }

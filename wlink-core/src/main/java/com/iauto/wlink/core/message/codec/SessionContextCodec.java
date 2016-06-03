@@ -10,10 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.comm.CommunicationPackage;
-import com.iauto.wlink.core.message.proto.TextMessageProto.TextMessage;
+import com.iauto.wlink.core.message.proto.SessionContextProto.SessionContext;
 import com.iauto.wlink.core.message.worker.MessageWorker;
 
-public class TextMessageCodec extends MessageToMessageCodec<CommunicationPackage, TextMessage> {
+public class SessionContextCodec extends MessageToMessageCodec<CommunicationPackage, SessionContext> {
 
 	// logger
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
@@ -21,18 +21,18 @@ public class TextMessageCodec extends MessageToMessageCodec<CommunicationPackage
 	/** 消息处理器 */
 	private final MessageWorker worker;
 
-	public TextMessageCodec( MessageWorker worker ) {
+	public SessionContextCodec( MessageWorker worker ) {
 		this.worker = worker;
 	}
 
 	@Override
-	protected void encode( ChannelHandlerContext ctx, TextMessage msg, List<Object> out ) throws Exception {
-		// 获取文本消息的ProtoBuffer编码
-		byte[] txtMsgBytes = msg.toByteArray();
+	protected void encode( ChannelHandlerContext ctx, SessionContext msg, List<Object> out ) throws Exception {
+		// 获取会话消息的ProtoBuffer编码
+		byte[] sessionBytes = msg.toByteArray();
 
 		CommunicationPackage comm = new CommunicationPackage();
-		comm.setType( "text" );
-		comm.setBody( txtMsgBytes );
+		comm.setType( "session" );
+		comm.setBody( sessionBytes );
 
 		// 传递到下一个处理器
 		out.add( comm );
@@ -44,15 +44,14 @@ public class TextMessageCodec extends MessageToMessageCodec<CommunicationPackage
 		String type = msg.getType();
 
 		// 如果不是文本消息，则流转到下一个处理器
-		if ( !StringUtils.equals( "text", type ) ) {
+		if ( !StringUtils.equals( "session", type ) ) {
 			out.add( msg );
 			return;
 		}
 
 		// log
-		logger.info( "Processing the text message......" );
+		logger.info( "Processing the session message......" );
 
-		// process
 		worker.process( ctx, msg.getBody() );
 	}
 }

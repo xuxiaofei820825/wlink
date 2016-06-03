@@ -15,7 +15,10 @@ import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
 import com.iauto.wlink.core.message.codec.AuthenticationMessageCodec;
 import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
 import com.iauto.wlink.core.message.codec.MessageAcknowledgeCodec;
+import com.iauto.wlink.core.message.codec.SessionContextCodec;
 import com.iauto.wlink.core.message.codec.TextMessageCodec;
+import com.iauto.wlink.core.message.worker.AuthWorker;
+import com.iauto.wlink.core.message.worker.TextMessageWorker;
 import com.iauto.wlink.server.AppConfig;
 import com.iauto.wlink.server.ServerStateStatistics;
 import com.iauto.wlink.server.channel.handler.HeartbeatHandler;
@@ -80,11 +83,14 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		// ===========================================================
 		// 3.以下设置解码器
 
+		// 设置会话上下文解码器
+		pipeline.addLast( "session", new SessionContextCodec( null ) );
+
 		// 设置认证信息解码器
-		pipeline.addLast( "auth", new AuthenticationMessageCodec() );
+		pipeline.addLast( "auth", new AuthenticationMessageCodec( new AuthWorker() ) );
 
 		// 设置文本消息解码器
-		pipeline.addLast( "text", new TextMessageCodec() );
+		pipeline.addLast( "text", new TextMessageCodec( new TextMessageWorker() ) );
 
 		// 4.设置服务器监控处理器
 		pipeline.addLast( new StateStatisticsHandler( statistics ) );
