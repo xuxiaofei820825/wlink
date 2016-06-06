@@ -41,6 +41,7 @@ public class AuthenticationMessageCodec extends MessageToMessageCodec<Communicat
 
 		CommunicationPackage comm = new CommunicationPackage();
 		comm.setType( "auth" );
+		comm.setHeader( new byte[] {} );
 		comm.setBody( authMsgBytes );
 
 		// 传递到下一个处理器

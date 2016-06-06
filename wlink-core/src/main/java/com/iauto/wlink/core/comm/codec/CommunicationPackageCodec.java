@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.comm.CommunicationPackage;
-import com.iauto.wlink.core.comm.proto.CommunicationHeaderProto.CommunicationHeader;
+import com.iauto.wlink.core.comm.proto.CommPackageHeaderProto.CommPackageHeader;
 
 public class CommunicationPackageCodec extends ByteToMessageCodec<CommunicationPackage> {
 
@@ -23,6 +23,9 @@ public class CommunicationPackageCodec extends ByteToMessageCodec<CommunicationP
 	private State currentState = State.INIT;
 
 	/** 实体头长度 */
+	private int commheaderLen = 0;
+
+	/**  */
 	private int headerLen = 0;
 
 	/** 实体内容长度 */
@@ -36,16 +39,18 @@ public class CommunicationPackageCodec extends ByteToMessageCodec<CommunicationP
 	 */
 	private enum State {
 		INIT,
-		HEADER,
-		BODY
+		COMM_HEADER,
+		PACKAGE_HEADER,
+		PACKAGE_BODY
 	}
 
 	@Override
 	protected void encode( ChannelHandlerContext ctx, CommunicationPackage msg, ByteBuf out ) throws Exception {
 
 		// 创建消息头
-		CommunicationHeader header = CommunicationHeader.newBuilder()
+		CommPackageHeader header = CommPackageHeader.newBuilder()
 			.setType( msg.getType() )
+			.setHeaderLength( msg.getHeader().length )
 			.setContentLength( msg.getBody().length )
 			.build();
 
@@ -61,7 +66,8 @@ public class CommunicationPackageCodec extends ByteToMessageCodec<CommunicationP
 		// 输出消息头
 		out.writeBytes( header_bytes );
 
-		// 输出消息体
+		// 输出包
+		out.writeBytes( msg.getHeader() );
 		out.writeBytes( msg.getBody() );
 	}
 
@@ -82,54 +88,77 @@ public class CommunicationPackageCodec extends ByteToMessageCodec<CommunicationP
 				return;
 
 			// 获取通讯头长度
-			headerLen = in.readShort();
+			this.commheaderLen = in.readShort();
 
-			// 否则状态迁移到解析Header
-			currentState = State.HEADER;
-		case HEADER:
-
-			if ( headerLen == 0 ) {
-				// 如果Header的长度为0，则状态迁移到解析Body
-				currentState = State.BODY;
+			// 如果Header的长度为0，则不做任何处理
+			if ( this.commheaderLen == 0 ) {
 				return;
 			}
 
-			// 如果Buffer的可读字节数不够读取Header，等待下次通道可读时继续解析
-			if ( in.readableBytes() < headerLen )
+			// 否则状态迁移到解析Header
+			this.currentState = State.COMM_HEADER;
+
+		case COMM_HEADER:
+
+			// 如果Buffer中的可读字节数不够读取Header，则等待下次通道可读时继续解析
+			if ( in.readableBytes() < this.commheaderLen )
 				return;
 
 			// 读取Header
-			CommunicationHeader header = CommunicationHeader.parseFrom( in.readBytes( headerLen ).array() );
+			byte[] commHeader = new byte[this.commheaderLen];
+			in.readBytes( commHeader );
+
+			// 解码
+			CommPackageHeader header = CommPackageHeader.parseFrom( commHeader );
 
 			// info
-			logger.info( "Channel:{}, Receive a package:[Content-Type: {}, Content-Length: {}]",
-				ctx.channel(), header.getType(), header.getContentLength() );
+			logger.info( "Channel:{}, Receive a package:[Content-Type: {}, Header-Length: {}, Content-Length: {}]",
+				ctx.channel(), header.getType(), header.getHeaderLength(), header.getContentLength() );
 
 			// 获取内容长度
-			this.bodyLen = header.getContentLength();
+			this.bodyLen = header.getHeaderLength() + header.getContentLength();
 
 			// 创建通讯包实例
 			this.commPackage = new CommunicationPackage();
 			this.commPackage.setType( header.getType() );
 
+			// 记录包头，包体的长度
+			this.headerLen = header.getHeaderLength();
+			this.bodyLen = header.getContentLength();
+
 			// 通讯头读取结束
-			// 状态迁移到解析Body
-			currentState = State.BODY;
-		case BODY:
+			// 状态迁移到读取包头
+			currentState = State.PACKAGE_HEADER;
 
-			if ( bodyLen != 0 ) {
-				// 如果Buffer的可读字节数不够读取Body，等待下次通道可读时继续解析
-				if ( in.readableBytes() < bodyLen )
-					return;
+		case PACKAGE_HEADER:
 
-				// 读取消息体
-				byte[] body = new byte[bodyLen];
-				in.readBytes( body );
+			// 如果Buffer中的可读字节数不够读取包头，则等待下次通道可读时继续解析
+			if ( in.readableBytes() < this.headerLen )
+				return;
 
-				this.commPackage.setBody( body );
-			}
+			byte[] packageHeader = new byte[this.headerLen];
+			in.readBytes( packageHeader );
 
-			// 通讯体读取结束
+			// 读取包头
+			this.commPackage.setHeader( packageHeader );
+
+			// 包头读取结束
+			// 状态迁移到读取包体
+			this.currentState = State.PACKAGE_BODY;
+
+		case PACKAGE_BODY:
+
+			// 如果Buffer中的可读字节数不够读取包体，则等待下次通道可读时继续解析
+			if ( in.readableBytes() < this.bodyLen )
+				return;
+
+			// 读取包体
+			byte[] body = new byte[this.bodyLen];
+			in.readBytes( body );
+
+			this.commPackage.setBody( body );
+
+			// 包体读取结束
 			out.add( this.commPackage );
 
 			// 报文解析完毕，初始化状态，等待解析下一段报文
@@ -137,7 +166,6 @@ public class CommunicationPackageCodec extends ByteToMessageCodec<CommunicationP
 		default:
 			break;
 		}
-
 	}
 
 	/**
@@ -147,6 +175,7 @@ public class CommunicationPackageCodec extends ByteToMessageCodec<CommunicationP
 		// 恢复初始状态
 		this.currentState = State.INIT;
 
+		this.commheaderLen = 0;
 		this.headerLen = 0;
 		this.bodyLen = 0;
 	}

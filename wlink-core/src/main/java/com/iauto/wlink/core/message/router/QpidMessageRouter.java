@@ -1,6 +1,5 @@
 package com.iauto.wlink.core.message.router;
 
-import com.iauto.wlink.core.message.worker.QpidClient;
 
 public class QpidMessageRouter implements MessageRouter {
 

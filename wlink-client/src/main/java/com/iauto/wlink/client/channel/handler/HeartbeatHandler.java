@@ -31,6 +31,7 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
 
 				CommunicationPackage comm = new CommunicationPackage();
 				comm.setType( "heartbeat" );
+				comm.setHeader( new byte[] {} );
 				comm.setBody( new byte[] {} );
 
 				// 发送一个无消息体的数据包

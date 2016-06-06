@@ -12,7 +12,7 @@ import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
 import com.iauto.wlink.core.message.codec.AuthenticationMessageCodec;
 import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
 import com.iauto.wlink.core.message.codec.MessageAcknowledgeCodec;
-import com.iauto.wlink.core.message.codec.TextMessageCodec;
+import com.iauto.wlink.core.message.codec.CommMessageCodec;
 
 /**
  * 实现一个默认的客户端通道初始化器
@@ -40,7 +40,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		pipeline.addLast( "message_ack", new MessageAcknowledgeCodec() );
 
 		// 设置文本消息编解码器
-		pipeline.addLast( "text", new TextMessageCodec( null ) );
+		pipeline.addLast( "text", new CommMessageCodec( null ) );
 
 		// 设置身份认证编解码器
 		pipeline.addLast( "auth", new AuthenticationMessageCodec( null ) );

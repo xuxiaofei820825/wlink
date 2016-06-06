@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.message.worker;
+package com.iauto.wlink.core.message.router;
 
 import java.net.URISyntaxException;
 

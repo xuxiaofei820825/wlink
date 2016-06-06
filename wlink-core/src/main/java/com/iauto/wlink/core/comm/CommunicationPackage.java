@@ -5,6 +5,9 @@ public class CommunicationPackage {
 	/** 数据包类型 */
 	private String type;
 
+	/** 数据头 */
+	private byte[] header;
+
 	/** 数据体 */
 	private byte[] body;
 
@@ -20,6 +23,14 @@ public class CommunicationPackage {
 
 	public void setType( String type ) {
 		this.type = type;
+	}
+
+	public byte[] getHeader() {
+		return header;
+	}
+
+	public void setHeader( byte[] header ) {
+		this.header = header;
 	}
 
 	public byte[] getBody() {
