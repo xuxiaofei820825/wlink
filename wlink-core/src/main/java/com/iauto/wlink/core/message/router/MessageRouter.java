@@ -12,7 +12,7 @@ public interface MessageRouter {
 	 * @param message
 	 *          消息体
 	 */
-	void send( String sender, String receiver, byte[] message );
+	void send( String sender, String receiver, byte[] message ) throws Exception;
 
 	void receive( String receiver );
 }

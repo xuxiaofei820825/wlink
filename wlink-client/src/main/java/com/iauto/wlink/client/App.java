@@ -16,9 +16,9 @@ public class App
 
 		client.auth( UUID.randomUUID().toString() );
 
-		//while ( true ) {
-		//	client.sendText( "woaijuanjuan2" );
-		//	Thread.sleep( 20000 );
-		//}
+		while ( true ) {
+			client.sendMessage( "woaijuanjuan2" );
+			Thread.sleep( 10000 );
+		}
 	}
 }

@@ -82,7 +82,7 @@ public class AuthenticationMessageCodec extends MessageToMessageCodec<Communicat
 		}
 
 		// 以下处理身份认证
-		worker.process( ctx, msg.getBody() );
+		worker.process( ctx, msg.getHeader(), msg.getBody() );
 	}
 
 	public void finish( final SessionContext sessionContext ) {

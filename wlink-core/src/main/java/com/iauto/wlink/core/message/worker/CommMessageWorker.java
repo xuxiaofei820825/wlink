@@ -9,12 +9,12 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.message.proto.CommMessageHeaderProto.CommMessageHeader;
 import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge;
-import com.iauto.wlink.core.message.proto.TextMessageProto.TextMessage;
 import com.iauto.wlink.core.message.router.MessageRouter;
 import com.iauto.wlink.core.message.router.QpidMessageRouter;
 
-public class TextMessageWorker implements MessageWorker {
+public class CommMessageWorker implements MessageWorker {
 
 	// logger
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
@@ -24,16 +24,15 @@ public class TextMessageWorker implements MessageWorker {
 			new ThreadPoolExecutor( 5, 10, 30L, TimeUnit.SECONDS,
 				new ArrayBlockingQueue<Runnable>( 100 ) );
 
-	public void process( final ChannelHandlerContext ctx, final byte[] data ) throws Exception {
+	public void process( final ChannelHandlerContext ctx, final byte[] header, final byte[] body ) throws Exception {
 		// log
 		logger.info( "Decoding the text message......" );
 
-		TextMessage message = TextMessage.parseFrom( data );
-		executor.execute( new TextMessageRunner( ctx, message ) );
+		executor.execute( new CommMessageRunner( ctx, header, body ) );
 	}
 }
 
-class TextMessageRunner implements Runnable {
+class CommMessageRunner implements Runnable {
 
 	// logger
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
@@ -42,27 +41,31 @@ class TextMessageRunner implements Runnable {
 	private ChannelHandlerContext ctx;
 
 	/** 文本消息 */
-	private TextMessage txtMsg;
+	private byte[] header;
+	private byte[] body;
 
 	/** 消息处理器 */
 	private MessageRouter router = new QpidMessageRouter();
 
-	public TextMessageRunner( final ChannelHandlerContext ctx, final TextMessage txtMsg ) {
+	public CommMessageRunner( final ChannelHandlerContext ctx, final byte[] header, final byte[] body ) {
 		this.ctx = ctx;
-		this.txtMsg = txtMsg;
+		this.header = header;
+		this.body = body;
 	}
 
 	public void run() {
 
-		// debug
-		logger.debug( "A text message: [from:{}, to:{}, text:PROTECTED]",
-			this.txtMsg.getFrom(), txtMsg.getTo() );
-
 		// 模拟耗时的网络请求
 		try {
 
+			CommMessageHeader msgHeader = CommMessageHeader.parseFrom( this.header );
+
+			// debug
+			logger.debug( "A text message: [from:{}, to:{}, text:PROTECTED]",
+				msgHeader.getFrom(), msgHeader.getTo() );
+
 			// 把消息路由给接收者
-			router.send( this.txtMsg.getFrom(), txtMsg.getTo(), txtMsg.getText().getBytes() );
+			router.send( msgHeader.getFrom(), msgHeader.getTo(), body );
 
 			// log
 			logger.info( "Finished to process the text message." );

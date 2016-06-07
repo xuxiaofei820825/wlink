@@ -55,8 +55,8 @@ public class CommunicationPackageCodec extends ByteToMessageCodec<CommunicationP
 			.build();
 
 		// log
-		logger.info( "Encoding a message package. [type: {}, content-length: {}]",
-			msg.getType(), msg.getBody().length );
+		logger.info( "Encoding a message package. [type: {}, Header-length: {}, Content-length: {}]",
+			msg.getType(), msg.getHeader().length, msg.getBody().length );
 
 		byte[] header_bytes = header.toByteArray();
 

@@ -52,6 +52,7 @@ public class SessionContextCodec extends MessageToMessageCodec<CommunicationPack
 		// log
 		logger.info( "Processing the session message......" );
 
-		worker.process( ctx, msg.getBody() );
+		if ( this.worker != null )
+			worker.process( ctx, msg.getHeader(), msg.getBody() );
 	}
 }

@@ -12,8 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.client.channel.DefaultChannelInitializer;
+import com.iauto.wlink.core.message.CommMessage;
 import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
-import com.iauto.wlink.core.message.proto.TextMessageProto.TextMessage;
 
 public class DefaultClient {
 
@@ -66,14 +66,20 @@ public class DefaultClient {
 		channel.writeAndFlush( authMsg );
 	}
 
-	public void sendText( final String message ) {
-		TextMessage txtMsg = TextMessage.newBuilder()
-			.setFrom( "xuxiaofei" )
-			.setTo( "xuhongjuan" )
-			.setText( message )
-			.build();
+	public void sendMessage( final String message ) {
+//		TextMessage txtMsg = TextMessage.newBuilder()
+//			.setFrom( "xuxiaofei" )
+//			.setTo( "xuhongjuan" )
+//			.setText( message )
+//			.build();
+		
+		CommMessage commMsg = new CommMessage();
+		commMsg.setFrom( "xuxiaofei" );
+		commMsg.setTo( "xuhongjuan" );
+		commMsg.setType( "text" );
+		commMsg.setBody( message.getBytes() );
 
 		// 发送文本消息
-		channel.writeAndFlush( txtMsg );
+		channel.writeAndFlush( commMsg );
 	}
 }

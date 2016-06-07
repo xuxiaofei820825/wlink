@@ -41,13 +41,18 @@ public final class SessionMessageProto {
         getTimestampBytes();
 
     /**
-     * <code>required bytes signature = 3;</code>
+     * <code>required string signature = 3 [default = ""];</code>
      */
     boolean hasSignature();
     /**
-     * <code>required bytes signature = 3;</code>
+     * <code>required string signature = 3 [default = ""];</code>
      */
-    com.google.protobuf.ByteString getSignature();
+    java.lang.String getSignature();
+    /**
+     * <code>required string signature = 3 [default = ""];</code>
+     */
+    com.google.protobuf.ByteString
+        getSignatureBytes();
   }
   /**
    * Protobuf type {@code com.iauto.wlink.core.message.proto.SessionMessage}
@@ -113,8 +118,9 @@ public final class SessionMessageProto {
               break;
             }
             case 26: {
+              com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000004;
-              signature_ = input.readBytes();
+              signature_ = bs;
               break;
             }
           }
@@ -242,24 +248,51 @@ public final class SessionMessageProto {
     }
 
     public static final int SIGNATURE_FIELD_NUMBER = 3;
-    private com.google.protobuf.ByteString signature_;
+    private java.lang.Object signature_;
     /**
-     * <code>required bytes signature = 3;</code>
+     * <code>required string signature = 3 [default = ""];</code>
      */
     public boolean hasSignature() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     /**
-     * <code>required bytes signature = 3;</code>
+     * <code>required string signature = 3 [default = ""];</code>
      */
-    public com.google.protobuf.ByteString getSignature() {
-      return signature_;
+    public java.lang.String getSignature() {
+      java.lang.Object ref = signature_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          signature_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string signature = 3 [default = ""];</code>
+     */
+    public com.google.protobuf.ByteString
+        getSignatureBytes() {
+      java.lang.Object ref = signature_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        signature_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
     }
 
     private void initFields() {
       userId_ = "";
       timestamp_ = "";
-      signature_ = com.google.protobuf.ByteString.EMPTY;
+      signature_ = "";
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -293,7 +326,7 @@ public final class SessionMessageProto {
         output.writeBytes(2, getTimestampBytes());
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeBytes(3, signature_);
+        output.writeBytes(3, getSignatureBytes());
       }
       getUnknownFields().writeTo(output);
     }
@@ -314,7 +347,7 @@ public final class SessionMessageProto {
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(3, signature_);
+          .computeBytesSize(3, getSignatureBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -437,7 +470,7 @@ public final class SessionMessageProto {
         bitField0_ = (bitField0_ & ~0x00000001);
         timestamp_ = "";
         bitField0_ = (bitField0_ & ~0x00000002);
-        signature_ = com.google.protobuf.ByteString.EMPTY;
+        signature_ = "";
         bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
@@ -506,7 +539,9 @@ public final class SessionMessageProto {
           onChanged();
         }
         if (other.hasSignature()) {
-          setSignature(other.getSignature());
+          bitField0_ |= 0x00000004;
+          signature_ = other.signature_;
+          onChanged();
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -699,23 +734,51 @@ public final class SessionMessageProto {
         return this;
       }
 
-      private com.google.protobuf.ByteString signature_ = com.google.protobuf.ByteString.EMPTY;
+      private java.lang.Object signature_ = "";
       /**
-       * <code>required bytes signature = 3;</code>
+       * <code>required string signature = 3 [default = ""];</code>
        */
       public boolean hasSignature() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       /**
-       * <code>required bytes signature = 3;</code>
+       * <code>required string signature = 3 [default = ""];</code>
        */
-      public com.google.protobuf.ByteString getSignature() {
-        return signature_;
+      public java.lang.String getSignature() {
+        java.lang.Object ref = signature_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            signature_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
       }
       /**
-       * <code>required bytes signature = 3;</code>
+       * <code>required string signature = 3 [default = ""];</code>
        */
-      public Builder setSignature(com.google.protobuf.ByteString value) {
+      public com.google.protobuf.ByteString
+          getSignatureBytes() {
+        java.lang.Object ref = signature_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          signature_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string signature = 3 [default = ""];</code>
+       */
+      public Builder setSignature(
+          java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -725,11 +788,24 @@ public final class SessionMessageProto {
         return this;
       }
       /**
-       * <code>required bytes signature = 3;</code>
+       * <code>required string signature = 3 [default = ""];</code>
        */
       public Builder clearSignature() {
         bitField0_ = (bitField0_ & ~0x00000004);
         signature_ = getDefaultInstance().getSignature();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string signature = 3 [default = ""];</code>
+       */
+      public Builder setSignatureBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        signature_ = value;
         onChanged();
         return this;
       }
@@ -760,9 +836,9 @@ public final class SessionMessageProto {
   static {
     java.lang.String[] descriptorData = {
       "\n\037wlink/SessionMessageProto.proto\022\"com.i" +
-      "auto.wlink.core.message.proto\"J\n\016Session" +
+      "auto.wlink.core.message.proto\"L\n\016Session" +
       "Message\022\020\n\006userId\030\001 \002(\t:\000\022\023\n\ttimestamp\030\002" +
-      " \002(\t:\000\022\021\n\tsignature\030\003 \002(\014"
+      " \002(\t:\000\022\023\n\tsignature\030\003 \002(\t:\000"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {

@@ -6,10 +6,10 @@ public class CommunicationPackage {
 	private String type;
 
 	/** 数据头 */
-	private byte[] header;
+	private byte[] header = new byte[] {};
 
 	/** 数据体 */
-	private byte[] body;
+	private byte[] body = new byte[] {};
 
 	public CommunicationPackage() {
 	}

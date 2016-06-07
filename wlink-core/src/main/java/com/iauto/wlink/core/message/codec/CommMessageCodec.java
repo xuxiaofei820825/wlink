@@ -61,6 +61,7 @@ public class CommMessageCodec extends MessageToMessageCodec<CommunicationPackage
 		logger.info( "Processing the message......" );
 
 		// process
-		worker.process( ctx, msg.getBody() );
+		if ( this.worker != null )
+			worker.process( ctx, msg.getHeader(), msg.getBody() );
 	}
 }
