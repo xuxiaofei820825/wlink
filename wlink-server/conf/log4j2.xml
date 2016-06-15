@@ -7,7 +7,7 @@
 		<!-- 服务名 -->
 		<property name="SERVICE_NAME">WLINK</property>
 		<!-- 默认消息格式 -->
-		<property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss} [%5p] ${SERVICE_NAME} %F:%L "%m"%n</property>
+		<property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss} [%5p] ${SERVICE_NAME} %t %F:%L "%m"%n</property>
 		<!-- SYSLOG消息格式 -->
 		<property name="SYSLOG_PATTERN">Java[%X{pid}]:OTH ${SERVICE_NAME} %c %F:%L "%m"%n</property>
 	</properties>
@@ -35,7 +35,7 @@
 	</appenders>
 
 	<loggers>
-		<asyncRoot level="DEBUG">
+		<asyncRoot level="INFO">
 			<appender-ref ref="Console" />
 		</asyncRoot>
 	</loggers>

@@ -10,17 +10,18 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iauto.wlink.core.message.codec.AuthenticationMessageCodec;
+import com.iauto.wlink.core.message.codec.SessionContextCodec;
 import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
 import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
 import com.iauto.wlink.core.session.SessionContext;
 
 public class AuthWorker implements MessageWorker {
 
-	// logger
+	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 	/** 签名密匙 */
@@ -28,12 +29,9 @@ public class AuthWorker implements MessageWorker {
 
 	/** 业务线程池 */
 	private static final ThreadPoolExecutor executor =
-			new ThreadPoolExecutor( 5, 10, 30L, TimeUnit.SECONDS,
-				new ArrayBlockingQueue<Runnable>( 100 ) );
+			new ThreadPoolExecutor( 1, 5, 30L, TimeUnit.SECONDS,
+				new ArrayBlockingQueue<Runnable>( 1000 ) );
 
-	/**
-	 * 构造函数
-	 */
 	public AuthWorker( final String key ) {
 		this.key = key;
 	}
@@ -42,16 +40,20 @@ public class AuthWorker implements MessageWorker {
 		// log
 		logger.info( "Decoding the authentication message......" );
 
+		// 解码
 		AuthMessage message = AuthMessage.parseFrom( body );
+
+		// 异步执行认证
 		executor.execute( new AuthRunner( ctx, message.getTicket(), this.key ) );
 	}
 }
 
 class AuthRunner implements Runnable {
 
-	// logger
+	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
+	/** 签名算法 */
 	private final static String HMAC_SHA256 = "HmacSHA256";
 
 	/** 通道处理上下文 */
@@ -70,53 +72,50 @@ class AuthRunner implements Runnable {
 	}
 
 	public void run() {
-
 		// log
-		logger.info( "Processing the authentication......" );
+		logger.info( "Processing the authentication. Received service ticket: {}", this.ticket );
 
 		try {
 
 			// log
-			logger.info( "Received service ticket: {}", this.ticket );
-
-			// 模拟耗时的网络请求
-			Thread.sleep( 3000 );
-
-			final String userId = "xuxiaofei";
-			final String timestamp = String.valueOf( System.currentTimeMillis() );
-
-			String session = userId + ";" + timestamp;
-
-			// log
 			logger.info( "Creating the session context......" );
 
-			// 生成签名
+			Thread.sleep( 2000 );
+
+			// 生成用来进行签名的字符串
+			final String userId = StringUtils.replace( ticket, "T", "U" );
+			final String timestamp = String.valueOf( System.currentTimeMillis() );
+			String session = userId + ";" + timestamp;
+
+			// 生成会话信息的签名
 			SecretKeySpec signingKey = new SecretKeySpec( Base64.decodeBase64( key ), HMAC_SHA256 );
 			Mac mac = Mac.getInstance( HMAC_SHA256 );
 			mac.init( signingKey );
 			byte[] rawHmac = mac.doFinal( session.getBytes() );
 
-			String signature = Base64.encodeBase64URLSafeString( rawHmac );
-
+			// 创建会话上下文对象，并返回给终端
+			// 终端可使用会话上下文重新建立与服务器的会话
 			SessionMessage sessionMsg = SessionMessage.newBuilder()
 				.setUserId( userId )
 				.setTimestamp( timestamp )
-				.setSignature( signature )
+				.setSignature( Base64.encodeBase64URLSafeString( rawHmac ) )
 				.build();
 
-			// 返回给客户端
+			// 返回给终端
 			ctx.writeAndFlush( sessionMsg );
+
+			// 设置上下文
+			SessionContextCodec sessionHandler = (SessionContextCodec) this.ctx.pipeline().get( "session" );
+			sessionHandler.setSessionContext( new SessionContext( userId ), ctx );
+
+			// 不再需要认证处理器了，删除掉
+			this.ctx.pipeline().remove( "auth" );
 
 			// log
 			logger.info( "Finished to process the authentication." );
-
-			AuthenticationMessageCodec authHandler = (AuthenticationMessageCodec) this.ctx.pipeline().get( "auth" );
-			authHandler.finish( new SessionContext( "xiaofei.xu" ) );
-		}
-		catch ( Exception e ) {
+		} catch ( Exception e ) {
 			// ignore
-			
-			logger.info( "Error occoured when processing the authentication." );
+			logger.info( "Error occoured when processing the authentication.", e );
 		}
 	}
 }

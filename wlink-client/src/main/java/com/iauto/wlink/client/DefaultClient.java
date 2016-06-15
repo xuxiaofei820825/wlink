@@ -66,16 +66,10 @@ public class DefaultClient {
 		channel.writeAndFlush( authMsg );
 	}
 
-	public void sendMessage( final String message ) {
-//		TextMessage txtMsg = TextMessage.newBuilder()
-//			.setFrom( "xuxiaofei" )
-//			.setTo( "xuhongjuan" )
-//			.setText( message )
-//			.build();
-		
+	public void sendMessage( final String sender, final String receiver, final String message ) {
 		CommMessage commMsg = new CommMessage();
-		commMsg.setFrom( "xuxiaofei" );
-		commMsg.setTo( "xuhongjuan" );
+		commMsg.setFrom( sender );
+		commMsg.setTo( receiver );
 		commMsg.setType( "text" );
 		commMsg.setBody( message.getBytes() );
 

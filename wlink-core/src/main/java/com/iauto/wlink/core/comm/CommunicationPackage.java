@@ -40,5 +40,4 @@ public class CommunicationPackage {
 	public void setBody( byte[] body ) {
 		this.body = body;
 	}
-
 }

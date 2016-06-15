@@ -14,7 +14,7 @@ import com.iauto.wlink.core.comm.proto.CommPackageHeaderProto.CommPackageHeader;
 
 public class CommunicationPackageCodec extends ByteToMessageCodec<CommunicationPackage> {
 
-	// logger
+	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 	/**
@@ -54,8 +54,8 @@ public class CommunicationPackageCodec extends ByteToMessageCodec<CommunicationP
 			.setContentLength( msg.getBody().length )
 			.build();
 
-		// log
-		logger.info( "Encoding a message package. [type: {}, Header-length: {}, Content-length: {}]",
+		// debug
+		logger.debug( "Encoding a message package. [type: {}, Header-length: {}, Content-length: {}]",
 			msg.getType(), msg.getHeader().length, msg.getBody().length );
 
 		byte[] header_bytes = header.toByteArray();
@@ -111,8 +111,8 @@ public class CommunicationPackageCodec extends ByteToMessageCodec<CommunicationP
 			// 解码
 			CommPackageHeader header = CommPackageHeader.parseFrom( commHeader );
 
-			// info
-			logger.info( "Channel:{}, Receive a package:[Content-Type: {}, Header-Length: {}, Content-Length: {}]",
+			// debug
+			logger.debug( "Channel:{}, Receive a package:[Content-Type: {}, Header-Length: {}, Content-Length: {}]",
 				ctx.channel(), header.getType(), header.getHeaderLength(), header.getContentLength() );
 
 			// 获取内容长度

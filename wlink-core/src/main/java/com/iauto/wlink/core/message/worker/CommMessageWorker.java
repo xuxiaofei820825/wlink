@@ -22,7 +22,7 @@ public class CommMessageWorker implements MessageWorker {
 	/** 业务线程池 */
 	private static final ThreadPoolExecutor executor =
 			new ThreadPoolExecutor( 5, 10, 30L, TimeUnit.SECONDS,
-				new ArrayBlockingQueue<Runnable>( 100 ) );
+				new ArrayBlockingQueue<Runnable>( 10000 ) );
 
 	public void process( final ChannelHandlerContext ctx, final byte[] header, final byte[] body ) throws Exception {
 		// log
@@ -61,8 +61,8 @@ class CommMessageRunner implements Runnable {
 			CommMessageHeader msgHeader = CommMessageHeader.parseFrom( this.header );
 
 			// debug
-			logger.debug( "A text message: [from:{}, to:{}, text:PROTECTED]",
-				msgHeader.getFrom(), msgHeader.getTo() );
+			logger.debug( "A text message: [from:{}, to:{}, content:{} bytes]",
+				msgHeader.getFrom(), msgHeader.getTo(), body.length );
 
 			// 把消息路由给接收者
 			router.send( msgHeader.getFrom(), msgHeader.getTo(), body );
@@ -75,8 +75,7 @@ class CommMessageRunner implements Runnable {
 				.setResult( MessageAcknowledge.Result.SUCCESS )
 				.build();
 			this.ctx.writeAndFlush( ack );
-		}
-		catch ( Exception e ) {
+		} catch ( Exception e ) {
 			// log
 			logger.info( "Failed to process the text message!!!" );
 

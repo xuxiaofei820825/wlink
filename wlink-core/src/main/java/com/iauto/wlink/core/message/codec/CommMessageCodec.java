@@ -48,11 +48,9 @@ public class CommMessageCodec extends MessageToMessageCodec<CommunicationPackage
 
 	@Override
 	protected void decode( ChannelHandlerContext ctx, CommunicationPackage msg, List<Object> out ) throws Exception {
-		// 获取数据包类型
-		String type = msg.getType();
 
 		// 如果不是文本消息，则流转到下一个处理器
-		if ( !StringUtils.equals( "message", type ) ) {
+		if ( !StringUtils.equals( "message", msg.getType() ) ) {
 			out.add( msg );
 			return;
 		}

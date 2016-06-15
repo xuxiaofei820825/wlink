@@ -12,12 +12,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
-import com.iauto.wlink.core.message.codec.AuthenticationMessageCodec;
+import com.iauto.wlink.core.message.Constant.SessionCodecEnv;
+import com.iauto.wlink.core.message.codec.CommMessageCodec;
 import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
 import com.iauto.wlink.core.message.codec.MessageAcknowledgeCodec;
 import com.iauto.wlink.core.message.codec.SessionContextCodec;
-import com.iauto.wlink.core.message.codec.CommMessageCodec;
-import com.iauto.wlink.core.message.worker.AuthWorker;
 import com.iauto.wlink.core.message.worker.CommMessageWorker;
 import com.iauto.wlink.server.AppConfig;
 import com.iauto.wlink.server.ServerStateStatistics;
@@ -26,7 +25,7 @@ import com.iauto.wlink.server.channel.handler.StateStatisticsHandler;
 
 public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel> {
 
-	// logger
+	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 	/** 应用配置 */
@@ -62,18 +61,19 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 			pipeline.addLast( sslCtx.newHandler( channel.alloc() ) );
 		}
 
-		// 设置通讯包编解码器
+		// 设置通讯包编解码器(进、出)
 		pipeline.addLast( "comm", new CommunicationPackageCodec() );
 
 		// ===========================================================
 		// 1.以下设置编码器
 
-		// 设置错误响应编码器
+		// 设置错误响应编码器(出)
 		pipeline.addLast( "error", new ErrorMessageCodec() );
 
-		// 设置消息确认响应编码器
-		pipeline.addLast( "message_ack", new MessageAcknowledgeCodec() );
+		// 设置消息确认响应编码器(出)
+		pipeline.addLast( "msg_ack", new MessageAcknowledgeCodec() );
 
+		// ===========================================================
 		// 2.设置心跳检测处理器
 		IdleStateHandler idleStateHandler = new IdleStateHandler(
 			config.getHeartbeatInterval(), 0, 0, TimeUnit.SECONDS );
@@ -83,15 +83,13 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		// ===========================================================
 		// 3.以下设置解码器
 
-		// 设置会话上下文解码器
-		pipeline.addLast( "session", new SessionContextCodec( null ) );
+		// 设置文本消息编解码器(进、出)
+		pipeline.addLast( "message", new CommMessageCodec( new CommMessageWorker() ) );
 
-		// 设置认证信息解码器
-		pipeline.addLast( "auth", new AuthenticationMessageCodec( new AuthWorker("9aROHg2eQXQ6X3XKrXGKWjXrLiRIO25CKTyz212ujvc") ) );
+		// 设置会话上下文解码器(进、出)
+		pipeline.addLast( "session", new SessionContextCodec( null, SessionCodecEnv.Server ) );
 
-		// 设置文本消息解码器
-		pipeline.addLast( "text", new CommMessageCodec( new CommMessageWorker() ) );
-
+		// ===========================================================
 		// 4.设置服务器监控处理器
 		pipeline.addLast( new StateStatisticsHandler( statistics ) );
 	}

@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.iauto.wlink.client.channel.handler.HeartbeatHandler;
 import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
+import com.iauto.wlink.core.message.Constant.SessionCodecEnv;
 import com.iauto.wlink.core.message.codec.AuthenticationMessageCodec;
 import com.iauto.wlink.core.message.codec.CommMessageCodec;
 import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
@@ -33,11 +34,14 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		// 设置通讯包编解码器
 		pipeline.addLast( "comm", new CommunicationPackageCodec() );
 
+		// ===========================================================================
 		// 1.心跳保活
 		pipeline.addLast( new IdleStateHandler( 0, 55, 0, TimeUnit.SECONDS ) )
 			.addLast( "heartbeat", new HeartbeatHandler() );
 
+		// ===========================================================================
 		// 2.设置服务端响应的解码器
+
 		// 设置错误响应解码器
 		pipeline.addLast( "error", new ErrorMessageCodec() );
 
@@ -49,14 +53,16 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 				System.out.println( "UserId: " + session.getUserId() );
 				System.out.println( "Timestamp: " + session.getTimestamp() );
-				System.out.println( "Session: " + session.getSignature() );
+				System.out.println( "Signature: " + session.getSignature() );
 			}
-		} ) );
+		}, SessionCodecEnv.Client ) );
 
 		// 设置消息确认响应解码器
 		pipeline.addLast( "message_ack", new MessageAcknowledgeCodec() );
 
+		// ===========================================================================
 		// 3.设置请求编码器
+
 		// 设置消息推送请求编码器
 		pipeline.addLast( "message", new CommMessageCodec( null ) );
 

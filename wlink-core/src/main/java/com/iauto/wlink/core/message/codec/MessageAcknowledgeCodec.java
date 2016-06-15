@@ -41,7 +41,7 @@ public class MessageAcknowledgeCodec extends MessageToMessageCodec<Communication
 			return;
 		}
 
-		// log
+		// info
 		logger.info( "Decoding the acknowledge message......" );
 
 		// 解码消息体
