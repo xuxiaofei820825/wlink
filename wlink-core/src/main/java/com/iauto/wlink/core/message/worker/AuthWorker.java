@@ -29,7 +29,7 @@ public class AuthWorker implements MessageWorker {
 
 	/** 业务线程池 */
 	private static final ThreadPoolExecutor executor =
-			new ThreadPoolExecutor( 1, 5, 30L, TimeUnit.SECONDS,
+			new ThreadPoolExecutor( 5, 10, 30L, TimeUnit.SECONDS,
 				new ArrayBlockingQueue<Runnable>( 1000 ) );
 
 	public AuthWorker( final String key ) {
@@ -73,7 +73,7 @@ class AuthRunner implements Runnable {
 
 	public void run() {
 		// log
-		logger.info( "Processing the authentication. Received service ticket: {}", this.ticket );
+		logger.info( "Processing the authentication. ST:{}", this.ticket );
 
 		try {
 
@@ -104,7 +104,7 @@ class AuthRunner implements Runnable {
 			// 返回给终端
 			ctx.writeAndFlush( sessionMsg );
 
-			// 设置上下文
+			// 设置会话上下文
 			SessionContextCodec sessionHandler = (SessionContextCodec) this.ctx.pipeline().get( "session" );
 			sessionHandler.setSessionContext( new SessionContext( userId ), ctx );
 
@@ -112,7 +112,7 @@ class AuthRunner implements Runnable {
 			this.ctx.pipeline().remove( "auth" );
 
 			// log
-			logger.info( "Finished to process the authentication." );
+			logger.info( "Succeed to process the authentication and create session context of user. userID:{}", userId );
 		} catch ( Exception e ) {
 			// ignore
 			logger.info( "Error occoured when processing the authentication.", e );

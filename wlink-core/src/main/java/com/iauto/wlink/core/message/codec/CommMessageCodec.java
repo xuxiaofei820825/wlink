@@ -55,8 +55,8 @@ public class CommMessageCodec extends MessageToMessageCodec<CommunicationPackage
 			return;
 		}
 
-		// log
-		logger.info( "Processing the message......" );
+		// info
+		logger.info( "Processing the message...... Channel:{}", ctx.channel() );
 
 		// process
 		if ( this.worker != null )

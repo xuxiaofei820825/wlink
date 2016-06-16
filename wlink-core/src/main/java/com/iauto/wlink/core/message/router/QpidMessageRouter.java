@@ -18,6 +18,7 @@ public class QpidMessageRouter implements MessageRouter {
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
+	/** 连接URL */
 	private static final String url =
 			"amqp://guest:guest@test/test?brokerlist='tcp://172.26.188.173:5672'";
 
@@ -53,7 +54,7 @@ public class QpidMessageRouter implements MessageRouter {
 
 			// 设置连接的节点名，如果不存在该topic节点，则新建一个
 			Destination dest = new AMQAnyDestination( "ADDR:message.topic/" + receiver
-					+ "; {create: always, node:{ type: topic }}" );
+					+ ";{create:always, node:{ type:topic }}" );
 
 			// 为指定的节点创建消息发送者
 			MessageProducer producer = session.createProducer( dest );
@@ -68,7 +69,7 @@ public class QpidMessageRouter implements MessageRouter {
 			producer.send( msg );
 
 			// info
-			logger.info( "Succeed to send the message. [from: {}, to: {}]", sender, receiver );
+			logger.info( "Succeed to send the message. [from:{}, to:{}]", sender, receiver );
 		} catch ( Exception ex ) {
 			// error
 			logger.info( "Failed to send a message" );

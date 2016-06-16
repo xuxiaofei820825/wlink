@@ -11,7 +11,7 @@ public class App
 	public static void main( String[] args ) throws Exception
 	{
 
-		final int client_count = 2;
+		final int client_count = 50;
 
 		for ( int idx = 1; idx <= client_count; idx++ ) {
 
@@ -51,7 +51,7 @@ class ClientRunnable implements Runnable {
 			client.auth( ticket );
 
 			while ( true ) {
-				Thread.sleep( 10000 );
+				Thread.sleep( 70000 );
 				client.sendMessage( userId, receiver, "ahfahfahfjskadhfdkj" );
 			}
 		} catch ( Exception ex ) {

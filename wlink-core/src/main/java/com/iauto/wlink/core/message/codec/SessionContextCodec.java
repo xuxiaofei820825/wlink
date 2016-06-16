@@ -96,7 +96,7 @@ public class SessionContextCodec extends MessageToMessageCodec<CommunicationPack
 		}
 
 		// 在当前的会话上创建消费者，监听发送给用户的消息
-		Destination dest = new AMQAnyDestination( "ADDR:" + "message.topic/" + userId );
+		Destination dest = new AMQAnyDestination( "ADDR:message.topic/" + userId );
 		MessageConsumer consumer = session.createConsumer( dest );
 
 		// 设置监听器
@@ -207,7 +207,7 @@ class CommMessageLinstener implements MessageListener {
 			}
 
 			// log
-			logger.info( "The user[ID: {}] receive a message. [from: {}]", to, from );
+			logger.info( "The user[ID: {}] receive a message. [from:{}]", to, from );
 
 			BytesMessage bytes = (BytesMessage) message;
 			byte[] body = new byte[] {};
@@ -223,7 +223,7 @@ class CommMessageLinstener implements MessageListener {
 			this.ctx.writeAndFlush( commMsg );
 
 			// log
-			logger.info( "Succeed to send the message to user[ID: {}]", to );
+			logger.info( "Succeed to send the message to user[ID:{}]", to );
 		} catch ( Exception ex ) {
 
 			logger.info( "Failed to send the message", ex );

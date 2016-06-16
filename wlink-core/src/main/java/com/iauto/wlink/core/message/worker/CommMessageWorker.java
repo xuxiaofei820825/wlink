@@ -25,8 +25,8 @@ public class CommMessageWorker implements MessageWorker {
 				new ArrayBlockingQueue<Runnable>( 10000 ) );
 
 	public void process( final ChannelHandlerContext ctx, final byte[] header, final byte[] body ) throws Exception {
-		// log
-		logger.info( "Decoding the text message......" );
+		// debug
+		logger.debug( "Decoding the text message......" );
 
 		executor.execute( new CommMessageRunner( ctx, header, body ) );
 	}
@@ -67,23 +67,24 @@ class CommMessageRunner implements Runnable {
 			// 把消息路由给接收者
 			router.send( msgHeader.getFrom(), msgHeader.getTo(), body );
 
-			// log
-			logger.info( "Finished to process the text message." );
-
 			// 创建表示成功的响应，并发送给客户端
 			MessageAcknowledge ack = MessageAcknowledge.newBuilder()
 				.setResult( MessageAcknowledge.Result.SUCCESS )
 				.build();
 			this.ctx.writeAndFlush( ack );
+
+			// info
+			logger.info( "Succeed to send the message, return a success acknowledge message." );
 		} catch ( Exception e ) {
-			// log
-			logger.info( "Failed to process the text message!!!" );
 
 			// 创建表示失败的响应，并发送给客户端
 			MessageAcknowledge ack = MessageAcknowledge.newBuilder()
 				.setResult( MessageAcknowledge.Result.FAILURE )
 				.build();
 			this.ctx.writeAndFlush( ack );
+
+			// info
+			logger.info( "Failed to send the message!!! return a failure acknowledge message." );
 		}
 	}
 }
