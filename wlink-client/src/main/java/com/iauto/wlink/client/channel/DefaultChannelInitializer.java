@@ -10,8 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.iauto.wlink.client.channel.handler.HeartbeatHandler;
 import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
-import com.iauto.wlink.core.message.Constant.SessionCodecEnv;
-import com.iauto.wlink.core.message.codec.AuthenticationMessageCodec;
+import com.iauto.wlink.core.message.codec.AuthenticationMessageEncoder;
 import com.iauto.wlink.core.message.codec.CommMessageCodec;
 import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
 import com.iauto.wlink.core.message.codec.MessageAcknowledgeCodec;
@@ -55,7 +54,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 				System.out.println( "Timestamp: " + session.getTimestamp() );
 				System.out.println( "Signature: " + session.getSignature() );
 			}
-		}, SessionCodecEnv.Client ) );
+		} ) );
 
 		// 设置消息确认响应解码器
 		pipeline.addLast( "message_ack", new MessageAcknowledgeCodec() );
@@ -67,6 +66,6 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		pipeline.addLast( "message", new CommMessageCodec( null ) );
 
 		// 设置身份认证请求编码器
-		pipeline.addLast( "auth", new AuthenticationMessageCodec( null ) );
+		pipeline.addLast( "auth", new AuthenticationMessageEncoder() );
 	}
 }

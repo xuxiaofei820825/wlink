@@ -14,6 +14,8 @@ public class App
 		final int client_count = 50;
 
 		for ( int idx = 1; idx <= client_count; idx++ ) {
+			
+			Thread.sleep( 2000 );
 
 			String ticket = StringUtils.EMPTY;
 			String userId = StringUtils.EMPTY;
@@ -51,7 +53,7 @@ class ClientRunnable implements Runnable {
 			client.auth( ticket );
 
 			while ( true ) {
-				Thread.sleep( 70000 );
+				Thread.sleep( 5000 );
 				client.sendMessage( userId, receiver, "ahfahfahfjskadhfdkj" );
 			}
 		} catch ( Exception ex ) {

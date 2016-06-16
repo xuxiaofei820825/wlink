@@ -1,6 +1,7 @@
-package com.iauto.wlink.core.message.worker;
+package com.iauto.wlink.core.message.handler;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -14,12 +15,12 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iauto.wlink.core.message.codec.SessionContextCodec;
-import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
+import com.iauto.wlink.core.message.event.AuthenticationEvent;
+import com.iauto.wlink.core.message.event.SessionContextEvent;
 import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
 import com.iauto.wlink.core.session.SessionContext;
 
-public class AuthWorker implements MessageWorker {
+public class AuthenticationHandler extends ChannelInboundHandlerAdapter {
 
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
@@ -27,24 +28,35 @@ public class AuthWorker implements MessageWorker {
 	/** 签名密匙 */
 	private final String key;
 
-	/** 业务线程池 */
+	/** 认证业务线程池 */
 	private static final ThreadPoolExecutor executor =
-			new ThreadPoolExecutor( 5, 10, 30L, TimeUnit.SECONDS,
-				new ArrayBlockingQueue<Runnable>( 1000 ) );
+			new ThreadPoolExecutor( 5, 10, 30L, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>( 1000 ) );
 
-	public AuthWorker( final String key ) {
+	public AuthenticationHandler( final String key ) {
 		this.key = key;
 	}
 
-	public void process( ChannelHandlerContext ctx, byte[] header, byte[] body ) throws Exception {
-		// log
-		logger.info( "Decoding the authentication message......" );
+	@Override
+	public void userEventTriggered( ChannelHandlerContext ctx, Object evt )
+			throws Exception {
 
-		// 解码
-		AuthMessage message = AuthMessage.parseFrom( body );
+		// 判断当前用户事件是否为AuthenticationEvent
+		if ( evt instanceof AuthenticationEvent ) {
 
-		// 异步执行认证
-		executor.execute( new AuthRunner( ctx, message.getTicket(), this.key ) );
+			// info
+			logger.info( "Processing the authentication...... Channel:{}", ctx.channel() );
+
+			AuthenticationEvent event = (AuthenticationEvent) evt;
+			String ticket = event.getTicket();
+
+			// 为用户执行消息监听
+			executor.execute( new AuthRunner( ctx, ticket, this.key ) );
+
+			return;
+		}
+
+		// 流转不能处理的事件
+		super.userEventTriggered( ctx, evt );
 	}
 }
 
@@ -80,7 +92,8 @@ class AuthRunner implements Runnable {
 			// log
 			logger.info( "Creating the session context......" );
 
-			Thread.sleep( 2000 );
+			// 模拟耗时的网络请求
+			Thread.sleep( 1000 );
 
 			// 生成用来进行签名的字符串
 			final String userId = StringUtils.replace( ticket, "T", "U" );
@@ -104,15 +117,14 @@ class AuthRunner implements Runnable {
 			// 返回给终端
 			ctx.writeAndFlush( sessionMsg );
 
-			// 设置会话上下文
-			SessionContextCodec sessionHandler = (SessionContextCodec) this.ctx.pipeline().get( "session" );
-			sessionHandler.setSessionContext( new SessionContext( userId ), ctx );
+			// 发送设置会话上下文的事件
+			ctx.fireUserEventTriggered( new SessionContextEvent( new SessionContext( userId ) ) );
 
 			// 不再需要认证处理器了，删除掉
 			this.ctx.pipeline().remove( "auth" );
 
 			// log
-			logger.info( "Succeed to process the authentication and create session context of user. userID:{}", userId );
+			logger.info( "Succeed to process the authentication. userID:{}", userId );
 		} catch ( Exception e ) {
 			// ignore
 			logger.info( "Error occoured when processing the authentication.", e );
