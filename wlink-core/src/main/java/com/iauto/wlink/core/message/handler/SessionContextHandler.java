@@ -8,9 +8,13 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import javax.jms.Session;
+
+import org.apache.qpid.client.AMQConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.message.event.MQSessionCreatedEvent;
 import com.iauto.wlink.core.message.event.SessionContextEvent;
 import com.iauto.wlink.core.message.router.QpidMessageListener;
 import com.iauto.wlink.core.session.SessionContext;
@@ -32,6 +36,14 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 	/** 用户会话上下文 */
 	private SessionContext sessionContext;
 
+	/** 与MQ服务端的会话(每个线程一个连接，一个会话) */
+	private final static ThreadLocal<AMQConnection> connections = new ThreadLocal<AMQConnection>();
+	private final static ThreadLocal<Session> sessions = new ThreadLocal<Session>();
+
+	public static ThreadLocal<Session> getSessions() {
+		return sessions;
+	}
+
 	@Override
 	public void userEventTriggered( ChannelHandlerContext ctx, Object evt )
 			throws Exception {
@@ -50,14 +62,31 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 			// info
 			logger.info( "A session context is created. userId:{}", userId );
 
-			// 为用户注册消息监听者
-			executor.execute( new MessageListenRunner( ctx, userId ) );
+			// 创建与MQ服务的会话
+			createMqSession( ctx, userId );
 
 			return;
 		}
 
 		// 流转不能处理的事件
 		super.userEventTriggered( ctx, evt );
+	}
+
+	private void createMqSession( final ChannelHandlerContext ctx, String userId ) {
+		// 获取当前线程的会话
+		Session session = sessions.get();
+
+		if ( session == null ) {
+			// 如果当前线程的会话还没有创建，则为当前线程创建一个
+
+			// debug
+			logger.info( "MQ-Session of current thread has not been created, create it first" );
+
+			// 创建MQ会话
+			executor.execute( new MqSessionCreateRunner( ctx, userId ) );
+		} else {
+			ctx.fireUserEventTriggered( new MQSessionCreatedEvent( session, userId ) );
+		}
 	}
 
 	// ======================================================================
@@ -68,16 +97,15 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 	}
 }
 
-class MessageListenRunner implements Runnable {
+class MqSessionCreateRunner implements Runnable {
 
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
-	/** 成员变量定义 */
 	private final ChannelHandlerContext ctx;
 	private final String userId;
 
-	public MessageListenRunner( ChannelHandlerContext ctx, String userId ) {
+	public MqSessionCreateRunner( ChannelHandlerContext ctx, String userId ) {
 		this.ctx = ctx;
 		this.userId = userId;
 	}
@@ -86,13 +114,14 @@ class MessageListenRunner implements Runnable {
 		try {
 
 			// info
-			logger.info( "Creating a message listener for user[ID:{}]", userId );
+			logger.info( "Creating a session for current thread......" );
 
-			QpidMessageListener.getInstance().listen( ctx, userId );
+			// 创建MQ会话
+			QpidMessageListener.getInstance().createSession( ctx, userId );
 		} catch ( Exception e ) {
 			// error
 
-			logger.info( "Failed to create a message listener for user!!!", e );
+			logger.info( "Failed to create a session for current thread!!!", e );
 		}
 	}
 }

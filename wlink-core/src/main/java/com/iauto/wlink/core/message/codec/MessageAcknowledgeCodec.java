@@ -23,7 +23,7 @@ public class MessageAcknowledgeCodec extends MessageToMessageCodec<Communication
 		byte[] ackBytes = msg.toByteArray();
 
 		CommunicationPackage comm = new CommunicationPackage();
-		comm.setType( "message_ack" );
+		comm.setType( "msg_ack" );
 		comm.setBody( ackBytes );
 
 		// 传递到下一个处理器
@@ -36,7 +36,7 @@ public class MessageAcknowledgeCodec extends MessageToMessageCodec<Communication
 		String type = msg.getType();
 
 		// 如果不是文本消息，则流转到下一个处理器
-		if ( !StringUtils.equals( "message_ack", type ) ) {
+		if ( !StringUtils.equals( "msg_ack", type ) ) {
 			out.add( msg );
 			return;
 		}
@@ -49,7 +49,7 @@ public class MessageAcknowledgeCodec extends MessageToMessageCodec<Communication
 
 		if ( ack.getResult() == MessageAcknowledge.Result.SUCCESS ) {
 			// info
-			logger.info( "Succeed to send a message!!!" );
+			logger.info( "Succeed to send a message!!! ID:{}, Type:{}", ack.getMessageId(), ack.getAckType() );
 		}
 	}
 }

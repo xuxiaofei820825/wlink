@@ -15,7 +15,7 @@ public class SingleClient {
 
 		while ( true ) {
 			Thread.sleep( 10000 );
-			//client.sendMessage( "U00002", "U00001", "ahfahfahfjskadhfdkj" );
+			client.sendMessage( "U00002", "U00001", "ahfahfahfjskadhfdkj" );
 		}
 	}
 }

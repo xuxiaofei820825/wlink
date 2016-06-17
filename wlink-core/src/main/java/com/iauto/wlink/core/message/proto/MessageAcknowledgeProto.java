@@ -20,6 +20,29 @@ public final class MessageAcknowledgeProto {
      * <code>required .com.iauto.wlink.core.message.proto.MessageAcknowledge.Result result = 1 [default = FAILURE];</code>
      */
     com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.Result getResult();
+
+    /**
+     * <code>required .com.iauto.wlink.core.message.proto.MessageAcknowledge.AckType ackType = 2 [default = SEND];</code>
+     */
+    boolean hasAckType();
+    /**
+     * <code>required .com.iauto.wlink.core.message.proto.MessageAcknowledge.AckType ackType = 2 [default = SEND];</code>
+     */
+    com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType getAckType();
+
+    /**
+     * <code>required string messageId = 3 [default = ""];</code>
+     */
+    boolean hasMessageId();
+    /**
+     * <code>required string messageId = 3 [default = ""];</code>
+     */
+    java.lang.String getMessageId();
+    /**
+     * <code>required string messageId = 3 [default = ""];</code>
+     */
+    com.google.protobuf.ByteString
+        getMessageIdBytes();
   }
   /**
    * Protobuf type {@code com.iauto.wlink.core.message.proto.MessageAcknowledge}
@@ -81,6 +104,23 @@ public final class MessageAcknowledgeProto {
                 bitField0_ |= 0x00000001;
                 result_ = value;
               }
+              break;
+            }
+            case 16: {
+              int rawValue = input.readEnum();
+              com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType value = com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType.valueOf(rawValue);
+              if (value == null) {
+                unknownFields.mergeVarintField(2, rawValue);
+              } else {
+                bitField0_ |= 0x00000002;
+                ackType_ = value;
+              }
+              break;
+            }
+            case 26: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000004;
+              messageId_ = bs;
               break;
             }
           }
@@ -204,6 +244,88 @@ public final class MessageAcknowledgeProto {
       // @@protoc_insertion_point(enum_scope:com.iauto.wlink.core.message.proto.MessageAcknowledge.Result)
     }
 
+    /**
+     * Protobuf enum {@code com.iauto.wlink.core.message.proto.MessageAcknowledge.AckType}
+     */
+    public enum AckType
+        implements com.google.protobuf.ProtocolMessageEnum {
+      /**
+       * <code>SEND = 1;</code>
+       */
+      SEND(0, 1),
+      /**
+       * <code>RECEIVE = 0;</code>
+       */
+      RECEIVE(1, 0),
+      ;
+
+      /**
+       * <code>SEND = 1;</code>
+       */
+      public static final int SEND_VALUE = 1;
+      /**
+       * <code>RECEIVE = 0;</code>
+       */
+      public static final int RECEIVE_VALUE = 0;
+
+
+      public final int getNumber() { return value; }
+
+      public static AckType valueOf(int value) {
+        switch (value) {
+          case 1: return SEND;
+          case 0: return RECEIVE;
+          default: return null;
+        }
+      }
+
+      public static com.google.protobuf.Internal.EnumLiteMap<AckType>
+          internalGetValueMap() {
+        return internalValueMap;
+      }
+      private static com.google.protobuf.Internal.EnumLiteMap<AckType>
+          internalValueMap =
+            new com.google.protobuf.Internal.EnumLiteMap<AckType>() {
+              public AckType findValueByNumber(int number) {
+                return AckType.valueOf(number);
+              }
+            };
+
+      public final com.google.protobuf.Descriptors.EnumValueDescriptor
+          getValueDescriptor() {
+        return getDescriptor().getValues().get(index);
+      }
+      public final com.google.protobuf.Descriptors.EnumDescriptor
+          getDescriptorForType() {
+        return getDescriptor();
+      }
+      public static final com.google.protobuf.Descriptors.EnumDescriptor
+          getDescriptor() {
+        return com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.getDescriptor().getEnumTypes().get(1);
+      }
+
+      private static final AckType[] VALUES = values();
+
+      public static AckType valueOf(
+          com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+        if (desc.getType() != getDescriptor()) {
+          throw new java.lang.IllegalArgumentException(
+            "EnumValueDescriptor is not for this type.");
+        }
+        return VALUES[desc.getIndex()];
+      }
+
+      private final int index;
+      private final int value;
+
+      private AckType(int index, int value) {
+        this.index = index;
+        this.value = value;
+      }
+
+      // @@protoc_insertion_point(enum_scope:com.iauto.wlink.core.message.proto.MessageAcknowledge.AckType)
+    }
+
     private int bitField0_;
     public static final int RESULT_FIELD_NUMBER = 1;
     private com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.Result result_;
@@ -220,8 +342,67 @@ public final class MessageAcknowledgeProto {
       return result_;
     }
 
+    public static final int ACKTYPE_FIELD_NUMBER = 2;
+    private com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType ackType_;
+    /**
+     * <code>required .com.iauto.wlink.core.message.proto.MessageAcknowledge.AckType ackType = 2 [default = SEND];</code>
+     */
+    public boolean hasAckType() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>required .com.iauto.wlink.core.message.proto.MessageAcknowledge.AckType ackType = 2 [default = SEND];</code>
+     */
+    public com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType getAckType() {
+      return ackType_;
+    }
+
+    public static final int MESSAGEID_FIELD_NUMBER = 3;
+    private java.lang.Object messageId_;
+    /**
+     * <code>required string messageId = 3 [default = ""];</code>
+     */
+    public boolean hasMessageId() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>required string messageId = 3 [default = ""];</code>
+     */
+    public java.lang.String getMessageId() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          messageId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string messageId = 3 [default = ""];</code>
+     */
+    public com.google.protobuf.ByteString
+        getMessageIdBytes() {
+      java.lang.Object ref = messageId_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        messageId_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private void initFields() {
       result_ = com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.Result.FAILURE;
+      ackType_ = com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType.SEND;
+      messageId_ = "";
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -230,6 +411,14 @@ public final class MessageAcknowledgeProto {
       if (isInitialized == 0) return false;
 
       if (!hasResult()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasAckType()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasMessageId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -243,6 +432,12 @@ public final class MessageAcknowledgeProto {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeEnum(1, result_.getNumber());
       }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeEnum(2, ackType_.getNumber());
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeBytes(3, getMessageIdBytes());
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -255,6 +450,14 @@ public final class MessageAcknowledgeProto {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
           .computeEnumSize(1, result_.getNumber());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeEnumSize(2, ackType_.getNumber());
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(3, getMessageIdBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -375,6 +578,10 @@ public final class MessageAcknowledgeProto {
         super.clear();
         result_ = com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.Result.FAILURE;
         bitField0_ = (bitField0_ & ~0x00000001);
+        ackType_ = com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType.SEND;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        messageId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -407,6 +614,14 @@ public final class MessageAcknowledgeProto {
           to_bitField0_ |= 0x00000001;
         }
         result.result_ = result_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.ackType_ = ackType_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.messageId_ = messageId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -426,12 +641,28 @@ public final class MessageAcknowledgeProto {
         if (other.hasResult()) {
           setResult(other.getResult());
         }
+        if (other.hasAckType()) {
+          setAckType(other.getAckType());
+        }
+        if (other.hasMessageId()) {
+          bitField0_ |= 0x00000004;
+          messageId_ = other.messageId_;
+          onChanged();
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
 
       public final boolean isInitialized() {
         if (!hasResult()) {
+          
+          return false;
+        }
+        if (!hasAckType()) {
+          
+          return false;
+        }
+        if (!hasMessageId()) {
           
           return false;
         }
@@ -492,6 +723,117 @@ public final class MessageAcknowledgeProto {
         return this;
       }
 
+      private com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType ackType_ = com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType.SEND;
+      /**
+       * <code>required .com.iauto.wlink.core.message.proto.MessageAcknowledge.AckType ackType = 2 [default = SEND];</code>
+       */
+      public boolean hasAckType() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required .com.iauto.wlink.core.message.proto.MessageAcknowledge.AckType ackType = 2 [default = SEND];</code>
+       */
+      public com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType getAckType() {
+        return ackType_;
+      }
+      /**
+       * <code>required .com.iauto.wlink.core.message.proto.MessageAcknowledge.AckType ackType = 2 [default = SEND];</code>
+       */
+      public Builder setAckType(com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000002;
+        ackType_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required .com.iauto.wlink.core.message.proto.MessageAcknowledge.AckType ackType = 2 [default = SEND];</code>
+       */
+      public Builder clearAckType() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        ackType_ = com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType.SEND;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object messageId_ = "";
+      /**
+       * <code>required string messageId = 3 [default = ""];</code>
+       */
+      public boolean hasMessageId() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>required string messageId = 3 [default = ""];</code>
+       */
+      public java.lang.String getMessageId() {
+        java.lang.Object ref = messageId_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            messageId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string messageId = 3 [default = ""];</code>
+       */
+      public com.google.protobuf.ByteString
+          getMessageIdBytes() {
+        java.lang.Object ref = messageId_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          messageId_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string messageId = 3 [default = ""];</code>
+       */
+      public Builder setMessageId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string messageId = 3 [default = ""];</code>
+       */
+      public Builder clearMessageId() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        messageId_ = getDefaultInstance().getMessageId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string messageId = 3 [default = ""];</code>
+       */
+      public Builder setMessageIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        messageId_ = value;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:com.iauto.wlink.core.message.proto.MessageAcknowledge)
     }
 
@@ -518,11 +860,15 @@ public final class MessageAcknowledgeProto {
   static {
     java.lang.String[] descriptorData = {
       "\n#wlink/MessageAcknowledgeProto.proto\022\"c" +
-      "om.iauto.wlink.core.message.proto\"\220\001\n\022Me" +
+      "om.iauto.wlink.core.message.proto\"\236\002\n\022Me" +
       "ssageAcknowledge\022V\n\006result\030\001 \002(\0162=.com.i" +
       "auto.wlink.core.message.proto.MessageAck" +
-      "nowledge.Result:\007FAILURE\"\"\n\006Result\022\013\n\007SU" +
-      "CCESS\020\001\022\013\n\007FAILURE\020\000"
+      "nowledge.Result:\007FAILURE\022U\n\007ackType\030\002 \002(" +
+      "\0162>.com.iauto.wlink.core.message.proto.M" +
+      "essageAcknowledge.AckType:\004SEND\022\023\n\tmessa" +
+      "geId\030\003 \002(\t:\000\"\"\n\006Result\022\013\n\007SUCCESS\020\001\022\013\n\007F" +
+      "AILURE\020\000\" \n\007AckType\022\010\n\004SEND\020\001\022\013\n\007RECEIVE" +
+      "\020\000"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -541,7 +887,7 @@ public final class MessageAcknowledgeProto {
     internal_static_com_iauto_wlink_core_message_proto_MessageAcknowledge_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_iauto_wlink_core_message_proto_MessageAcknowledge_descriptor,
-        new java.lang.String[] { "Result", });
+        new java.lang.String[] { "Result", "AckType", "MessageId", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

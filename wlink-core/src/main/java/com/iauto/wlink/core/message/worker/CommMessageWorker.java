@@ -11,8 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.message.proto.CommMessageHeaderProto.CommMessageHeader;
 import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge;
-import com.iauto.wlink.core.message.router.MessageRouter;
-import com.iauto.wlink.core.message.router.QpidMessageRouter;
+import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType;
+import com.iauto.wlink.core.message.router.QpidMessageSender;
 
 public class CommMessageWorker implements MessageWorker {
 
@@ -44,9 +44,6 @@ class CommMessageRunner implements Runnable {
 	private byte[] header;
 	private byte[] body;
 
-	/** 消息处理器 */
-	private MessageRouter router = new QpidMessageRouter();
-
 	public CommMessageRunner( final ChannelHandlerContext ctx, final byte[] header, final byte[] body ) {
 		this.ctx = ctx;
 		this.header = header;
@@ -65,11 +62,14 @@ class CommMessageRunner implements Runnable {
 				msgHeader.getFrom(), msgHeader.getTo(), body.length );
 
 			// 把消息路由给接收者
-			router.send( msgHeader.getFrom(), msgHeader.getTo(), body );
+			String msgId = QpidMessageSender.getInstance().send( msgHeader.getFrom(), msgHeader.getTo(), msgHeader.getType(),
+				body );
 
 			// 创建表示成功的响应，并发送给客户端
 			MessageAcknowledge ack = MessageAcknowledge.newBuilder()
 				.setResult( MessageAcknowledge.Result.SUCCESS )
+				.setMessageId( msgId )
+				.setAckType( AckType.SEND )
 				.build();
 			this.ctx.writeAndFlush( ack );
 

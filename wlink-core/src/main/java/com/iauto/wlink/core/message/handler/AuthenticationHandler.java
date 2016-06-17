@@ -117,9 +117,6 @@ class AuthRunner implements Runnable {
 			// 返回给终端
 			ctx.writeAndFlush( sessionMsg );
 			
-			if (StringUtils.isBlank( userId )) 
-				System.err.println("!!!!!!!!!!!!!!!!!!======!!!!!!!!!!!!!!!!!!");
-
 			// 发送设置会话上下文的事件
 			ctx.fireUserEventTriggered( new SessionContextEvent( new SessionContext( userId ) ) );
 

@@ -17,6 +17,7 @@ import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
 import com.iauto.wlink.core.message.codec.MessageAcknowledgeCodec;
 import com.iauto.wlink.core.message.codec.SessionContextCodec;
 import com.iauto.wlink.core.message.handler.AuthenticationHandler;
+import com.iauto.wlink.core.message.handler.MessageListenerHandler;
 import com.iauto.wlink.core.message.handler.SessionContextCheckHandler;
 import com.iauto.wlink.core.message.handler.SessionContextHandler;
 import com.iauto.wlink.core.message.worker.CommMessageWorker;
@@ -73,7 +74,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		pipeline.addLast( "error_encoder", new ErrorMessageCodec() );
 
 		// 设置消息确认响应编码器(出)
-		pipeline.addLast( "msg_ack_encoder", new MessageAcknowledgeCodec() );
+		pipeline.addLast( "msg_send_ack_encoder", new MessageAcknowledgeCodec() );
 
 		// ===========================================================
 		// 2.设置心跳检测处理器
@@ -100,6 +101,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 		// 会话处理(建立会话，保存会话上下文等等)
 		pipeline.addLast( "session_handler", new SessionContextHandler() );
+		pipeline.addLast( "mq_listener_handler", new MessageListenerHandler() );
 
 		// ===========================================================
 		// 4.设置服务器监控处理器

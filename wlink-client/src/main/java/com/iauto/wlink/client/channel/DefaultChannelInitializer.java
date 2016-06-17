@@ -58,7 +58,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		} ) );
 
 		// 设置消息确认响应解码器
-		pipeline.addLast( "message_ack", new MessageAcknowledgeCodec() );
+		pipeline.addLast( "msg_send_ack_decoder", new MessageAcknowledgeCodec() );
 
 		// ===========================================================================
 		// 3.设置请求编码器
