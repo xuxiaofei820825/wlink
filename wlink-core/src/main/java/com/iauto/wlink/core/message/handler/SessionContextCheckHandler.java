@@ -12,6 +12,12 @@ import com.iauto.wlink.core.message.event.AuthenticationEvent;
 import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
 
+/**
+ * 检查会话上下文是否建立
+ * 
+ * @author xiaofei.xu
+ * 
+ */
 public class SessionContextCheckHandler extends SimpleChannelInboundHandler<CommunicationPackage> {
 
 	/** logger */
@@ -27,14 +33,6 @@ public class SessionContextCheckHandler extends SimpleChannelInboundHandler<Comm
 			ctx.fireChannelRead( msg );
 			return;
 		}
-
-		// debug
-		// logger.debug( "Session has not been created, add the authentication handler to pipline." );
-
-		// 添加认证处理器
-		// ctx.pipeline().addAfter( SessionContextCodec.HANDLER_NAME, "auth",
-		// new AuthenticationMessageCodec( new AuthWorker(
-		// "9aROHg2eQXQ6X3XKrXGKWjXrLiRIO25CKTyz212ujvc" ) ) );
 
 		// debug
 		logger.debug( "Type of communication package: {}", msg.getType() );

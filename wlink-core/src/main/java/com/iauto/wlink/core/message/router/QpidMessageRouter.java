@@ -58,7 +58,7 @@ public class QpidMessageRouter implements MessageRouter {
 
 			// 为指定的节点创建消息发送者
 			MessageProducer producer = session.createProducer( dest );
-
+			
 			// 创建字节消息
 			BytesMessage msg = session.createBytesMessage();
 			msg.writeBytes( message );
@@ -72,7 +72,7 @@ public class QpidMessageRouter implements MessageRouter {
 			logger.info( "Succeed to send the message. [from:{}, to:{}]", sender, receiver );
 		} catch ( Exception ex ) {
 			// error
-			logger.info( "Failed to send a message" );
+			logger.info( "Failed to send a message", ex );
 
 		} finally {
 			// 关闭会话

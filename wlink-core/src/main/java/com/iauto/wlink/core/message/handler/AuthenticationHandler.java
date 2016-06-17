@@ -44,7 +44,7 @@ public class AuthenticationHandler extends ChannelInboundHandlerAdapter {
 		if ( evt instanceof AuthenticationEvent ) {
 
 			// info
-			logger.info( "Processing the authentication...... Channel:{}", ctx.channel() );
+			logger.info( "Channel:{} Processing the authentication......", ctx.channel() );
 
 			AuthenticationEvent event = (AuthenticationEvent) evt;
 			String ticket = event.getTicket();
@@ -116,6 +116,9 @@ class AuthRunner implements Runnable {
 
 			// 返回给终端
 			ctx.writeAndFlush( sessionMsg );
+			
+			if (StringUtils.isBlank( userId )) 
+				System.err.println("!!!!!!!!!!!!!!!!!!======!!!!!!!!!!!!!!!!!!");
 
 			// 发送设置会话上下文的事件
 			ctx.fireUserEventTriggered( new SessionContextEvent( new SessionContext( userId ) ) );

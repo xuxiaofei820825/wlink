@@ -15,6 +15,7 @@ import com.iauto.wlink.core.message.codec.CommMessageCodec;
 import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
 import com.iauto.wlink.core.message.codec.MessageAcknowledgeCodec;
 import com.iauto.wlink.core.message.codec.SessionContextCodec;
+import com.iauto.wlink.core.message.proto.CommMessageHeaderProto.CommMessageHeader;
 import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
 import com.iauto.wlink.core.message.worker.MessageWorker;
 
@@ -50,9 +51,9 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 			public void process( ChannelHandlerContext ctx, byte[] header, byte[] body ) throws Exception {
 				SessionMessage session = SessionMessage.parseFrom( body );
 
-				System.out.println( "UserId: " + session.getUserId() );
-				System.out.println( "Timestamp: " + session.getTimestamp() );
-				System.out.println( "Signature: " + session.getSignature() );
+				System.err.println( "UserId: " + session.getUserId() );
+				System.err.println( "Timestamp: " + session.getTimestamp() );
+				System.err.println( "Signature: " + session.getSignature() );
 			}
 		} ) );
 
@@ -63,7 +64,17 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		// 3.设置请求编码器
 
 		// 设置消息推送请求编码器
-		pipeline.addLast( "message", new CommMessageCodec( null ) );
+		pipeline.addLast( "message", new CommMessageCodec( new MessageWorker() {
+
+			public void process( ChannelHandlerContext ctx, byte[] header, byte[] body ) throws Exception {
+				CommMessageHeader commHeader = CommMessageHeader.parseFrom( header );
+
+				System.err.println( "Type: " + commHeader.getType() );
+				System.err.println( "From: " + commHeader.getFrom() );
+				System.err.println( "To: " + commHeader.getTo() );
+				System.err.println( "Content: " + new String( body, "UTF-8" ) );
+			}
+		} ) );
 
 		// 设置身份认证请求编码器
 		pipeline.addLast( "auth", new AuthenticationMessageEncoder() );

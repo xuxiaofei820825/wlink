@@ -55,7 +55,7 @@ public class QpidMessageListener {
 			// 如果当前线程的会话还没有创建，则为当前线程创建一个
 
 			// debug
-			logger.debug( "Session of current thread has not been created, create it first" );
+			logger.info( "Session of current thread has not been created, create it first" );
 
 			// 与broker创建一个连接
 			Connection conn = new AMQConnection( url );
@@ -70,9 +70,19 @@ public class QpidMessageListener {
 			conn.start();
 		}
 
+		String url = String.format( "ADDR:message.topic/%s", userId );
+
+		System.err.println( "Session: " + session );
+
 		// 在当前的会话上创建消费者，监听发送给用户的消息
-		Destination dest = new AMQAnyDestination( "ADDR:message.topic/" + userId
-				+ ";{create:always, node:{ type:topic }}" );
+		Destination dest = new AMQAnyDestination( url );
+
+		System.err.println( "DEST: " + dest );
+
+		if ( session.getTransacted() ) {
+
+		}
+
 		MessageConsumer consumer = session.createConsumer( dest );
 
 		// 设置监听器
@@ -114,7 +124,8 @@ class CommMessageLinstener implements MessageListener {
 			logger.info( "The user[ID: {}] receive a message. [from:{}]", to, from );
 
 			BytesMessage bytes = (BytesMessage) message;
-			byte[] body = new byte[] {};
+			long len = bytes.getBodyLength();
+			byte[] body = new byte[(int) len];
 			bytes.readBytes( body );
 
 			CommMessage commMsg = new CommMessage();
