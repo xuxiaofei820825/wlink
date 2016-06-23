@@ -16,6 +16,7 @@ public class QpidTester {
 	private static final String url =
 			"amqp://guest:guest@test/test?brokerlist='tcp://172.26.188.173:5672'";
 
+	private static Connection conn;
 	private static Session session;
 
 	/** 连接池(单例) */
@@ -33,62 +34,52 @@ public class QpidTester {
 	}
 
 	public static void main( String[] args ) throws Exception {
-		// TODO Auto-generated method stub
-		receive();
-
-		System.out.println( "============================AAAAAAA==============================" );
+		// 建立连接
+		connect();
 
 		for ( int idx = 1; idx <= 100; idx++ ) {
 
-			Destination dest2 = new AMQAnyDestination( "ADDR:" + "message.topic" + "/xuxiaofei" );
-			MessageConsumer consumer2 = session.createConsumer( dest2 );
+			System.out.println( "Create a message consumer!!! Count:" + idx );
 
-			consumer2.setMessageListener( new MessageListener() {
-				public void onMessage( Message message ) {
-					System.out.println( "====================QQQQQQQQQQQQQQ====================" );
-				}
-			} );
+			// 创建消息监听器
+			createConsumer();
 		}
 	}
 
-	public static void receive() throws Exception {
-		Connection conn = null;
+	public static void connect() throws Exception {
 
 		try {
 
 			// 从连接池中获取连接
 			conn = pooledConnectionFactory.createConnection();
 
-			// 与broker建立Session
+			// client
+			System.out.println( "Client-ID: " + conn.getClientID() );
+
 			session = conn.createSession( false, Session.AUTO_ACKNOWLEDGE );
 
-			// 设置连接的节点名，如果不存在该topic节点，则新建一个
-			Destination dest1 = new AMQAnyDestination( "ADDR:" + "message.topic" + "/xuhongjuan" );
-			MessageConsumer consumer1 = session.createConsumer( dest1 );
-
-			consumer1.setMessageListener( new MessageListener() {
-				public void onMessage( Message message ) {
-					System.out.println( "====================XXXXXXXXXXXXXX====================" );
-				}
-			} );
-
-			System.out.println( "====================RRRRRRRRRRRRRRRR====================" );
-
+			// 启动连接
 			conn.start();
 
-			// 接收消息
-			// consumer.receive();
-
-			System.out.println( "Succeed to create a message listener." );
-
+			System.out.println( "Succeed to create a connection to MQ server." );
 		} finally {
-// if ( conn != null ) {
-// try {
-// conn.close();
-// } catch ( JMSException e ) {
-// // ignore
-// }
-// }
+
 		}
+	}
+
+	private static void createConsumer() throws Exception {
+
+		// 与broker建立Session
+		// Session session = conn.createSession( false, Session.AUTO_ACKNOWLEDGE );
+
+		// 设置连接的节点名，如果不存在该topic节点，则新建一个
+		Destination dest = new AMQAnyDestination( "ADDR:" + "message.topic" + "/xuhongjuan" );
+		MessageConsumer consumer = session.createConsumer( dest );
+
+		consumer.setMessageListener( new MessageListener() {
+			public void onMessage( Message message ) {
+				System.err.println( "==========Receive a message!!!==========" );
+			}
+		} );
 	}
 }

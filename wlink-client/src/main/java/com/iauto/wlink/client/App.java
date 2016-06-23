@@ -1,5 +1,7 @@
 package com.iauto.wlink.client;
 
+import java.util.Random;
+
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -8,41 +10,40 @@ import org.apache.commons.lang.StringUtils;
  */
 public class App
 {
+
+	public static int clients_max = 10;
+	public static int clients_create_interval = 2;
+
 	public static void main( String[] args ) throws Exception
 	{
 
-		final int client_count = 1;
-
-		for ( int idx = 1; idx <= client_count; idx++ ) {
+		for ( int idx = 1; idx <= clients_max; idx++ ) {
 
 			String ticket = StringUtils.EMPTY;
 			String userId = StringUtils.EMPTY;
-			String receiver = StringUtils.EMPTY;
 
 			ticket = "T" + String.format( "%05d", idx );
 			userId = "U" + String.format( "%05d", idx );
-			receiver = "U" + String.format( "%05d", idx + 1 );
 
-			Thread thread = new Thread( new ClientRunnable( ticket, userId, receiver ) );
+			Thread thread = new Thread( new ClientRunnable( ticket, userId ) );
 
 			// start
 			thread.start();
-			
-			Thread.sleep( 5000 );
+
+			Thread.sleep( clients_create_interval * 1000 );
 		}
 	}
+
 }
 
 class ClientRunnable implements Runnable {
 
 	private final String ticket;
 	private final String userId;
-	private final String receiver;
 
-	public ClientRunnable( String ticket, String userId, String receiver ) {
+	public ClientRunnable( String ticket, String userId ) {
 		this.ticket = ticket;
 		this.userId = userId;
-		this.receiver = receiver;
 	}
 
 	public void run() {
@@ -53,8 +54,15 @@ class ClientRunnable implements Runnable {
 			client.auth( ticket );
 
 			while ( true ) {
-				Thread.sleep( 10000 );
-				//client.sendMessage( userId, receiver, "HI, I am " + userId );
+				Thread.sleep( 5000 );
+
+				// 随机生成接收者
+				Random random = new Random();
+				int rd_id = random.nextInt( App.clients_max - 1 ) + 1;
+				String receiver = "U" + String.format( "%05d", rd_id );
+
+				// 向接收者发送消息
+				client.sendMessage( userId, receiver, "HI, I am " + userId );
 			}
 		} catch ( Exception ex ) {
 			// ignore

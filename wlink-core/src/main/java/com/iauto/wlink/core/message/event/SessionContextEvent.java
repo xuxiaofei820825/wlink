@@ -9,9 +9,11 @@ public class SessionContextEvent {
 	public SessionContextEvent( SessionContext context ) {
 		this.context = context;
 	}
+	
+	// =============================================================
+	// setter/getter
 
 	public SessionContext getContext() {
 		return context;
 	}
-
 }

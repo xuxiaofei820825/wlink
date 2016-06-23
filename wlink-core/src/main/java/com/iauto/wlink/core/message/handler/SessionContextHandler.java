@@ -3,19 +3,23 @@ package com.iauto.wlink.core.message.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.jms.Session;
+import javax.jms.MessageConsumer;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.qpid.client.AMQConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iauto.wlink.core.message.event.MQSessionCreatedEvent;
+import com.iauto.wlink.core.message.event.MQConnectionCreatedEvent;
 import com.iauto.wlink.core.message.event.SessionContextEvent;
+import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
 import com.iauto.wlink.core.message.router.QpidMessageListener;
 import com.iauto.wlink.core.session.SessionContext;
 
@@ -36,13 +40,16 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 	/** 用户会话上下文 */
 	private SessionContext sessionContext;
 
-	/** 与MQ服务端的会话(每个线程一个连接，一个会话) */
+	/** 与MQ服务端的会话(每个IO线程创建一个连接，每个连接创建一个会话(线程)) */
 	private final static ThreadLocal<AMQConnection> connections = new ThreadLocal<AMQConnection>();
-	private final static ThreadLocal<Session> sessions = new ThreadLocal<Session>();
 
-	public static ThreadLocal<Session> getSessions() {
-		return sessions;
-	}
+	/** 当前IO线程管理的所有通道中的用户 */
+	private final static ThreadLocal<Map<String, MessageConsumer>> users = new ThreadLocal<Map<String, MessageConsumer>>() {
+		@Override
+		protected Map<String, MessageConsumer> initialValue() {
+			return new HashMap<String, MessageConsumer>();
+		}
+	};
 
 	@Override
 	public void userEventTriggered( ChannelHandlerContext ctx, Object evt )
@@ -63,7 +70,7 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 			logger.info( "A session context is created. userId:{}", userId );
 
 			// 创建与MQ服务的会话
-			createMqSession( ctx, userId );
+			createMQConnection( ctx, userId );
 
 			return;
 		}
@@ -72,21 +79,48 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 		super.userEventTriggered( ctx, evt );
 	}
 
-	private void createMqSession( final ChannelHandlerContext ctx, String userId ) {
+	private void createMQConnection( final ChannelHandlerContext ctx, final String userId ) {
 		// 获取当前线程的会话
-		Session session = sessions.get();
+		AMQConnection conn = SessionContextHandler.getConnections().get();
 
-		if ( session == null ) {
+		if ( conn == null ) {
 			// 如果当前线程的会话还没有创建，则为当前线程创建一个
 
 			// debug
-			logger.info( "MQ-Session of current thread has not been created, create it first" );
+			logger.info( "MQ-Connection of current thread has not been created, create it first!!!" );
 
 			// 创建MQ会话
-			executor.execute( new MqSessionCreateRunner( ctx, userId ) );
+			executor.execute( new MQConnectionCreateRunner( ctx, userId ) );
 		} else {
-			ctx.fireUserEventTriggered( new MQSessionCreatedEvent( session, userId ) );
+
+			// 直接发送会话已经创建的事件
+			ctx.fireUserEventTriggered( new MQConnectionCreatedEvent( connections.get(), userId ) );
 		}
+	}
+
+	@Override
+	public void channelInactive( ChannelHandlerContext ctx ) throws Exception {
+
+		if ( this.getSessionContext() != null
+				&& StringUtils.isNotBlank( this.getSessionContext().getUserId() ) ) {
+			String userId = this.getSessionContext().getUserId();
+
+			// log
+			logger.info(
+				"Channel:{}, The channel is inactive, unbind the message consumer and remove user from current thread.",
+				ctx.channel() );
+
+			// 解绑监听器
+			MessageConsumer consumer = SessionContextHandler.getUsers().get().get( userId );
+			if ( consumer != null )
+				consumer.close();
+
+			// 删除当前管理的用户
+			SessionContextHandler.getUsers().get().remove( userId );
+		}
+
+		// 流转到下一个处理器
+		ctx.fireChannelInactive();
 	}
 
 	// ======================================================================
@@ -95,33 +129,48 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 	public SessionContext getSessionContext() {
 		return sessionContext;
 	}
-}
 
-class MqSessionCreateRunner implements Runnable {
-
-	/** logger */
-	private final Logger logger = LoggerFactory.getLogger( getClass() );
-
-	private final ChannelHandlerContext ctx;
-	private final String userId;
-
-	public MqSessionCreateRunner( ChannelHandlerContext ctx, String userId ) {
-		this.ctx = ctx;
-		this.userId = userId;
+	public static ThreadLocal<Map<String, MessageConsumer>> getUsers() {
+		return users;
 	}
 
-	public void run() {
-		try {
+	public static ThreadLocal<AMQConnection> getConnections() {
+		return connections;
+	}
 
-			// info
-			logger.info( "Creating a session for current thread......" );
+	// ==============================================================================
+	// private class
 
-			// 创建MQ会话
-			QpidMessageListener.getInstance().createSession( ctx, userId );
-		} catch ( Exception e ) {
-			// error
+	private class MQConnectionCreateRunner implements Runnable {
 
-			logger.info( "Failed to create a session for current thread!!!", e );
+		private final ChannelHandlerContext ctx;
+		private final String userId;
+
+		public MQConnectionCreateRunner( ChannelHandlerContext ctx, String userId ) {
+			this.ctx = ctx;
+			this.userId = userId;
+		}
+
+		public void run() {
+			try {
+				// info
+				logger.info( "Creating a connection for current thread......" );
+
+				// 创建MQ会话
+				AMQConnection conn = QpidMessageListener.getInstance().newConnection();
+
+				// 触发MQ连接创建成功的事件
+				ctx.fireUserEventTriggered( new MQConnectionCreatedEvent( conn, userId ) );
+			} catch ( Exception e ) {
+				// error
+
+				logger.info( "Failed to create a session for current thread!!!", e );
+
+				ErrorMessage error = ErrorMessage.newBuilder()
+					.setError( "Session_Create_Failure" )
+					.build();
+				ctx.channel().writeAndFlush( error );
+			}
 		}
 	}
 }

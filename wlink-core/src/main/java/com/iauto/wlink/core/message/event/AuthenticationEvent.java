@@ -7,6 +7,9 @@ public class AuthenticationEvent {
 		this.ticket = ticket;
 	}
 
+	// =============================================================
+	// setter/getter
+
 	public String getTicket() {
 		return ticket;
 	}

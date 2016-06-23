@@ -10,11 +10,11 @@ import com.iauto.wlink.server.ServerStateStatistics;
 
 public class StateStatisticsHandler extends ChannelInboundHandlerAdapter {
 
-	// logger
+	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 	/** 状态统计 */
-	private ServerStateStatistics statistics;
+	private final ServerStateStatistics statistics;
 
 	public StateStatisticsHandler( ServerStateStatistics statistics ) {
 		this.statistics = statistics;
@@ -27,17 +27,10 @@ public class StateStatisticsHandler extends ChannelInboundHandlerAdapter {
 		Integer currentNum = statistics.getClientsOfCurrentThread().get();
 
 		// 通道失效时，客户端计数减1
-		if ( currentNum == null ) {
-			currentNum = new Integer( 0 );
-		} else {
-			int cnt = currentNum.intValue();
-			currentNum = new Integer( cnt - 1 );
-		}
+		int cnt = currentNum.intValue();
+		currentNum = new Integer( cnt - 1 );
 
 		statistics.getClientsOfCurrentThread().set( currentNum );
-
-		// info
-		logger.info( "A channel is closed. {}", ctx.channel() );
 	}
 
 	@Override
@@ -49,19 +42,10 @@ public class StateStatisticsHandler extends ChannelInboundHandlerAdapter {
 		Integer currentNum = statistics.getClientsOfCurrentThread().get();
 
 		// 通道有效时，客户端计数加1
-		if ( currentNum == null ) {
-			currentNum = new Integer( 1 );
-		} else {
-			int cnt = currentNum.intValue();
-			currentNum = new Integer( cnt + 1 );
-		}
+		int cnt = currentNum.intValue();
+		currentNum = new Integer( cnt + 1 );
 
 		statistics.getClientsOfCurrentThread().set( currentNum );
-	}
-
-	@Override
-	public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception {
-		// do noting
 	}
 
 	@Override

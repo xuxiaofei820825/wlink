@@ -17,7 +17,8 @@ import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
 import com.iauto.wlink.core.message.codec.MessageAcknowledgeCodec;
 import com.iauto.wlink.core.message.codec.SessionContextCodec;
 import com.iauto.wlink.core.message.handler.AuthenticationHandler;
-import com.iauto.wlink.core.message.handler.MessageListenerHandler;
+import com.iauto.wlink.core.message.handler.MQMessageConsumerCreatedHandler;
+import com.iauto.wlink.core.message.handler.MQConnectionCreatedHandler;
 import com.iauto.wlink.core.message.handler.SessionContextCheckHandler;
 import com.iauto.wlink.core.message.handler.SessionContextHandler;
 import com.iauto.wlink.core.message.worker.CommMessageWorker;
@@ -40,12 +41,12 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	/** 服务器状态统计 */
 	private static final ServerStateStatistics statistics = new ServerStateStatistics();
 
-	public DefaultChannelInitializer( SslContext sslCtx, AppConfig config ) {
+	public DefaultChannelInitializer( final SslContext sslCtx, final AppConfig config ) {
 		this.config = config;
 		this.sslCtx = sslCtx;
 	}
 
-	public DefaultChannelInitializer( AppConfig config ) {
+	public DefaultChannelInitializer( final AppConfig config ) {
 		this.config = config;
 	}
 
@@ -101,7 +102,8 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 		// 会话处理(建立会话，保存会话上下文等等)
 		pipeline.addLast( "session_handler", new SessionContextHandler() );
-		pipeline.addLast( "mq_listener_handler", new MessageListenerHandler() );
+		pipeline.addLast( "mq_listener_handler", new MQConnectionCreatedHandler() );
+		pipeline.addLast( "mq_consumer_created_handler", new MQMessageConsumerCreatedHandler() );
 
 		// ===========================================================
 		// 4.设置服务器监控处理器
