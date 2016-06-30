@@ -38,12 +38,12 @@ public class DefaultServerBootstrap {
 		this.config = config;
 
 		this.bossGroup = new NioEventLoopGroup();
-		this.workerGroup = new NioEventLoopGroup();
+		this.workerGroup = new NioEventLoopGroup( 1 );
 	}
 
 	public DefaultServerBootstrap( int port ) {
 		this.bossGroup = new NioEventLoopGroup();
-		this.workerGroup = new NioEventLoopGroup();
+		this.workerGroup = new NioEventLoopGroup( 1 );
 	}
 
 	public DefaultServerBootstrap( int port, int workerThreadNum ) {
@@ -105,8 +105,7 @@ public class DefaultServerBootstrap {
 			}
 
 			future.channel().closeFuture().sync();
-		}
-		finally {
+		} finally {
 			bossGroup.shutdownGracefully();
 			workerGroup.shutdownGracefully();
 		}

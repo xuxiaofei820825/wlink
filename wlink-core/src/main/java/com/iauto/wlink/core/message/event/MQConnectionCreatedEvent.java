@@ -2,29 +2,24 @@ package com.iauto.wlink.core.message.event;
 
 import org.apache.qpid.client.AMQConnection;
 
+import com.iauto.wlink.core.session.SessionContext;
+
 public class MQConnectionCreatedEvent {
 
-	private final String userId;
+	private final SessionContext session;
 	private final AMQConnection connection;
-//	private final Session session;
 
-	public MQConnectionCreatedEvent( AMQConnection connection,  String userId ) {
-		//public MQSessionCreatedEvent( AMQConnection connection, Session session, String userId ) {
+	public MQConnectionCreatedEvent( AMQConnection connection, SessionContext session ) {
 		this.connection = connection;
-		this.userId = userId;
-//		this.session = session;
+		this.session = session;
 	}
 
 	// =============================================================
 	// setter/getter
 
-	public String getUserId() {
-		return userId;
+	public SessionContext getSession() {
+		return session;
 	}
-
-//	public Session getSession() {
-//		return session;
-//	}
 
 	public AMQConnection getConnection() {
 		return connection;

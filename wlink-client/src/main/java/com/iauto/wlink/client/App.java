@@ -11,8 +11,9 @@ import org.apache.commons.lang.StringUtils;
 public class App
 {
 
-	public static int clients_max = 10;
+	public static int clients_max = 2;
 	public static int clients_create_interval = 2;
+	public static int message_interval = 10;
 
 	public static void main( String[] args ) throws Exception
 	{
@@ -34,38 +35,37 @@ public class App
 		}
 	}
 
-}
+	private static class ClientRunnable implements Runnable {
 
-class ClientRunnable implements Runnable {
+		private final String ticket;
+		private final String userId;
 
-	private final String ticket;
-	private final String userId;
+		public ClientRunnable( String ticket, String userId ) {
+			this.ticket = ticket;
+			this.userId = userId;
+		}
 
-	public ClientRunnable( String ticket, String userId ) {
-		this.ticket = ticket;
-		this.userId = userId;
-	}
+		public void run() {
+			try {
 
-	public void run() {
-		try {
+				DefaultClient client = new DefaultClient( "localhost", 2391 );
+				client.connect();
+				client.auth( ticket );
 
-			DefaultClient client = new DefaultClient( "localhost", 2391 );
-			client.connect();
-			client.auth( ticket );
+				while ( true ) {
+					Thread.sleep( message_interval * 1000 );
 
-			while ( true ) {
-				Thread.sleep( 5000 );
+					// 随机生成接收者
+					Random random = new Random();
+					int rd_id = random.nextInt( App.clients_max - 1 ) + 1;
+					String receiver = "U" + String.format( "%05d", rd_id );
 
-				// 随机生成接收者
-				Random random = new Random();
-				int rd_id = random.nextInt( App.clients_max - 1 ) + 1;
-				String receiver = "U" + String.format( "%05d", rd_id );
-
-				// 向接收者发送消息
-				client.sendMessage( userId, receiver, "HI, I am " + userId );
+					// 向接收者发送消息
+					client.sendMessage( userId, receiver, "HI, I am " + userId );
+				}
+			} catch ( Exception ex ) {
+				// ignore
 			}
-		} catch ( Exception ex ) {
-			// ignore
 		}
 	}
 }

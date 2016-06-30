@@ -80,6 +80,8 @@ class CommMessageRunner implements Runnable {
 			// 创建表示失败的响应，并发送给客户端
 			MessageAcknowledge ack = MessageAcknowledge.newBuilder()
 				.setResult( MessageAcknowledge.Result.FAILURE )
+				.setAckType( AckType.SEND )
+				.setMessageId( "" )
 				.build();
 			this.ctx.writeAndFlush( ack );
 

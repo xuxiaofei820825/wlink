@@ -52,6 +52,9 @@ public class QpidMessageSender implements MessageRouter {
 
 		try {
 
+			// info
+			logger.info( "Send a message. [from:{}, to:{}]", sender, receiver );
+
 			// 从连接池中获取连接
 			conn = pooledConnectionFactory.createConnection();
 
@@ -79,12 +82,12 @@ public class QpidMessageSender implements MessageRouter {
 			String msgId = msg.getJMSMessageID().substring( 3 );
 
 			// info
-			logger.info( "Succeed to send the message. [from:{}, to:{}]", sender, receiver );
+			logger.info( "Succeed to send the message. ID:{}", msgId );
 
 			return msgId;
 		} catch ( Exception ex ) {
 			// error
-			logger.error( "Failed to send the message!!!", ex );
+			logger.error( "Failed to send the message!!! Caused by: {}", ex.getMessage() );
 
 		} finally {
 			// 关闭会话

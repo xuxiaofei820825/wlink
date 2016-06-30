@@ -14,10 +14,11 @@ import org.apache.qpid.client.AMQConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iauto.wlink.core.message.event.MQMessageConsumerCreatedEvent;
 import com.iauto.wlink.core.message.event.MQConnectionCreatedEvent;
+import com.iauto.wlink.core.message.event.MQMessageConsumerCreatedEvent;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
 import com.iauto.wlink.core.message.router.QpidMessageListener;
+import com.iauto.wlink.core.session.SessionContext;
 
 public class MQConnectionCreatedHandler extends ChannelInboundHandlerAdapter {
 
@@ -43,14 +44,16 @@ public class MQConnectionCreatedHandler extends ChannelInboundHandlerAdapter {
 			MQConnectionCreatedEvent event = (MQConnectionCreatedEvent) evt;
 
 			// info
-			logger.info( "MQ-Session has been created, register a message listener for user[ID:{}]", event.getUserId() );
+			logger.info( "MQ-Connection has been created, create a message consumer for user[{}].",
+				event.getSession().getUserId() );
 
-			// 设置当前线程的MQ会话
+			// 设置当前线程的MQ连接
 			SessionContextHandler.getConnections().set( event.getConnection() );
 
 			// 为用户注册消息监听者
-			executor.execute( new MessageConsumerCreateRunner( ctx, event.getConnection(), event.getUserId() ) );
+			executor.execute( new MessageConsumerCreateRunner( ctx, event.getConnection(), event.getSession() ) );
 
+			// 结束处理，返回
 			return;
 		}
 
@@ -69,24 +72,25 @@ public class MQConnectionCreatedHandler extends ChannelInboundHandlerAdapter {
 		/** 成员变量定义 */
 		private final ChannelHandlerContext ctx;
 		private final AMQConnection conn;
-		private final String userId;
+		private final SessionContext session;
 
-		public MessageConsumerCreateRunner( ChannelHandlerContext ctx, AMQConnection conn, String userId ) {
+		public MessageConsumerCreateRunner( ChannelHandlerContext ctx, AMQConnection conn, SessionContext session ) {
 			this.ctx = ctx;
-			this.userId = userId;
+			this.session = session;
 			this.conn = conn;
 		}
 
 		public void run() {
 			try {
 				// info
-				logger.info( "Creating a message listener for user[ID:{}]", userId );
+				logger.info( "Creating a message listener for user[ID:{}]", session.getUserId() );
 
 				// 在指定的会话上创建消息监听器
-				MessageConsumer consumer = QpidMessageListener.getInstance().createConsumer( ctx, this.conn, userId );
+				MessageConsumer consumer = QpidMessageListener.getInstance().createConsumer( session.getChannel(), this.conn,
+					session.getUserId() );
 
-				// fire a consumer created event
-				ctx.fireUserEventTriggered( new MQMessageConsumerCreatedEvent( userId, consumer ) );
+				// 触发事件
+				ctx.fireUserEventTriggered( new MQMessageConsumerCreatedEvent( session.getId(), consumer ) );
 			} catch ( Exception e ) {
 				// error
 

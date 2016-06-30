@@ -116,9 +116,9 @@ class AuthRunner implements Runnable {
 
 			// 返回给终端
 			ctx.writeAndFlush( sessionMsg );
-			
+
 			// 发送设置会话上下文的事件
-			ctx.fireUserEventTriggered( new SessionContextEvent( new SessionContext( userId ) ) );
+			ctx.fireUserEventTriggered( new SessionContextEvent( new SessionContext( userId, ctx.channel() ) ) );
 
 			// 不再需要认证处理器了，删除掉
 			this.ctx.pipeline().remove( "auth" );

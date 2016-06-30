@@ -4,19 +4,19 @@ import javax.jms.MessageConsumer;
 
 public class MQMessageConsumerCreatedEvent {
 
-	private final String userId;
+	private final String sessionId;
 	private final MessageConsumer consumer;
 
-	public MQMessageConsumerCreatedEvent( String userId, MessageConsumer consumer ) {
-		this.userId = userId;
+	public MQMessageConsumerCreatedEvent( String sessionId, MessageConsumer consumer ) {
+		this.sessionId = sessionId;
 		this.consumer = consumer;
 	}
 
 	// =============================================================
 	// setter/getter
 
-	public String getUserId() {
-		return userId;
+	public String getSessionId() {
+		return sessionId;
 	}
 
 	public MessageConsumer getConsumer() {

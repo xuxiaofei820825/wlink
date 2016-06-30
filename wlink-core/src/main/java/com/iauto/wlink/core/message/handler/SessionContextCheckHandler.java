@@ -27,9 +27,9 @@ public class SessionContextCheckHandler extends SimpleChannelInboundHandler<Comm
 	protected void channelRead0( ChannelHandlerContext ctx, CommunicationPackage msg ) throws Exception {
 
 		// 检查用户会话上下文是否已经建立
-		SessionContextHandler sessionHandler = (SessionContextHandler) ctx.pipeline().get( "session_handler" );
+		SessionContextHandler sessionHandler = ctx.pipeline().get( SessionContextHandler.class );
 
-		if ( sessionHandler.getSessionContext() != null ) {
+		if ( sessionHandler.getSession() != null ) {
 			ctx.fireChannelRead( msg );
 			return;
 		}

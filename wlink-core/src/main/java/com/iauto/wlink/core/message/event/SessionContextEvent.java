@@ -4,16 +4,16 @@ import com.iauto.wlink.core.session.SessionContext;
 
 public class SessionContextEvent {
 
-	private final SessionContext context;
+	private final SessionContext session;
 
-	public SessionContextEvent( SessionContext context ) {
-		this.context = context;
+	public SessionContextEvent( SessionContext session ) {
+		this.session = session;
 	}
 	
 	// =============================================================
 	// setter/getter
 
-	public SessionContext getContext() {
-		return context;
+	public SessionContext getSession() {
+		return session;
 	}
 }

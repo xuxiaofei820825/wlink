@@ -22,12 +22,14 @@ public class MQMessageConsumerCreatedHandler extends ChannelInboundHandlerAdapte
 
 			MQMessageConsumerCreatedEvent event = (MQMessageConsumerCreatedEvent) evt;
 
+			// 保存用户会话与消息监听者的对应关系
+			// 便于用户会话结束时，注销消息监听者
+			SessionContextHandler.getUsers().get().put( event.getSessionId(), event.getConsumer() );
+
 			// info
-			logger.info( "A consumer is created, save the map user to consumer.", event.getUserId() );
+			logger.info( "A consumer is created, save the map user to consumer. session:{}", event.getSessionId() );
 
-			// 保存用户与其消息监听者的对应关系
-			SessionContextHandler.getUsers().get().put( event.getUserId(), event.getConsumer() );
-
+			// 处理结束，退出
 			return;
 		}
 
