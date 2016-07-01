@@ -2,6 +2,7 @@ package com.iauto.wlink.core.message.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.AttributeKey;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,11 +41,15 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 	/** 用户会话上下文 */
 	private SessionContext session;
 
+	// TODO 
+	private final AttributeKey<SessionContext> session2 =
+			AttributeKey.newInstance( "session" );
+
 	/** 与MQ服务端的会话(每个IO线程创建一个连接，每个连接创建一个会话(线程)) */
 	private final static ThreadLocal<AMQConnection> connections = new ThreadLocal<AMQConnection>();
 
 	/** 当前IO线程管理的所有通道中的用户 */
-	private final static ThreadLocal<Map<String, MessageConsumer>> users = new ThreadLocal<Map<String, MessageConsumer>>() {
+	private final static ThreadLocal<Map<String, MessageConsumer>> consumers = new ThreadLocal<Map<String, MessageConsumer>>() {
 		@Override
 		protected Map<String, MessageConsumer> initialValue() {
 			return new HashMap<String, MessageConsumer>();
@@ -65,6 +70,9 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 			// 保存会话上下文到当前线程
 			session = event.getSession();
 			SessionContext.addSession( event.getSession() );
+			
+			// TODO
+			ctx.attr( session2 ).set( session );
 
 			// info
 			logger.info( "A session context is created. userId:{}, session:{}",
@@ -83,7 +91,7 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 
 	private void createMQConnection( final ChannelHandlerContext ctx ) {
 		// 获取当前线程的会话
-		AMQConnection conn = SessionContextHandler.getConnections().get();
+		AMQConnection conn = SessionContextHandler.getConnection();
 
 		if ( conn == null ) {
 			// 如果当前线程的会话还没有创建，则为当前线程创建一个
@@ -111,18 +119,18 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 			String sessionId = this.getSession().getId();
 
 			// log
-			logger.info(
-				"User[ID:{}] is offline, remove user and message consumer.",
+			logger.info( "User[ID:{}] is offline, remove user and message consumer.",
 				userId );
 
 			// 解绑监听器
-			MessageConsumer consumer = SessionContextHandler.getUsers().get()
+			MessageConsumer consumer = SessionContextHandler.getConsumers()
 				.get( sessionId );
 			if ( consumer != null )
 				consumer.close();
 
 			// 删除当前管理的用户
-			SessionContextHandler.getUsers().get().remove( sessionId );
+			SessionContextHandler.getConsumers().remove( sessionId );
+			SessionContext.getSessions().remove( sessionId );
 		}
 
 		// 流转到下一个处理器
@@ -136,12 +144,17 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 		return session;
 	}
 
-	public static ThreadLocal<Map<String, MessageConsumer>> getUsers() {
-		return users;
+	public static Map<String, MessageConsumer> getConsumers() {
+		return consumers.get();
 	}
 
-	public static ThreadLocal<AMQConnection> getConnections() {
-		return connections;
+	public static AMQConnection getConnection() {
+		return connections.get();
+	}
+
+	public static void addConnection( AMQConnection conn ) {
+		connections.set( conn );
+		;
 	}
 
 	// ==============================================================================
@@ -150,7 +163,6 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 	private class MQConnectionCreateRunner implements Runnable {
 
 		private final ChannelHandlerContext ctx;
-// private final Channel channel;
 		private final SessionContext session;
 
 		public MQConnectionCreateRunner( ChannelHandlerContext ctx, SessionContext session ) {

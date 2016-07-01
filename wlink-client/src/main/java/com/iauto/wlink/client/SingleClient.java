@@ -7,7 +7,7 @@ public class SingleClient {
 	public static void main( String[] args ) throws Exception {
 
 		String ticket = StringUtils.EMPTY;
-		ticket = "T" + String.format( "%05d", 2 );
+		ticket = "T" + String.format( "%05d", 1 );
 
 		DefaultClient client = new DefaultClient( "localhost", 2391 );
 		client.connect();

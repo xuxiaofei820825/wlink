@@ -49,11 +49,10 @@ public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 			logger.info( "MQ-Connection is reconnected, reset connection of current thread." );
 
 			// 设置当前IO线程的MQ连接
-			SessionContextHandler.getConnections().set( event.getConnection() );
+			SessionContextHandler.addConnection( event.getConnection() );
 
 			// 获取当前IO线程管理的用户
 			Map<String, SessionContext> sessions = SessionContext.getSessions();
-			//executor.execute( new ConsumerCreateRunner( ctx, conn, sessions ) );
 			executor.execute( new ConsumerCreateRunner( event.getContext(), conn, sessions ) );
 
 			// 处理结束，返回
@@ -87,23 +86,38 @@ public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 				logger.info( "Creating message consumer for user[ID:{}].", userId );
 
 				// 由于被重新连接，所以需要恢复原已注册的所有消息监听器
-				try {
 
-					// 重建监听者
-//					MessageConsumer consumer = QpidMessageListener.getInstance()
-//						.createConsumer( ctx.channel(), conn, userId );
-					MessageConsumer consumer = QpidMessageListener.getInstance()
+				boolean isSuccess = false;
+
+				do {
+					try {
+
+						// 重建监听者
+						MessageConsumer consumer = QpidMessageListener.getInstance()
 							.createConsumer( channel, conn, userId );
 
-					// 触发消息监听器成功创建的事件
-					ctx.fireUserEventTriggered( new MQMessageConsumerCreatedEvent( sessionId, consumer ) );
+						// 触发消息监听器成功创建的事件
+						ctx.fireUserEventTriggered( new MQMessageConsumerCreatedEvent( sessionId, consumer ) );
 
-					// info
-					logger.info( "Succeed to create the message consumer for user[ID:{}].", userId );
-				} catch ( Exception e ) {
-					// info
-					logger.info( "Failed to create message consumer.", e );
-				}
+						// info
+						logger.info( "Succeed to create the message consumer for user[ID:{}].", userId );
+
+						isSuccess = true;
+					} catch ( Exception e ) {
+						// error
+						logger.error( "Failed to create message consumer. Caused by: {}",
+							e.getMessage() );
+
+						// info
+						logger.info( "5 seconds later, try again." );
+
+						try {
+							Thread.sleep( 5000 );
+						} catch ( InterruptedException e1 ) {
+							// ignore
+						}
+					}
+				} while ( !isSuccess );
 			}
 		}
 	}

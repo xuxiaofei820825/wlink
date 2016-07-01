@@ -42,14 +42,14 @@ public class AuthenticationHandler extends ChannelInboundHandlerAdapter {
 
 		// 判断当前用户事件是否为AuthenticationEvent
 		if ( evt instanceof AuthenticationEvent ) {
-
 			// info
 			logger.info( "Channel:{} Processing the authentication......", ctx.channel() );
 
+			// 获取认证票据
 			AuthenticationEvent event = (AuthenticationEvent) evt;
 			String ticket = event.getTicket();
 
-			// 为用户执行消息监听
+			// 异步执行用户认证
 			executor.execute( new AuthRunner( ctx, ticket, this.key ) );
 
 			return;
@@ -58,76 +58,80 @@ public class AuthenticationHandler extends ChannelInboundHandlerAdapter {
 		// 流转不能处理的事件
 		super.userEventTriggered( ctx, evt );
 	}
-}
 
-class AuthRunner implements Runnable {
+	/**
+	 * 根据提供的认证票据，对用户进行身份认证
+	 * 
+	 * @author xiaofei.xu
+	 * 
+	 */
+	private class AuthRunner implements Runnable {
 
-	/** logger */
-	private final Logger logger = LoggerFactory.getLogger( getClass() );
+		/** 签名算法 */
+		private final static String HMAC_SHA256 = "HmacSHA256";
 
-	/** 签名算法 */
-	private final static String HMAC_SHA256 = "HmacSHA256";
+		/** 通道处理上下文 */
+		private final ChannelHandlerContext ctx;
 
-	/** 通道处理上下文 */
-	private final ChannelHandlerContext ctx;
+		/** 票据 */
+		private final String ticket;
 
-	/** 票据 */
-	private final String ticket;
+		/** 签名密匙 */
+		private final String key;
 
-	/** 签名密匙 */
-	private final String key;
+		public AuthRunner( ChannelHandlerContext ctx, String ticket, String key ) {
+			this.ctx = ctx;
+			this.ticket = ticket;
+			this.key = key;
+		}
 
-	public AuthRunner( ChannelHandlerContext ctx, String ticket, String key ) {
-		this.ctx = ctx;
-		this.ticket = ticket;
-		this.key = key;
-	}
-
-	public void run() {
-		// log
-		logger.info( "Processing the authentication. ST:{}", this.ticket );
-
-		try {
-
+		public void run() {
 			// log
-			logger.info( "Creating the session context......" );
+			logger.info( "Processing the authentication. ticket:{}", this.ticket );
 
-			// 模拟耗时的网络请求
-			Thread.sleep( 1000 );
+			try {
 
-			// 生成用来进行签名的字符串
-			final String userId = StringUtils.replace( ticket, "T", "U" );
-			final String timestamp = String.valueOf( System.currentTimeMillis() );
-			String session = userId + ";" + timestamp;
+				// log
+				logger.info( "Creating the session context......" );
 
-			// 生成会话信息的签名
-			SecretKeySpec signingKey = new SecretKeySpec( Base64.decodeBase64( key ), HMAC_SHA256 );
-			Mac mac = Mac.getInstance( HMAC_SHA256 );
-			mac.init( signingKey );
-			byte[] rawHmac = mac.doFinal( session.getBytes() );
+				// 模拟耗时的网络请求
+				Thread.sleep( 1000 );
 
-			// 创建会话上下文对象，并返回给终端
-			// 终端可使用会话上下文重新建立与服务器的会话
-			SessionMessage sessionMsg = SessionMessage.newBuilder()
-				.setUserId( userId )
-				.setTimestamp( timestamp )
-				.setSignature( Base64.encodeBase64URLSafeString( rawHmac ) )
-				.build();
+				// 生成用来进行签名的字符串
+				final String userId = StringUtils.replace( ticket, "T", "U" );
+				final String timestamp = String.valueOf( System.currentTimeMillis() );
+				String sessionContent = userId + ";" + timestamp;
 
-			// 返回给终端
-			ctx.writeAndFlush( sessionMsg );
+				// 生成会话信息的签名
+				SecretKeySpec signingKey = new SecretKeySpec( Base64.decodeBase64( key ), HMAC_SHA256 );
+				Mac mac = Mac.getInstance( HMAC_SHA256 );
+				mac.init( signingKey );
+				byte[] rawHmac = mac.doFinal( sessionContent.getBytes() );
 
-			// 发送设置会话上下文的事件
-			ctx.fireUserEventTriggered( new SessionContextEvent( new SessionContext( userId, ctx.channel() ) ) );
+				// 创建会话上下文对象，并返回给终端
+				// 终端可使用会话上下文重新建立与服务器的会话
+				SessionMessage sessionMsg = SessionMessage.newBuilder()
+					.setUserId( userId )
+					.setTimestamp( timestamp )
+					.setSignature( Base64.encodeBase64URLSafeString( rawHmac ) )
+					.build();
 
-			// 不再需要认证处理器了，删除掉
-			this.ctx.pipeline().remove( "auth" );
+				// 返回给终端
+				ctx.writeAndFlush( sessionMsg );
 
-			// log
-			logger.info( "Succeed to process the authentication. userID:{}", userId );
-		} catch ( Exception e ) {
-			// ignore
-			logger.info( "Error occoured when processing the authentication.", e );
+				// 发送设置会话上下文的事件
+				SessionContext session = new SessionContext( userId, ctx.channel() );
+				ctx.fireUserEventTriggered( new SessionContextEvent( session ) );
+
+				// 不再需要认证处理器了，删除掉
+				this.ctx.pipeline().remove( "auth" );
+
+				// log
+				logger.info( "Succeed to process the authentication. user:{}", userId );
+			} catch ( Exception e ) {
+				// ignore
+				logger.info( "Error occoured when processing the authentication.", e );
+			}
 		}
 	}
 }

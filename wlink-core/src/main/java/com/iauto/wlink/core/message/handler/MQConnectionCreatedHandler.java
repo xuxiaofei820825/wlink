@@ -48,7 +48,7 @@ public class MQConnectionCreatedHandler extends ChannelInboundHandlerAdapter {
 				event.getSession().getUserId() );
 
 			// 设置当前线程的MQ连接
-			SessionContextHandler.getConnections().set( event.getConnection() );
+			SessionContextHandler.addConnection( event.getConnection() );
 
 			// 为用户注册消息监听者
 			executor.execute( new MessageConsumerCreateRunner( ctx, event.getConnection(), event.getSession() ) );
