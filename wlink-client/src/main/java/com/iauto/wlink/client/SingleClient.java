@@ -7,15 +7,15 @@ public class SingleClient {
 	public static void main( String[] args ) throws Exception {
 
 		String ticket = StringUtils.EMPTY;
-		ticket = "T" + String.format( "%05d", 1 );
+		ticket = "T" + String.format( "%05d", 10002 );
 
 		DefaultClient client = new DefaultClient( "localhost", 2391 );
 		client.connect();
 		client.auth( ticket );
-
+		
 		while ( true ) {
-			Thread.sleep( 10000 );
-			//client.sendMessage( "U00001", "U00002", "ahfahfahfjskadhfdkj" );
+			Thread.sleep( 3000 );
+			//client.sendMessage( "U10001", "U10002", "ahfahfahfjskadhfdkj" );
 		}
 	}
 }

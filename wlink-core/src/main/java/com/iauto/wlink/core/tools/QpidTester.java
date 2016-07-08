@@ -39,7 +39,7 @@ public class QpidTester {
 		// 建立连接
 		connect();
 
-		for ( int idx = 1; idx <= 100; idx++ ) {
+		for ( int idx = 1; idx <= 10000; idx++ ) {
 
 			System.out.println( "Create a message consumer!!! Count:" + idx );
 

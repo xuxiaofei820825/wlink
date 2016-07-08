@@ -32,6 +32,11 @@
 			<artifactId>wlink-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>com.iauto</groupId>
+			<artifactId>wlink-server-integration-qpid</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 	</dependencies>
 
 	<!-- 编译设置 -->

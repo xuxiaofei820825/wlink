@@ -5,10 +5,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import javax.jms.MessageConsumer;
 
@@ -16,9 +12,10 @@ import org.apache.qpid.client.AMQConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.message.Executor;
 import com.iauto.wlink.core.message.event.MQMessageConsumerCreatedEvent;
 import com.iauto.wlink.core.message.event.MQReconnectedEvent;
-import com.iauto.wlink.core.message.router.QpidMessageListener;
+import com.iauto.wlink.core.message.router.MessageReceiver;
 import com.iauto.wlink.core.session.SessionContext;
 
 public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
@@ -26,14 +23,11 @@ public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
-	/** 业务线程池 */
-	private static final ThreadPoolExecutor executor =
-			new ThreadPoolExecutor( 5, 5, 30L, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>( 1000 ),
-				new RejectedExecutionHandler() {
-					public void rejectedExecution( Runnable r, ThreadPoolExecutor executor ) {
-						System.err.println( String.format( "Task %d rejected.", r.hashCode() ) );
-					}
-				} );
+	private final MessageReceiver receiver;
+
+	public MQReconnectedHandler( MessageReceiver receiver ) {
+		this.receiver = receiver;
+	}
 
 	@Override
 	public void userEventTriggered( ChannelHandlerContext ctx, Object evt )
@@ -53,7 +47,7 @@ public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 
 			// 获取当前IO线程管理的用户
 			Map<String, SessionContext> sessions = SessionContext.getSessions();
-			executor.execute( new ConsumerCreateRunner( event.getContext(), conn, sessions ) );
+			Executor.execute( new ConsumerCreateRunner( event.getContext(), conn, sessions, receiver ) );
 
 			// 处理结束，返回
 			return;
@@ -68,11 +62,14 @@ public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 		private final Map<String, SessionContext> sessions;
 		private final ChannelHandlerContext ctx;
 		private final AMQConnection conn;
+		private final MessageReceiver receiver;
 
-		public ConsumerCreateRunner( ChannelHandlerContext ctx, AMQConnection conn, Map<String, SessionContext> sessions ) {
+		public ConsumerCreateRunner( ChannelHandlerContext ctx, AMQConnection conn, Map<String, SessionContext> sessions,
+				MessageReceiver receiver ) {
 			this.sessions = sessions;
 			this.ctx = ctx;
 			this.conn = conn;
+			this.receiver = receiver;
 		}
 
 		public void run() {
@@ -93,7 +90,7 @@ public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 					try {
 
 						// 重建监听者
-						MessageConsumer consumer = QpidMessageListener.getInstance()
+						MessageConsumer consumer = receiver
 							.createConsumer( channel, conn, userId );
 
 						// 触发消息监听器成功创建的事件

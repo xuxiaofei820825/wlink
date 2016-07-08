@@ -1,15 +1,15 @@
 package com.iauto.wlink.core.message.event;
 
-import org.apache.qpid.client.AMQConnection;
+import javax.jms.Connection;
 
 import com.iauto.wlink.core.session.SessionContext;
 
 public class MQConnectionCreatedEvent {
 
 	private final SessionContext session;
-	private final AMQConnection connection;
+	private final Connection connection;
 
-	public MQConnectionCreatedEvent( AMQConnection connection, SessionContext session ) {
+	public MQConnectionCreatedEvent( Connection connection, SessionContext session ) {
 		this.connection = connection;
 		this.session = session;
 	}
@@ -21,7 +21,7 @@ public class MQConnectionCreatedEvent {
 		return session;
 	}
 
-	public AMQConnection getConnection() {
+	public Connection getConnection() {
 		return connection;
 	}
 }

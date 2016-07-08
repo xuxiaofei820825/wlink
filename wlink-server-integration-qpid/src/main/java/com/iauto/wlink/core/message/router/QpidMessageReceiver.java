@@ -4,6 +4,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 
 import javax.jms.BytesMessage;
+import javax.jms.Connection;
 import javax.jms.Destination;
 import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
@@ -20,9 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.message.CommMessage;
 import com.iauto.wlink.core.message.event.MQReconnectedEvent;
-import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge;
-import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType;
-import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.Result;
+import com.iauto.wlink.core.message.router.MessageReceiver;
 
 /**
  * 该类用来创建与QPID的连接，并为登录用户注册消息监听器
@@ -30,37 +29,34 @@ import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowl
  * @author xiaofei.xu
  * 
  */
-public class QpidMessageListener {
+public class QpidMessageReceiver implements MessageReceiver {
 
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 	/** 连接用URL */
-	private final static String url = "amqp://guest:guest@test/test?brokerlist='tcp://172.26.188.173:5672'";
-
-	/** 单例 */
-	private final static QpidMessageListener instance = new QpidMessageListener();
+	private final String url;
 
 	/** 只运行内部实例化 */
-	private QpidMessageListener() {
-	}
-
-	/** 返回单例 */
-	public static QpidMessageListener getInstance() {
-		return instance;
+	public QpidMessageReceiver( String url ) {
+		this.url = url;
 	}
 
 	/**
 	 * 创建于MQ服务器的连接
 	 * 
+	 * @param ctx
+	 *          通道处理器上下文
+	 * 
 	 * @throws Exception
 	 */
-	public AMQConnection newConnection( final ChannelHandlerContext ctx ) throws Exception {
+	public Connection newConnection( final ChannelHandlerContext ctx ) throws Exception {
+
 		// 与broker创建一个连接
 		AMQConnection conn = new AMQConnection( url );
 
 		// 添加异常监听器
-		conn.setExceptionListener( new CommMessageExceptionListener( ctx ) );
+		conn.setExceptionListener( new CommMessageExceptionListener( ctx, url ) );
 
 		// 创建连接
 		conn.start();
@@ -72,27 +68,30 @@ public class QpidMessageListener {
 	 * 创建消息监听器
 	 * 
 	 * @param channel
+	 *          用户通道
 	 * @param conn
+	 *          与MQ服务器的连接
 	 * @param userId
-	 * @return
+	 *          用户编号
+	 * @return 创建的消息监听器
 	 * @throws Exception
 	 */
-	public MessageConsumer createConsumer( final Channel channel, final AMQConnection conn, final String userId )
+	public MessageConsumer createConsumer( final Channel channel, final Connection conn, final String userId )
 			throws Exception {
 
 		// 在当前的会话上创建消费者，监听发送给用户的消息
-		// String url = String.format( "ADDR:message.topic/%s;{create:always,node:{type:topic}}", userId );
-		String url = String.format( "ADDR:message.topic/%s", userId );
-		Destination dest = new AMQAnyDestination( url );
+		String dest_url = String.format( "ADDR:message.topic/%s", userId );
+		Destination dest = new AMQAnyDestination( dest_url );
 
 		// debug
 		logger.debug( "DEST: {}", dest );
 
 		Session session = null;
-		if ( conn.getSessions().size() == 0 ) {
+		AMQConnection amqConn = (AMQConnection) conn;
+		if ( amqConn.getSessions().size() == 0 ) {
 			session = conn.createSession( false, Session.CLIENT_ACKNOWLEDGE );
 		} else {
-			session = conn.getSession( 0 );
+			session = amqConn.getSession( 0 );
 		}
 
 		// 设置监听器
@@ -109,9 +108,11 @@ public class QpidMessageListener {
 	private class CommMessageExceptionListener implements ExceptionListener {
 
 		private final ChannelHandlerContext ctx;
+		private final String url;
 
-		public CommMessageExceptionListener( final ChannelHandlerContext ctx ) {
+		public CommMessageExceptionListener( final ChannelHandlerContext ctx, final String url ) {
 			this.ctx = ctx;
+			this.url = url;
 		}
 
 		public void onException( JMSException exception ) {
@@ -135,7 +136,7 @@ public class QpidMessageListener {
 				try {
 
 					// 与broker创建一个连接
-					AMQConnection conn = new AMQConnection( url );
+					AMQConnection conn = new AMQConnection( this.url );
 
 					// 添加异常监听器
 					conn.setExceptionListener( this );
@@ -193,47 +194,25 @@ public class QpidMessageListener {
 				// log
 				logger.info( "The user[ID:{}] receive a message. [from:{}, type:{}]", to, from, type );
 
-				if ( StringUtils.equals( type, "msg_rev_ack" ) ) {
+				BytesMessage bytes = (BytesMessage) message;
+				long len = bytes.getBodyLength();
+				byte[] body = new byte[(int) len];
+				bytes.readBytes( body );
 
-					String msgId = message.getStringProperty( "msgId" );
+				CommMessage commMsg = new CommMessage();
+				commMsg.setFrom( from );
+				commMsg.setTo( to );
+				commMsg.setType( type );
+				commMsg.setBody( body );
 
-					MessageAcknowledge ack = MessageAcknowledge.newBuilder()
-						.setAckType( AckType.RECEIVE )
-						.setResult( Result.SUCCESS )
-						.setMessageId( msgId )
-						.build();
+				// 发送给接收者
+				this.channel.writeAndFlush( commMsg );
 
-					// 发送给接收者
-					this.channel.writeAndFlush( ack );
+				// log
+				logger.info( "Succeed to send the message to receiver!!! [ID:{}]", to );
 
-					// 给MQ服务器发送确认消息
-					message.acknowledge();
-				} else {
-
-					BytesMessage bytes = (BytesMessage) message;
-					long len = bytes.getBodyLength();
-					byte[] body = new byte[(int) len];
-					bytes.readBytes( body );
-
-					CommMessage commMsg = new CommMessage();
-					commMsg.setFrom( from );
-					commMsg.setTo( to );
-					commMsg.setType( type );
-					commMsg.setBody( body );
-
-					// 发送给接收者
-					this.channel.writeAndFlush( commMsg );
-
-					// log
-					logger.info( "Succeed to send the message to receiver!!! [ID:{}]", to );
-
-					// 发送一个消息已发送给接收者的确认信息
-					String msgId = bytes.getJMSMessageID().substring( 3 );
-					QpidMessageSender.getInstance().sendReceiveAck( to, from, msgId );
-
-					// 给MQ服务器发送确认消息
-					message.acknowledge();
-				}
+				// 给MQ服务器发送确认消息
+				message.acknowledge();
 			} catch ( Exception ex ) {
 				// error
 

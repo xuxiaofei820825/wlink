@@ -20,10 +20,13 @@ import com.iauto.wlink.core.message.handler.AuthenticationHandler;
 import com.iauto.wlink.core.message.handler.MQConnectionCreatedHandler;
 import com.iauto.wlink.core.message.handler.MQMessageConsumerCreatedHandler;
 import com.iauto.wlink.core.message.handler.MQReconnectedHandler;
-import com.iauto.wlink.core.message.handler.SessionContextCheckHandler;
 import com.iauto.wlink.core.message.handler.SessionContextHandler;
-import com.iauto.wlink.core.message.worker.CommMessageWorker;
-import com.iauto.wlink.server.AppConfig;
+import com.iauto.wlink.core.message.router.MessageReceiver;
+import com.iauto.wlink.core.message.router.MessageSender;
+import com.iauto.wlink.core.message.router.QpidMessageReceiver;
+import com.iauto.wlink.core.message.router.QpidMessageSender;
+import com.iauto.wlink.core.message.worker.SendCommMessageWorker;
+import com.iauto.wlink.server.ApplicationSetting;
 import com.iauto.wlink.server.ServerStateStatistics;
 import com.iauto.wlink.server.channel.handler.HeartbeatHandler;
 import com.iauto.wlink.server.channel.handler.StateStatisticsHandler;
@@ -33,8 +36,8 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
-	/** 应用配置 */
-	private final AppConfig config;
+	/** 应用配置项 */
+	private static final ApplicationSetting setting = ApplicationSetting.getInstance();
 
 	/** SSL Context */
 	private SslContext sslCtx;
@@ -42,13 +45,16 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	/** 服务器状态统计 */
 	private static final ServerStateStatistics statistics = new ServerStateStatistics();
 
-	public DefaultChannelInitializer( final SslContext sslCtx, final AppConfig config ) {
-		this.config = config;
-		this.sslCtx = sslCtx;
+	/** 消息队列组件 */
+	private static final MessageSender msgSender = new QpidMessageSender( setting.getMqUrl() );
+	private static final MessageReceiver msgReceiver = new QpidMessageReceiver( setting.getMqUrl() );
+
+	public DefaultChannelInitializer() {
+		this( null );
 	}
 
-	public DefaultChannelInitializer( final AppConfig config ) {
-		this.config = config;
+	public DefaultChannelInitializer( final SslContext sslCtx ) {
+		this.sslCtx = sslCtx;
 	}
 
 	@Override
@@ -59,7 +65,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		ChannelPipeline pipeline = channel.pipeline();
 
 		// SSL
-		if ( config.isSSLUsed() ) {
+		if ( setting.isSSLEnabled() ) {
 			if ( this.sslCtx == null ) {
 				throw new IllegalArgumentException( "SSL context is required." );
 			}
@@ -81,7 +87,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		// ===========================================================
 		// 2.设置心跳检测处理器
 		IdleStateHandler idleStateHandler = new IdleStateHandler(
-			config.getHeartbeatInterval(), 0, 0, TimeUnit.SECONDS );
+			setting.getHeartbeatInterval(), 0, 0, TimeUnit.SECONDS );
 		pipeline.addLast( "idle", idleStateHandler )
 			.addLast( "heartbeat", new HeartbeatHandler() );
 
@@ -91,20 +97,16 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		// 设置会话上下文解码器(进、出)
 		pipeline.addLast( "session_codec", new SessionContextCodec( null ) );
 
-		// 检查会话上下文是否建立(进)
-		// 如果还未建立会话上下文，将拒绝处理消息
-		pipeline.addLast( "session_check", new SessionContextCheckHandler() );
-
 		// 处理用户身份认证
 		pipeline.addLast( "auth", new AuthenticationHandler( "9aROHg2eQXQ6X3XKrXGKWjXrLiRIO25CKTyz212ujvc" ) );
 
-		// 设置文本消息编解码器(进、出)
-		pipeline.addLast( "message_codec", new CommMessageCodec( new CommMessageWorker() ) );
+		// 设置消息编解码器(进、出)
+		pipeline.addLast( "message_codec", new CommMessageCodec( new SendCommMessageWorker( msgSender ) ) );
 
 		// 会话处理(建立会话，保存会话上下文等等)
-		pipeline.addLast( "session_handler", new SessionContextHandler() );
-		pipeline.addLast( "mq_connection_created_handler", new MQConnectionCreatedHandler() );
-		pipeline.addLast( "mq_reconnected_handler", new MQReconnectedHandler() ); // 处理MQ服务器的重连
+		pipeline.addLast( "session_handler", new SessionContextHandler( msgReceiver ) );
+		pipeline.addLast( "mq_connection_created_handler", new MQConnectionCreatedHandler( msgReceiver ) );
+		pipeline.addLast( "mq_reconnected_handler", new MQReconnectedHandler( msgReceiver ) );
 		pipeline.addLast( "mq_consumer_created_handler", new MQMessageConsumerCreatedHandler() );
 
 		// ===========================================================

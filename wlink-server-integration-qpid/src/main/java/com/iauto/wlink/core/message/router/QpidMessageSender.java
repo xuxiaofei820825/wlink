@@ -13,36 +13,29 @@ import org.apache.qpid.url.URLSyntaxException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class QpidMessageSender implements MessageRouter {
+import com.iauto.wlink.core.message.router.MessageSender;
+
+public class QpidMessageSender implements MessageSender {
 
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
-	/** 连接URL */
-	private static final String url =
-			"amqp://guest:guest@test/test?brokerlist='tcp://172.26.188.173:5672'";
+	/** 连接池 */
+	private final PooledConnectionFactory pooledConnectionFactory;
 
-	/** 连接池(单例) */
-	private static final PooledConnectionFactory pooledConnectionFactory = new PooledConnectionFactory();
+	public QpidMessageSender( final String url ) {
 
-	static {
+		// 创建连接池
+		pooledConnectionFactory = new PooledConnectionFactory();
+		pooledConnectionFactory.setConnectionTimeout( 10000 );
+		pooledConnectionFactory.setMaxPoolSize( 10 );
 
 		try {
-			pooledConnectionFactory.setConnectionTimeout( 10000 );
-			pooledConnectionFactory.setMaxPoolSize( 10 );
 			pooledConnectionFactory.setConnectionURLString( url );
 		} catch ( URLSyntaxException e ) {
-			//
+			// URL无法解析(配置项错误)
+			throw new RuntimeException( e );
 		}
-	}
-
-	private final static QpidMessageSender instance = new QpidMessageSender();
-
-	private QpidMessageSender() {
-	}
-
-	public static QpidMessageSender getInstance() {
-		return instance;
 	}
 
 	public String send( String sender, String receiver, String type, byte[] message ) {
@@ -163,9 +156,5 @@ public class QpidMessageSender implements MessageRouter {
 				}
 			}
 		}
-	}
-
-	public void receive( String receiver ) {
-
 	}
 }

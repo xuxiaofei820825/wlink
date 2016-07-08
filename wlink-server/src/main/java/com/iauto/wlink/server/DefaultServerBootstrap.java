@@ -22,11 +22,10 @@ import com.iauto.wlink.server.channel.DefaultChannelInitializer;
 
 public class DefaultServerBootstrap {
 
-	// logger
-	private final static Logger logger = LoggerFactory.getLogger( DefaultServerBootstrap.class );
+	/** logger */
+	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
-	/** 应用配置 */
-	private AppConfig config;
+	private final ApplicationSetting setting = ApplicationSetting.getInstance();
 
 	/** Acceptor Reactor */
 	private final EventLoopGroup bossGroup;
@@ -34,16 +33,14 @@ public class DefaultServerBootstrap {
 	/** Event Reactor */
 	private final EventLoopGroup workerGroup;
 
-	public DefaultServerBootstrap( AppConfig config ) {
-		this.config = config;
-
+	public DefaultServerBootstrap() {
 		this.bossGroup = new NioEventLoopGroup();
-		this.workerGroup = new NioEventLoopGroup( 1 );
+		this.workerGroup = new NioEventLoopGroup();
 	}
 
 	public DefaultServerBootstrap( int port ) {
 		this.bossGroup = new NioEventLoopGroup();
-		this.workerGroup = new NioEventLoopGroup( 1 );
+		this.workerGroup = new NioEventLoopGroup();
 	}
 
 	public DefaultServerBootstrap( int port, int workerThreadNum ) {
@@ -59,15 +56,15 @@ public class DefaultServerBootstrap {
 
 			ChannelInitializer<SocketChannel> initializer = null;
 
-			if ( config.isSSLUsed() ) {
+			if ( setting.isSSLEnabled() ) {
 				// 如果需要通信加密
 
 				// log
 				logger.info( "Setting the SSL context......" );
 
 				// 加载证书和密匙文件
-				URL crtFileUrl = this.getClass().getClassLoader().getResource( config.getCerFile() );
-				URL keyFileUrl = this.getClass().getClassLoader().getResource( config.getKeyFile() );
+				URL crtFileUrl = this.getClass().getClassLoader().getResource( setting.getCrtFileName() );
+				URL keyFileUrl = this.getClass().getClassLoader().getResource( setting.getPkFileName() );
 
 				if ( crtFileUrl == null )
 					// log
@@ -78,17 +75,17 @@ public class DefaultServerBootstrap {
 					logger.warn( "Failed to load key file." );
 
 				SslContext sslCtx = SslContextBuilder
-					.forServer( new File( crtFileUrl.toURI() ), new File( keyFileUrl.toURI() ), config.getKeyPassword() )
+					.forServer( new File( crtFileUrl.toURI() ), new File( keyFileUrl.toURI() ), setting.getKeyPassword() )
 					.build();
 
 				// log
 				logger.info( "Succeed to set SSL context." );
 
 				// 使用SSL协议进行通信加密
-				initializer = new DefaultChannelInitializer( sslCtx, config );
+				initializer = new DefaultChannelInitializer( sslCtx );
 			}
 			else {
-				initializer = new DefaultChannelInitializer( config );
+				initializer = new DefaultChannelInitializer();
 			}
 
 			ServerBootstrap b = new ServerBootstrap();
@@ -98,10 +95,10 @@ public class DefaultServerBootstrap {
 				.childHandler( initializer );
 
 			// 绑定监听端口
-			ChannelFuture future = b.bind( config.getPort() ).sync();
+			ChannelFuture future = b.bind( setting.getPort() ).sync();
 			if ( future.isSuccess() ) {
 				// log
-				logger.info( "Succeed to start wlink server. listening in port: {}", config.getPort() );
+				logger.info( "Succeed to start wlink server. listening in port: {}", setting.getPort() );
 			}
 
 			future.channel().closeFuture().sync();

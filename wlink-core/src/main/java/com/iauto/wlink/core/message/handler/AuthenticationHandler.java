@@ -1,11 +1,8 @@
 package com.iauto.wlink.core.message.handler;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.AttributeKey;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -15,48 +12,70 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iauto.wlink.core.message.event.AuthenticationEvent;
+import com.iauto.wlink.core.comm.CommunicationPackage;
+import com.iauto.wlink.core.message.Executor;
 import com.iauto.wlink.core.message.event.SessionContextEvent;
+import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
+import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
 import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
 import com.iauto.wlink.core.session.SessionContext;
 
-public class AuthenticationHandler extends ChannelInboundHandlerAdapter {
+/**
+ * 判断当前用户是否已建立会话。如果未建立，进行用户身份的认证。
+ * 
+ * @author xiaofei.xu
+ * 
+ */
+public class AuthenticationHandler extends SimpleChannelInboundHandler<CommunicationPackage> {
 
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
+	/** 会话键 */
+	public static final AttributeKey<SessionContext> SessionKey =
+			AttributeKey.newInstance( "session" );
+
 	/** 签名密匙 */
 	private final String key;
-
-	/** 认证业务线程池 */
-	private static final ThreadPoolExecutor executor =
-			new ThreadPoolExecutor( 5, 10, 30L, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>( 1000 ) );
 
 	public AuthenticationHandler( final String key ) {
 		this.key = key;
 	}
 
 	@Override
-	public void userEventTriggered( ChannelHandlerContext ctx, Object evt )
-			throws Exception {
+	protected void channelRead0( ChannelHandlerContext ctx, CommunicationPackage msg ) throws Exception {
 
-		// 判断当前用户事件是否为AuthenticationEvent
-		if ( evt instanceof AuthenticationEvent ) {
-			// info
-			logger.info( "Channel:{} Processing the authentication......", ctx.channel() );
+		// 获取用户会话
+		SessionContext session = ctx.channel().attr( SessionKey ).get();
 
-			// 获取认证票据
-			AuthenticationEvent event = (AuthenticationEvent) evt;
-			String ticket = event.getTicket();
-
-			// 异步执行用户认证
-			executor.execute( new AuthRunner( ctx, ticket, this.key ) );
-
+		// 检查用户会话是否存在
+		// 如果已经存在，则直接流转消息
+		if ( session != null ) {
+			ctx.fireChannelRead( msg );
 			return;
 		}
 
-		// 流转不能处理的事件
-		super.userEventTriggered( ctx, evt );
+		// 以下判断消息类型是否为认证类型
+		// 如果是，则进行认证处理
+		// 如果不是，则直接返回错误
+		if ( StringUtils.equals( msg.getType(), "auth" ) ) {
+
+			// info
+			logger.info( "Type of communication package: {}", msg.getType() );
+
+			// 解码
+			AuthMessage authMsg = AuthMessage.parseFrom( msg.getBody() );
+
+			// 进行用户身份认证
+			Executor.execute( new AuthenticationRunner( ctx, authMsg.getTicket(), key ) );
+		} else {
+			// 其余类型的消息将被忽略(不会继续流转到下一个处理器)，且返回未认证的错误消息
+
+			ErrorMessage error = ErrorMessage.newBuilder()
+				.setError( "UnAuthenticated" )
+				.build();
+			ctx.channel().writeAndFlush( error );
+		}
 	}
 
 	/**
@@ -65,7 +84,7 @@ public class AuthenticationHandler extends ChannelInboundHandlerAdapter {
 	 * @author xiaofei.xu
 	 * 
 	 */
-	private class AuthRunner implements Runnable {
+	private class AuthenticationRunner implements Runnable {
 
 		/** 签名算法 */
 		private final static String HMAC_SHA256 = "HmacSHA256";
@@ -79,7 +98,7 @@ public class AuthenticationHandler extends ChannelInboundHandlerAdapter {
 		/** 签名密匙 */
 		private final String key;
 
-		public AuthRunner( ChannelHandlerContext ctx, String ticket, String key ) {
+		public AuthenticationRunner( ChannelHandlerContext ctx, String ticket, String key ) {
 			this.ctx = ctx;
 			this.ticket = ticket;
 			this.key = key;
@@ -117,17 +136,19 @@ public class AuthenticationHandler extends ChannelInboundHandlerAdapter {
 					.build();
 
 				// 返回给终端
-				ctx.writeAndFlush( sessionMsg );
+				this.ctx.writeAndFlush( sessionMsg );
 
-				// 发送设置会话上下文的事件
+				// 创建会话上下文
 				SessionContext session = new SessionContext( userId, ctx.channel() );
-				ctx.fireUserEventTriggered( new SessionContextEvent( session ) );
 
-				// 不再需要认证处理器了，删除掉
-				this.ctx.pipeline().remove( "auth" );
+				// 保存到上下文中
+				this.ctx.channel().attr( SessionKey ).set( session );
 
-				// log
-				logger.info( "Succeed to process the authentication. user:{}", userId );
+				// 触发用户会话创建成功的事件
+				this.ctx.fireUserEventTriggered( new SessionContextEvent( session ) );
+
+				// success log
+				logger.info( "Succeed to process the authentication of user:{}", userId );
 			} catch ( Exception e ) {
 				// ignore
 				logger.info( "Error occoured when processing the authentication.", e );

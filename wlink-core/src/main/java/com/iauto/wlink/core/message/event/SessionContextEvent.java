@@ -9,11 +9,12 @@ public class SessionContextEvent {
 	public SessionContextEvent( SessionContext session ) {
 		this.session = session;
 	}
-	
+
 	// =============================================================
 	// setter/getter
 
 	public SessionContext getSession() {
 		return session;
 	}
+
 }

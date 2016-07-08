@@ -13,7 +13,7 @@ public class App
 
 	public static int clients_max = 100;
 	public static int clients_create_interval = 2;
-	public static int message_interval = 10;
+	public static int message_interval = 3;
 
 	public static void main( String[] args ) throws Exception
 	{
