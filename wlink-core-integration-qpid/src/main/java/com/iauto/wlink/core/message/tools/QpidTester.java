@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.tools;
+package com.iauto.wlink.core.message.tools;
 
 import javax.jms.Connection;
 import javax.jms.Destination;

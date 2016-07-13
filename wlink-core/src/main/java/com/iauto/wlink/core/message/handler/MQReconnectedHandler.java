@@ -6,9 +6,9 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.util.Map;
 
+import javax.jms.Connection;
 import javax.jms.MessageConsumer;
 
-import org.apache.qpid.client.AMQConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +37,7 @@ public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 			// 处理MQ服务器重连事件
 
 			MQReconnectedEvent event = (MQReconnectedEvent) evt;
-			AMQConnection conn = event.getConnection();
+			Connection conn = event.getConnection();
 
 			// info
 			logger.info( "MQ-Connection is reconnected, reset connection of current thread." );
@@ -61,10 +61,10 @@ public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 
 		private final Map<String, SessionContext> sessions;
 		private final ChannelHandlerContext ctx;
-		private final AMQConnection conn;
+		private final Connection conn;
 		private final MessageReceiver receiver;
 
-		public ConsumerCreateRunner( ChannelHandlerContext ctx, AMQConnection conn, Map<String, SessionContext> sessions,
+		public ConsumerCreateRunner( ChannelHandlerContext ctx, Connection conn, Map<String, SessionContext> sessions,
 				MessageReceiver receiver ) {
 			this.sessions = sessions;
 			this.ctx = ctx;

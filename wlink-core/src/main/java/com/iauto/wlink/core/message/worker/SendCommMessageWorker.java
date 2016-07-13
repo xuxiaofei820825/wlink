@@ -2,10 +2,13 @@ package com.iauto.wlink.core.message.worker;
 
 import io.netty.channel.ChannelHandlerContext;
 
+import javax.jms.Connection;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.message.Executor;
+import com.iauto.wlink.core.message.handler.SessionContextHandler;
 import com.iauto.wlink.core.message.proto.CommMessageHeaderProto.CommMessageHeader;
 import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge;
 import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType;
@@ -17,15 +20,19 @@ public class SendCommMessageWorker implements MessageWorker {
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 	/** 消息发送者 */
-	private MessageSender sender;
+	private final MessageSender sender;
 
 	public SendCommMessageWorker( MessageSender sender ) {
 		this.sender = sender;
 	}
 
 	public void process( final ChannelHandlerContext ctx, final byte[] header, final byte[] body ) throws Exception {
+
+		// 获取当前IO线程的连接
+		Connection conn = SessionContextHandler.getConnection();
+
 		// 执行处理
-		Executor.execute( new CommMessageSendRunner( this.sender, ctx, header, body ) );
+		Executor.execute( new CommMessageSendRunner( conn, this.sender, ctx, header, body ) );
 	}
 
 	// =========================================================================
@@ -34,17 +41,19 @@ public class SendCommMessageWorker implements MessageWorker {
 	private class CommMessageSendRunner implements Runnable {
 
 		/** Handler context */
-		private ChannelHandlerContext ctx;
+		private final ChannelHandlerContext ctx;
 
 		/** 消息发送者 */
-		private MessageSender sender;
+		private final MessageSender sender;
+		private final Connection conn;
 
-		/** 文本消息 */
-		private byte[] header;
-		private byte[] body;
+		/** 消息头&消息体 */
+		private final byte[] header;
+		private final byte[] body;
 
-		public CommMessageSendRunner( MessageSender sender, final ChannelHandlerContext ctx, final byte[] header,
-				final byte[] body ) {
+		public CommMessageSendRunner( final Connection conn, final MessageSender sender, final ChannelHandlerContext ctx,
+				final byte[] header, final byte[] body ) {
+			this.conn = conn;
 			this.sender = sender;
 			this.ctx = ctx;
 			this.header = header;
@@ -63,7 +72,7 @@ public class SendCommMessageWorker implements MessageWorker {
 					msgHeader.getFrom(), msgHeader.getTo(), body.length );
 
 				// 把消息路由给接收者
-				String msgId = sender.send( msgHeader.getFrom(), msgHeader.getTo(),
+				String msgId = sender.send( conn, msgHeader.getFrom(), msgHeader.getTo(),
 					msgHeader.getType(), body );
 
 				// 创建表示成功的响应，并发送给客户端
@@ -87,7 +96,7 @@ public class SendCommMessageWorker implements MessageWorker {
 				this.ctx.writeAndFlush( ack );
 
 				// info
-				logger.info( "Failed to send the message!!! return a failure acknowledge message." );
+				logger.info( "Failed to send the message, return a failure acknowledge message." );
 			}
 		}
 	}

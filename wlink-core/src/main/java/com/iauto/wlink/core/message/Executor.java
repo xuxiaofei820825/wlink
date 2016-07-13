@@ -1,6 +1,6 @@
 package com.iauto.wlink.core.message;
 
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -12,8 +12,8 @@ public class Executor {
 
 	/** 业务线程池 */
 	private static final ThreadPoolExecutor executor = new ThreadPoolExecutor(
-		50, 50, 30L, TimeUnit.SECONDS,
-		new ArrayBlockingQueue<Runnable>( 5000 ),
+		10, 10, 0L, TimeUnit.SECONDS,
+		new LinkedBlockingQueue<Runnable>(),
 		new TaskRejectedHandler() );
 
 	public static void execute( Runnable command ) {

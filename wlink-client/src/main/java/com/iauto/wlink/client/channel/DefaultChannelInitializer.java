@@ -36,7 +36,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 		// ===========================================================================
 		// 1.心跳保活
-		pipeline.addLast( new IdleStateHandler( 0, 55, 0, TimeUnit.SECONDS ) )
+		pipeline.addLast( new IdleStateHandler( 0, 0, 50, TimeUnit.SECONDS ) )
 			.addLast( "heartbeat", new HeartbeatHandler() );
 
 		// ===========================================================================

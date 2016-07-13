@@ -24,7 +24,7 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
 		if ( evt instanceof IdleStateEvent ) {
 			IdleStateEvent e = (IdleStateEvent) evt;
 
-			if ( e.state() == IdleState.WRITER_IDLE ) {
+			if ( e.state() == IdleState.ALL_IDLE ) {
 
 				// debug
 				logger.info( "Channel is idle, send a hearbeat message." );

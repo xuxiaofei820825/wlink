@@ -2,19 +2,19 @@ package com.iauto.wlink.core.message.event;
 
 import io.netty.channel.ChannelHandlerContext;
 
-import org.apache.qpid.client.AMQConnection;
+import javax.jms.Connection;
 
 public class MQReconnectedEvent {
 
-	private final AMQConnection connection;
+	private final Connection connection;
 	private final ChannelHandlerContext ctx;
 
-	public MQReconnectedEvent( AMQConnection conn, ChannelHandlerContext ctx ) {
+	public MQReconnectedEvent( Connection conn, ChannelHandlerContext ctx ) {
 		this.connection = conn;
 		this.ctx = ctx;
 	}
 
-	public AMQConnection getConnection() {
+	public Connection getConnection() {
 		return connection;
 	}
 

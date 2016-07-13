@@ -34,7 +34,7 @@
 		</dependency>
 		<dependency>
 			<groupId>com.iauto</groupId>
-			<artifactId>wlink-server-integration-qpid</artifactId>
+			<artifactId>wlink-core-integration-qpid</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 	</dependencies>

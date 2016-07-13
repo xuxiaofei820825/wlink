@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>wlink-server-integration-qpid</name>
+	<name>wlink-core-integration-qpid</name>
 	<comment></comment>
 	<projects>
 	</projects>

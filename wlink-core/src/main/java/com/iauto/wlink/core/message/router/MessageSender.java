@@ -1,5 +1,7 @@
 package com.iauto.wlink.core.message.router;
 
+import javax.jms.Connection;
+
 public interface MessageSender {
-	String send( String sender, String receiver, String type, byte[] message );
+	String send( Connection conn, String sender, String receiver, String type, byte[] message );
 }

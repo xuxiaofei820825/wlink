@@ -7,8 +7,8 @@
     <artifactId>wlink</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <artifactId>wlink-server-integration-qpid</artifactId>
-  <name>wlink-server-integration-qpid</name>
+  <artifactId>wlink-core-integration-qpid</artifactId>
+  <name>wlink-core-integration-qpid</name>
   <url>http://maven.apache.org</url>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -20,6 +20,8 @@
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
+    
+    <!-- qpid -->
     <dependency>
 			<groupId>org.apache.qpid</groupId>
 			<artifactId>qpid-client</artifactId>

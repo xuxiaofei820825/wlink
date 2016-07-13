@@ -46,7 +46,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	private static final ServerStateStatistics statistics = new ServerStateStatistics();
 
 	/** 消息队列组件 */
-	private static final MessageSender msgSender = new QpidMessageSender( setting.getMqUrl() );
+	private static final MessageSender msgSender = new QpidMessageSender();
 	private static final MessageReceiver msgReceiver = new QpidMessageReceiver( setting.getMqUrl() );
 
 	public DefaultChannelInitializer() {

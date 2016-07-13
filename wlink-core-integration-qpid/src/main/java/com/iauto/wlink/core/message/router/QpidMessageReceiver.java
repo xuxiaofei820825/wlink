@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.message.CommMessage;
 import com.iauto.wlink.core.message.event.MQReconnectedEvent;
-import com.iauto.wlink.core.message.router.MessageReceiver;
 
 /**
  * 该类用来创建与QPID的连接，并为登录用户注册消息监听器
