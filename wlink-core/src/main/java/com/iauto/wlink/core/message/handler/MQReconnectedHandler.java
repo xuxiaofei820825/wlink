@@ -12,11 +12,12 @@ import javax.jms.MessageConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.auth.SessionContext;
+import com.iauto.wlink.core.auth.handler.SessionContextHandler;
 import com.iauto.wlink.core.message.Executor;
 import com.iauto.wlink.core.message.event.MQMessageConsumerCreatedEvent;
 import com.iauto.wlink.core.message.event.MQReconnectedEvent;
 import com.iauto.wlink.core.message.router.MessageReceiver;
-import com.iauto.wlink.core.session.SessionContext;
 
 public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 

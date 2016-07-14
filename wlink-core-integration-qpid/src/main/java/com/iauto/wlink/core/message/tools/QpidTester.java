@@ -11,7 +11,7 @@ import org.apache.qpid.client.AMQAnyDestination;
 import org.apache.qpid.client.PooledConnectionFactory;
 import org.apache.qpid.url.URLSyntaxException;
 
-import com.iauto.wlink.core.session.SessionContext;
+import com.iauto.wlink.core.auth.SessionContext;
 
 public class QpidTester {
 

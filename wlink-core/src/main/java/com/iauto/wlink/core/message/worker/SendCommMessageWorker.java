@@ -1,5 +1,7 @@
 package com.iauto.wlink.core.message.worker;
 
+import java.util.UUID;
+
 import io.netty.channel.ChannelHandlerContext;
 
 import javax.jms.Connection;
@@ -7,8 +9,8 @@ import javax.jms.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.auth.handler.SessionContextHandler;
 import com.iauto.wlink.core.message.Executor;
-import com.iauto.wlink.core.message.handler.SessionContextHandler;
 import com.iauto.wlink.core.message.proto.CommMessageHeaderProto.CommMessageHeader;
 import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge;
 import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType;
@@ -62,6 +64,9 @@ public class SendCommMessageWorker implements MessageWorker {
 
 		public void run() {
 
+			// 创建一个消息编号
+			final String msgId = UUID.randomUUID().toString();
+
 			try {
 
 				// 解码
@@ -71,17 +76,25 @@ public class SendCommMessageWorker implements MessageWorker {
 				logger.debug( "A message: [from:{}, to:{}, content:{} bytes]",
 					msgHeader.getFrom(), msgHeader.getTo(), body.length );
 
+				// 给终端返回一个确认信息，表明服务端已收到该消息，准备推送给接收者
+				MessageAcknowledge ack_rev = MessageAcknowledge.newBuilder()
+					.setResult( MessageAcknowledge.Result.SUCCESS )
+					.setMessageId( msgId )
+					.setAckType( AckType.RECEIVE )
+					.build();
+				this.ctx.writeAndFlush( ack_rev );
+
 				// 把消息路由给接收者
-				String msgId = sender.send( conn, msgHeader.getFrom(), msgHeader.getTo(),
+				sender.send( conn, msgHeader.getFrom(), msgHeader.getTo(),
 					msgHeader.getType(), body );
 
-				// 创建表示成功的响应，并发送给客户端
-				MessageAcknowledge ack = MessageAcknowledge.newBuilder()
+				// 给终端返回一个确认信息，表明服务端已经把消息推送给接收者
+				MessageAcknowledge ack_send = MessageAcknowledge.newBuilder()
 					.setResult( MessageAcknowledge.Result.SUCCESS )
 					.setMessageId( msgId )
 					.setAckType( AckType.SEND )
 					.build();
-				this.ctx.writeAndFlush( ack );
+				this.ctx.writeAndFlush( ack_send );
 
 				// info
 				logger.info( "Succeed to send the message, return a success acknowledge message." );
@@ -91,7 +104,7 @@ public class SendCommMessageWorker implements MessageWorker {
 				MessageAcknowledge ack = MessageAcknowledge.newBuilder()
 					.setResult( MessageAcknowledge.Result.FAILURE )
 					.setAckType( AckType.SEND )
-					.setMessageId( "" )
+					.setMessageId( msgId )
 					.build();
 				this.ctx.writeAndFlush( ack );
 

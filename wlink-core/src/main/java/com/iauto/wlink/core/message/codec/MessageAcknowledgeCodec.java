@@ -51,5 +51,10 @@ public class MessageAcknowledgeCodec extends MessageToMessageCodec<Communication
 			// info
 			logger.info( "Succeed to send a message!!! ID:{}, Type:{}", ack.getMessageId(), ack.getAckType() );
 		}
+
+		if ( ack.getResult() == MessageAcknowledge.Result.FAILURE ) {
+			// info
+			logger.info( "Failed to send the message!!!" );
+		}
 	}
 }

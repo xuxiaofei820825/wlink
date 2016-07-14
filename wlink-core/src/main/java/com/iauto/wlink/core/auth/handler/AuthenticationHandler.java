@@ -1,24 +1,20 @@
-package com.iauto.wlink.core.message.handler;
+package com.iauto.wlink.core.auth.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.AttributeKey;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.auth.SessionContext;
+import com.iauto.wlink.core.auth.event.SessionContextEvent;
+import com.iauto.wlink.core.auth.service.AuthenticationProvider;
 import com.iauto.wlink.core.comm.CommunicationPackage;
 import com.iauto.wlink.core.message.Executor;
-import com.iauto.wlink.core.message.event.SessionContextEvent;
 import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
-import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
-import com.iauto.wlink.core.session.SessionContext;
 
 /**
  * 判断当前用户是否已建立会话。如果未建立，进行用户身份的认证。
@@ -31,15 +27,15 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
-	/** 会话键 */
+	/** 会话键值 */
 	public static final AttributeKey<SessionContext> SessionKey =
 			AttributeKey.newInstance( "session" );
 
-	/** 签名密匙 */
-	private final String key;
+	/** 认证提供者 */
+	private final AuthenticationProvider provider;
 
-	public AuthenticationHandler( final String key ) {
-		this.key = key;
+	public AuthenticationHandler( final AuthenticationProvider provider ) {
+		this.provider = provider;
 	}
 
 	@Override
@@ -49,16 +45,15 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 		SessionContext session = ctx.channel().attr( SessionKey ).get();
 
 		// 检查用户会话是否存在
-		// 如果已经存在，则直接流转消息
+		// 如果已经存在，直接流转获取的消息
 		if ( session != null ) {
 			ctx.fireChannelRead( msg );
 			return;
 		}
 
 		// 以下判断消息类型是否为认证类型
-		// 如果是，则进行认证处理
-		// 如果不是，则直接返回错误
 		if ( StringUtils.equals( msg.getType(), "auth" ) ) {
+			// 如果是，则进行认证处理
 
 			// info
 			logger.info( "Type of communication package: {}", msg.getType() );
@@ -67,8 +62,9 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 			AuthMessage authMsg = AuthMessage.parseFrom( msg.getBody() );
 
 			// 进行用户身份认证
-			Executor.execute( new AuthenticationRunner( ctx, authMsg.getTicket(), key ) );
+			Executor.execute( new AuthenticationTask( ctx, authMsg.getTicket(), provider ) );
 		} else {
+			// 如果不是，则直接返回错误
 			// 其余类型的消息将被忽略(不会继续流转到下一个处理器)，且返回未认证的错误消息
 
 			ErrorMessage error = ErrorMessage.newBuilder()
@@ -84,24 +80,21 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 	 * @author xiaofei.xu
 	 * 
 	 */
-	private class AuthenticationRunner implements Runnable {
-
-		/** 签名算法 */
-		private final static String HMAC_SHA256 = "HmacSHA256";
+	private class AuthenticationTask implements Runnable {
 
 		/** 通道处理上下文 */
 		private final ChannelHandlerContext ctx;
 
+		/** 认证者 */
+		private AuthenticationProvider provider;
+
 		/** 票据 */
 		private final String ticket;
 
-		/** 签名密匙 */
-		private final String key;
-
-		public AuthenticationRunner( ChannelHandlerContext ctx, String ticket, String key ) {
+		public AuthenticationTask( ChannelHandlerContext ctx, String ticket, AuthenticationProvider provider ) {
 			this.ctx = ctx;
 			this.ticket = ticket;
-			this.key = key;
+			this.provider = provider;
 		}
 
 		public void run() {
@@ -110,45 +103,24 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 
 			try {
 
-				// log
-				logger.info( "Creating the session context......" );
+				// 进行认证
+				String userId = provider.authenticate( ticket );
 
-				// 模拟耗时的网络请求
-				Thread.sleep( 1000 );
-
-				// 生成用来进行签名的字符串
-				final String userId = StringUtils.replace( ticket, "T", "U" );
-				final String timestamp = String.valueOf( System.currentTimeMillis() );
-				String sessionContent = userId + ";" + timestamp;
-
-				// 生成会话信息的签名
-				SecretKeySpec signingKey = new SecretKeySpec( Base64.decodeBase64( key ), HMAC_SHA256 );
-				Mac mac = Mac.getInstance( HMAC_SHA256 );
-				mac.init( signingKey );
-				byte[] rawHmac = mac.doFinal( sessionContent.getBytes() );
-
-				// 创建会话上下文对象，并返回给终端
-				// 终端可使用会话上下文重新建立与服务器的会话
-				SessionMessage sessionMsg = SessionMessage.newBuilder()
-					.setUserId( userId )
-					.setTimestamp( timestamp )
-					.setSignature( Base64.encodeBase64URLSafeString( rawHmac ) )
-					.build();
-
-				// 返回给终端
-				this.ctx.writeAndFlush( sessionMsg );
+				// success log
+				logger.info( "Succeed to process the authentication of user:{}", userId );
 
 				// 创建会话上下文
 				SessionContext session = new SessionContext( userId, ctx.channel() );
 
-				// 保存到上下文中
+				// 保存到Channel的附件中
 				this.ctx.channel().attr( SessionKey ).set( session );
+
+				// log
+				logger.info( "Succeed to create a session context for user[{}]", userId );
 
 				// 触发用户会话创建成功的事件
 				this.ctx.fireUserEventTriggered( new SessionContextEvent( session ) );
 
-				// success log
-				logger.info( "Succeed to process the authentication of user:{}", userId );
 			} catch ( Exception e ) {
 				// ignore
 				logger.info( "Error occoured when processing the authentication.", e );

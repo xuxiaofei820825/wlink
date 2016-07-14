@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.message.codec;
+package com.iauto.wlink.core.auth.codec;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
@@ -17,8 +17,6 @@ public class SessionContextCodec extends MessageToMessageCodec<CommunicationPack
 
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
-
-	public static final String HANDLER_NAME = "session_codec";
 
 	/** 消息处理器 */
 	private final MessageWorker worker;

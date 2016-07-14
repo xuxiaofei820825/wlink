@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.message.handler;
+package com.iauto.wlink.core.auth.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -13,12 +13,13 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.auth.SessionContext;
+import com.iauto.wlink.core.auth.event.SessionContextEvent;
 import com.iauto.wlink.core.message.Executor;
 import com.iauto.wlink.core.message.event.MQConnectionCreatedEvent;
-import com.iauto.wlink.core.message.event.SessionContextEvent;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
+import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
 import com.iauto.wlink.core.message.router.MessageReceiver;
-import com.iauto.wlink.core.session.SessionContext;
 
 /**
  * 完成用户会话创建后的处理
@@ -37,6 +38,8 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 	/** 消息接收者 */
 	private final MessageReceiver receiver;
 
+	private final String signKey;
+
 	/** 当前IO线程管理的所有通道中的用户 */
 	private final static ThreadLocal<Map<String, MessageConsumer>> consumers = new ThreadLocal<Map<String, MessageConsumer>>() {
 		@Override
@@ -45,8 +48,9 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 		}
 	};
 
-	public SessionContextHandler( MessageReceiver receiver ) {
+	public SessionContextHandler( MessageReceiver receiver, String signKey ) {
 		this.receiver = receiver;
+		this.signKey = signKey;
 	}
 
 	@Override
@@ -66,6 +70,17 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 			// info
 			logger.info( "A session context is created. userId:{}, session:{}",
 				event.getSession().getUserId(), event.getSession().getId() );
+
+			// 创建会话上下文对象，并返回给终端
+			// 终端可使用会话上下文重新建立与服务器的会话
+			SessionMessage sessionMsg = SessionMessage.newBuilder()
+				.setUserId( session.getId() )
+				.setTimestamp( String.valueOf( System.currentTimeMillis() ) )
+				.setSignature( SessionContext.sign( signKey, session ) )
+				.build();
+
+			// 把签名后的会话上下文返回给终端
+			event.getSession().getChannel().writeAndFlush( sessionMsg );
 
 			// 创建与MQ服务的会话
 			createMQConnection( ctx, session );
@@ -88,7 +103,7 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 			logger.info( "MQ-Connection of current thread has not been created, create it first!!!" );
 
 			// 创建MQ会话
-			Executor.execute( new MQConnectionCreateRunner( ctx, session, receiver ) );
+			Executor.execute( new MQConnectionCreateTask( ctx, session, receiver ) );
 		} else {
 
 			// 直接发送会话已经创建的事件
@@ -146,13 +161,13 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 	// ==============================================================================
 	// private class
 
-	private class MQConnectionCreateRunner implements Runnable {
+	private class MQConnectionCreateTask implements Runnable {
 
 		private final ChannelHandlerContext ctx;
 		private final SessionContext session;
 		private final MessageReceiver receiver;
 
-		public MQConnectionCreateRunner( ChannelHandlerContext ctx, SessionContext session, MessageReceiver receiver ) {
+		public MQConnectionCreateTask( ChannelHandlerContext ctx, SessionContext session, MessageReceiver receiver ) {
 			this.ctx = ctx;
 			this.session = session;
 			this.receiver = receiver;

@@ -11,16 +11,18 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.auth.codec.SessionContextCodec;
+import com.iauto.wlink.core.auth.handler.AuthenticationHandler;
+import com.iauto.wlink.core.auth.handler.SessionContextHandler;
+import com.iauto.wlink.core.auth.service.AuthenticationProvider;
+import com.iauto.wlink.core.auth.service.ReserveAccountAuthenticationProvider;
 import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
 import com.iauto.wlink.core.message.codec.CommMessageCodec;
 import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
 import com.iauto.wlink.core.message.codec.MessageAcknowledgeCodec;
-import com.iauto.wlink.core.message.codec.SessionContextCodec;
-import com.iauto.wlink.core.message.handler.AuthenticationHandler;
 import com.iauto.wlink.core.message.handler.MQConnectionCreatedHandler;
 import com.iauto.wlink.core.message.handler.MQMessageConsumerCreatedHandler;
 import com.iauto.wlink.core.message.handler.MQReconnectedHandler;
-import com.iauto.wlink.core.message.handler.SessionContextHandler;
 import com.iauto.wlink.core.message.router.MessageReceiver;
 import com.iauto.wlink.core.message.router.MessageSender;
 import com.iauto.wlink.core.message.router.QpidMessageReceiver;
@@ -48,6 +50,8 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	/** 消息队列组件 */
 	private static final MessageSender msgSender = new QpidMessageSender();
 	private static final MessageReceiver msgReceiver = new QpidMessageReceiver( setting.getMqUrl() );
+	private static final AuthenticationProvider provider = new ReserveAccountAuthenticationProvider( "UhZr6vyeBu0KmlX9",
+		"UTbKkKQ335whZicI" );
 
 	public DefaultChannelInitializer() {
 		this( null );
@@ -98,13 +102,14 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		pipeline.addLast( "session_codec", new SessionContextCodec( null ) );
 
 		// 处理用户身份认证
-		pipeline.addLast( "auth", new AuthenticationHandler( "9aROHg2eQXQ6X3XKrXGKWjXrLiRIO25CKTyz212ujvc" ) );
+		pipeline.addLast( "auth", new AuthenticationHandler( provider ) );
 
 		// 设置消息编解码器(进、出)
 		pipeline.addLast( "message_codec", new CommMessageCodec( new SendCommMessageWorker( msgSender ) ) );
 
 		// 会话处理(建立会话，保存会话上下文等等)
-		pipeline.addLast( "session_handler", new SessionContextHandler( msgReceiver ) );
+		pipeline.addLast( "session_handler", new SessionContextHandler( msgReceiver,
+			"9aROHg2eQXQ6X3XKrXGKWjXrLiRIO25CKTyz212ujvc" ) );
 		pipeline.addLast( "mq_connection_created_handler", new MQConnectionCreatedHandler( msgReceiver ) );
 		pipeline.addLast( "mq_reconnected_handler", new MQReconnectedHandler( msgReceiver ) );
 		pipeline.addLast( "mq_consumer_created_handler", new MQMessageConsumerCreatedHandler() );
