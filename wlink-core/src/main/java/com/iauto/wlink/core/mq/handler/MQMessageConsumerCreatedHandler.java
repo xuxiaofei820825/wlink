@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.message.handler;
+package com.iauto.wlink.core.mq.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.auth.handler.SessionContextHandler;
-import com.iauto.wlink.core.message.event.MQMessageConsumerCreatedEvent;
+import com.iauto.wlink.core.mq.event.MQMessageConsumerCreatedEvent;
 
 /**
  * 进行消息监听器被创建后的处理

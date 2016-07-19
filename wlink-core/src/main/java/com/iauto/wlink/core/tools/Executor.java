@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.message;
+package com.iauto.wlink.core.tools;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;

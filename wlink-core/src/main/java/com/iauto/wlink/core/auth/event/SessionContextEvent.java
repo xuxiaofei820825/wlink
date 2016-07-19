@@ -4,6 +4,7 @@ import com.iauto.wlink.core.auth.SessionContext;
 
 public class SessionContextEvent {
 
+	/** 会话上下文 */
 	private final SessionContext session;
 
 	public SessionContextEvent( SessionContext session ) {
@@ -16,5 +17,4 @@ public class SessionContextEvent {
 	public SessionContext getSession() {
 		return session;
 	}
-
 }

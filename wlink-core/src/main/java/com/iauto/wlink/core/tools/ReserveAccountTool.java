@@ -5,16 +5,25 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang.StringUtils;
 
 public class ReserveAccountTool {
 
-	public static void main( String[] args ) {
+	private static final String key = "UhZr6vyeBu0KmlX9"; // 128 bit key
+	private static final String initVector = "UTbKkKQ335whZicI"; // 16 bytes IV
 
-		String key = "UhZr6vyeBu0KmlX9"; // 128 bit key
-		String initVector = "UTbKkKQ335whZicI"; // 16 bytes IV
+	public static void main( String[] args ) {
 
 		System.out.println( decrypt( key, initVector,
 			encrypt( key, initVector, "U000001;" + System.currentTimeMillis() ) ) );
+	}
+
+	public static String generate( String userId ) {
+		String result = StringUtils.EMPTY;
+
+		result = encrypt( key, initVector, userId + ";" + System.currentTimeMillis() );
+
+		return result;
 	}
 
 	public static String decrypt( String key, String initVector, String encrypted ) {

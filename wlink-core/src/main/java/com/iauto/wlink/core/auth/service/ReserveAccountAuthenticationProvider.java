@@ -40,7 +40,7 @@ public class ReserveAccountAuthenticationProvider implements AuthenticationProvi
 
 			byte[] original = cipher.doFinal( Base64.decodeBase64( ticket ) );
 
-			String info = String.valueOf( original );
+			String info = new String( original );
 
 			// 截取用户编号
 			userId = info.split( ";" )[0];

@@ -8,16 +8,22 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.Constant;
 import com.iauto.wlink.core.auth.SessionContext;
 import com.iauto.wlink.core.auth.event.SessionContextEvent;
 import com.iauto.wlink.core.auth.service.AuthenticationProvider;
 import com.iauto.wlink.core.comm.CommunicationPackage;
-import com.iauto.wlink.core.message.Executor;
 import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
+import com.iauto.wlink.core.tools.Executor;
 
 /**
- * 判断当前用户是否已建立会话。如果未建立，进行用户身份的认证。
+ * 进行用户身份认证<br/>
+ * 判断当前通道是否已建立用户会话。
+ * <ul>
+ * <li>若未建立，则进行用户身份的认证。
+ * <li>若已建立，则流转接收到的消息
+ * <ul>
  * 
  * @author xiaofei.xu
  * 
@@ -44,15 +50,15 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 		// 获取用户会话
 		SessionContext session = ctx.channel().attr( SessionKey ).get();
 
-		// 检查用户会话是否存在
-		// 如果已经存在，直接流转获取的消息
+		// 检查用户会话是否已建立
+		// 如果已经建立，直接流转获取到的消息
 		if ( session != null ) {
 			ctx.fireChannelRead( msg );
 			return;
 		}
 
 		// 以下判断消息类型是否为认证类型
-		if ( StringUtils.equals( msg.getType(), "auth" ) ) {
+		if ( StringUtils.equals( msg.getType(), Constant.MessageType.Auth ) ) {
 			// 如果是，则进行认证处理
 
 			// info

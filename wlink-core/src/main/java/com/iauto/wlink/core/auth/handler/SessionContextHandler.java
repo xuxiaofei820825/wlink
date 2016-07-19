@@ -15,14 +15,18 @@ import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.auth.SessionContext;
 import com.iauto.wlink.core.auth.event.SessionContextEvent;
-import com.iauto.wlink.core.message.Executor;
-import com.iauto.wlink.core.message.event.MQConnectionCreatedEvent;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
 import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
-import com.iauto.wlink.core.message.router.MessageReceiver;
+import com.iauto.wlink.core.mq.event.MQConnectionCreatedEvent;
+import com.iauto.wlink.core.mq.router.MessageReceiver;
+import com.iauto.wlink.core.tools.Executor;
 
 /**
- * 完成用户会话创建后的处理
+ * 完成用户会话创建后的处理 <br>
+ * <ul>
+ * <li>如果当前IO线程没有创建MQ连接，则创建MQ连接
+ * <li>为当前用户创建消息监听
+ * </ul>
  * 
  * @author xiaofei.xu
  * 
@@ -38,9 +42,10 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 	/** 消息接收者 */
 	private final MessageReceiver receiver;
 
+	/** 签名密匙 */
 	private final String signKey;
 
-	/** 当前IO线程管理的所有通道中的用户 */
+	/** 当前IO线程创建的所有消息监听器 */
 	private final static ThreadLocal<Map<String, MessageConsumer>> consumers = new ThreadLocal<Map<String, MessageConsumer>>() {
 		@Override
 		protected Map<String, MessageConsumer> initialValue() {
@@ -57,39 +62,39 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 	public void userEventTriggered( ChannelHandlerContext ctx, Object evt )
 			throws Exception {
 
-		// 处理由认证处理器触发的建立会话上下文的事件
-		if ( evt instanceof SessionContextEvent ) {
-
-			// 获取会话上下文
-			SessionContextEvent event = (SessionContextEvent) evt;
-
-			// 保存会话上下文到当前线程
-			SessionContext session = event.getSession();
-			SessionContext.addSession( event.getSession() );
-
-			// info
-			logger.info( "A session context is created. userId:{}, session:{}",
-				event.getSession().getUserId(), event.getSession().getId() );
-
-			// 创建会话上下文对象，并返回给终端
-			// 终端可使用会话上下文重新建立与服务器的会话
-			SessionMessage sessionMsg = SessionMessage.newBuilder()
-				.setUserId( session.getId() )
-				.setTimestamp( String.valueOf( System.currentTimeMillis() ) )
-				.setSignature( SessionContext.sign( signKey, session ) )
-				.build();
-
-			// 把签名后的会话上下文返回给终端
-			event.getSession().getChannel().writeAndFlush( sessionMsg );
-
-			// 创建与MQ服务的会话
-			createMQConnection( ctx, session );
-
-			return;
-		}
-
 		// 流转不能处理的事件
-		super.userEventTriggered( ctx, evt );
+		if ( !( evt instanceof SessionContextEvent ) )
+			super.userEventTriggered( ctx, evt );
+
+		// 处理由认证处理器触发的建立会话上下文的事件
+		// 获取会话上下文
+		SessionContextEvent event = (SessionContextEvent) evt;
+		SessionContext session = event.getSession();
+
+		// 保存会话上下文到当前线程
+		SessionContext.add( session );
+
+		// info
+		logger.info( "A session context is created. userId:{}, session:{}",
+			session.getUserId(),
+			session.getId() );
+
+		// 创建会话上下文对象，并返回给终端
+		// 终端可使用会话上下文重新建立与服务器的会话
+		long timestamp = System.currentTimeMillis();
+		String signature = SessionContext.sign( signKey, session );
+		SessionMessage sessionMsg = SessionMessage.newBuilder()
+			.setId( session.getId() )
+			.setUserId( session.getUserId() )
+			.setTimestamp( timestamp )
+			.setSignature( signature )
+			.build();
+
+		// 把签名后的会话上下文返回给终端
+		session.getChannel().writeAndFlush( sessionMsg );
+
+		// 创建与MQ服务的会话
+		createMQConnection( ctx, session );
 	}
 
 	private void createMQConnection( final ChannelHandlerContext ctx, SessionContext session ) {
@@ -97,17 +102,17 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 		Connection conn = SessionContextHandler.getConnection();
 
 		if ( conn == null ) {
-			// 如果当前线程的会话还没有创建，则为当前线程创建一个
+			// 如果当前IO线程的连接还未创建，则为当前IO线程创建一个
 
 			// info
-			logger.info( "MQ-Connection of current thread has not been created, create it first!!!" );
+			logger.info( "MQ-Connection of current IO thread has not been created, create it first!!!" );
 
 			// 创建MQ会话
 			Executor.execute( new MQConnectionCreateTask( ctx, session, receiver ) );
 		} else {
 
 			// 直接发送会话已经创建的事件
-			ctx.fireUserEventTriggered( new MQConnectionCreatedEvent( connections.get(), session ) );
+			ctx.fireUserEventTriggered( new MQConnectionCreatedEvent( conn, session ) );
 		}
 	}
 
@@ -143,7 +148,7 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 		ctx.fireChannelInactive();
 	}
 
-	// ======================================================================
+	// ================================================================================================================
 	// setter/getter
 
 	public static Map<String, MessageConsumer> getConsumers() {
@@ -158,7 +163,7 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 		connections.set( conn );
 	}
 
-	// ==============================================================================
+	// ================================================================================================================
 	// private class
 
 	private class MQConnectionCreateTask implements Runnable {
@@ -176,22 +181,22 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 		public void run() {
 			try {
 				// info
-				logger.info( "Creating a connection for current thread......" );
+				logger.info( "Creating a MQ-Connection for current IO thread......" );
 
-				// 创建MQ会话
+				// 创建MQ服务连接
 				Connection conn = receiver.newConnection( ctx );
 
 				// 触发MQ连接创建成功的事件
 				ctx.fireUserEventTriggered( new MQConnectionCreatedEvent( conn, session ) );
 			} catch ( Exception e ) {
 				// error
+				logger.info( "Failed to create a session for current thread! Caused by: {}", e.getMessage() );
 
-				logger.info( "Failed to create a session for current thread!!!", e );
-
+				// 返回一个错误响应
 				ErrorMessage error = ErrorMessage.newBuilder()
 					.setError( "Session_Create_Failure" )
 					.build();
-				ctx.channel().writeAndFlush( error );
+				session.getChannel().writeAndFlush( error );
 			}
 		}
 	}

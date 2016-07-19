@@ -16,18 +16,19 @@ import com.iauto.wlink.core.auth.handler.AuthenticationHandler;
 import com.iauto.wlink.core.auth.handler.SessionContextHandler;
 import com.iauto.wlink.core.auth.service.AuthenticationProvider;
 import com.iauto.wlink.core.auth.service.ReserveAccountAuthenticationProvider;
+import com.iauto.wlink.core.auth.worker.SessionRebuildWorker;
 import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
 import com.iauto.wlink.core.message.codec.CommMessageCodec;
 import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
 import com.iauto.wlink.core.message.codec.MessageAcknowledgeCodec;
-import com.iauto.wlink.core.message.handler.MQConnectionCreatedHandler;
-import com.iauto.wlink.core.message.handler.MQMessageConsumerCreatedHandler;
-import com.iauto.wlink.core.message.handler.MQReconnectedHandler;
-import com.iauto.wlink.core.message.router.MessageReceiver;
-import com.iauto.wlink.core.message.router.MessageSender;
 import com.iauto.wlink.core.message.router.QpidMessageReceiver;
 import com.iauto.wlink.core.message.router.QpidMessageSender;
 import com.iauto.wlink.core.message.worker.SendCommMessageWorker;
+import com.iauto.wlink.core.mq.handler.MQConnectionCreatedHandler;
+import com.iauto.wlink.core.mq.handler.MQMessageConsumerCreatedHandler;
+import com.iauto.wlink.core.mq.handler.MQReconnectedHandler;
+import com.iauto.wlink.core.mq.router.MessageReceiver;
+import com.iauto.wlink.core.mq.router.MessageSender;
 import com.iauto.wlink.server.ApplicationSetting;
 import com.iauto.wlink.server.ServerStateStatistics;
 import com.iauto.wlink.server.channel.handler.HeartbeatHandler;
@@ -99,7 +100,8 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		// 3.以下设置解码器
 
 		// 设置会话上下文解码器(进、出)
-		pipeline.addLast( "session_codec", new SessionContextCodec( null ) );
+		pipeline.addLast( "session_codec", new SessionContextCodec(
+			new SessionRebuildWorker( setting.getHmacKey() ) ) );
 
 		// 处理用户身份认证
 		pipeline.addLast( "auth", new AuthenticationHandler( provider ) );
@@ -108,8 +110,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		pipeline.addLast( "message_codec", new CommMessageCodec( new SendCommMessageWorker( msgSender ) ) );
 
 		// 会话处理(建立会话，保存会话上下文等等)
-		pipeline.addLast( "session_handler", new SessionContextHandler( msgReceiver,
-			"9aROHg2eQXQ6X3XKrXGKWjXrLiRIO25CKTyz212ujvc" ) );
+		pipeline.addLast( "session_handler", new SessionContextHandler( msgReceiver, setting.getHmacKey() ) );
 		pipeline.addLast( "mq_connection_created_handler", new MQConnectionCreatedHandler( msgReceiver ) );
 		pipeline.addLast( "mq_reconnected_handler", new MQReconnectedHandler( msgReceiver ) );
 		pipeline.addLast( "mq_consumer_created_handler", new MQMessageConsumerCreatedHandler() );

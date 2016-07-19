@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.message;
+package com.iauto.wlink.core;
 
 public class Constant {
 
@@ -7,11 +7,6 @@ public class Constant {
 		public static final String Session = "session";
 		public static final String Auth = "auth";
 		public static final String Message = "message";
-	}
-
-	public enum SessionCodecEnv {
-		Client,
-		Server
 	}
 
 }

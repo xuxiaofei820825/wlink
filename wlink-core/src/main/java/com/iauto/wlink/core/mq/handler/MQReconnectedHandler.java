@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.message.handler;
+package com.iauto.wlink.core.mq.handler;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -14,10 +14,10 @@ import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.auth.SessionContext;
 import com.iauto.wlink.core.auth.handler.SessionContextHandler;
-import com.iauto.wlink.core.message.Executor;
-import com.iauto.wlink.core.message.event.MQMessageConsumerCreatedEvent;
-import com.iauto.wlink.core.message.event.MQReconnectedEvent;
-import com.iauto.wlink.core.message.router.MessageReceiver;
+import com.iauto.wlink.core.mq.event.MQMessageConsumerCreatedEvent;
+import com.iauto.wlink.core.mq.event.MQReconnectedEvent;
+import com.iauto.wlink.core.mq.router.MessageReceiver;
+import com.iauto.wlink.core.tools.Executor;
 
 public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 

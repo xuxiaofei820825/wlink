@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.message.worker;
+package com.iauto.wlink.core;
 
 import io.netty.channel.ChannelHandlerContext;
 

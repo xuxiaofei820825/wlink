@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.iauto.wlink.client.channel.DefaultChannelInitializer;
 import com.iauto.wlink.core.message.CommMessage;
 import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
+import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
 
 public class DefaultClient {
 
@@ -64,6 +65,19 @@ public class DefaultClient {
 
 		// 发送认证消息
 		channel.writeAndFlush( authMsg );
+	}
+
+	public void auth( String id, String userId, long timestamp, String signature ) {
+
+		SessionMessage sessionMsg = SessionMessage.newBuilder()
+			.setId( id )
+			.setUserId( userId )
+			.setTimestamp( timestamp )
+			.setSignature( signature )
+			.build();
+
+		// 发送认证消息
+		channel.writeAndFlush( sessionMsg );
 	}
 
 	public void sendMessage( final String sender, final String receiver, final String message ) {

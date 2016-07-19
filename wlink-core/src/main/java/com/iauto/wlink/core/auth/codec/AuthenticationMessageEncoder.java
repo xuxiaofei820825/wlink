@@ -5,9 +5,16 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 
 import java.util.List;
 
+import com.iauto.wlink.core.Constant;
 import com.iauto.wlink.core.comm.CommunicationPackage;
 import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
 
+/**
+ * 对认证消息进行编码
+ * 
+ * @author xiaofei.xu
+ * 
+ */
 public class AuthenticationMessageEncoder extends MessageToMessageEncoder<AuthMessage> {
 
 	@Override
@@ -16,7 +23,7 @@ public class AuthenticationMessageEncoder extends MessageToMessageEncoder<AuthMe
 		byte[] authMsgBytes = msg.toByteArray();
 
 		CommunicationPackage comm = new CommunicationPackage();
-		comm.setType( "auth" );
+		comm.setType( Constant.MessageType.Auth );
 		comm.setHeader( new byte[] {} );
 		comm.setBody( authMsgBytes );
 

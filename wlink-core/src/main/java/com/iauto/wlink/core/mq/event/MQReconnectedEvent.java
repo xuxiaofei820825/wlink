@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.message.event;
+package com.iauto.wlink.core.mq.event;
 
 import io.netty.channel.ChannelHandlerContext;
 

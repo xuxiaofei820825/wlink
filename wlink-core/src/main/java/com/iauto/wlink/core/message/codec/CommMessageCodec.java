@@ -9,10 +9,10 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.MessageWorker;
 import com.iauto.wlink.core.comm.CommunicationPackage;
 import com.iauto.wlink.core.message.CommMessage;
 import com.iauto.wlink.core.message.proto.CommMessageHeaderProto.CommMessageHeader;
-import com.iauto.wlink.core.message.worker.MessageWorker;
 
 public class CommMessageCodec extends MessageToMessageCodec<CommunicationPackage, CommMessage> {
 

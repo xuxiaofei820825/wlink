@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.message.handler;
+package com.iauto.wlink.core.mq.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -11,11 +11,11 @@ import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.auth.SessionContext;
 import com.iauto.wlink.core.auth.handler.SessionContextHandler;
-import com.iauto.wlink.core.message.Executor;
-import com.iauto.wlink.core.message.event.MQConnectionCreatedEvent;
-import com.iauto.wlink.core.message.event.MQMessageConsumerCreatedEvent;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
-import com.iauto.wlink.core.message.router.MessageReceiver;
+import com.iauto.wlink.core.mq.event.MQConnectionCreatedEvent;
+import com.iauto.wlink.core.mq.event.MQMessageConsumerCreatedEvent;
+import com.iauto.wlink.core.mq.router.MessageReceiver;
+import com.iauto.wlink.core.tools.Executor;
 
 public class MQConnectionCreatedHandler extends ChannelInboundHandlerAdapter {
 
@@ -45,7 +45,7 @@ public class MQConnectionCreatedHandler extends ChannelInboundHandlerAdapter {
 			SessionContextHandler.addConnection( event.getConnection() );
 
 			// 为用户注册消息监听者
-			Executor.execute( new MessageConsumerCreateRunner( ctx, event.getConnection(), event.getSession(), receiver ) );
+			Executor.execute( new MessageConsumerCreateTask( ctx, event.getConnection(), event.getSession(), receiver ) );
 
 			// 结束处理，返回
 			return;
@@ -58,10 +58,7 @@ public class MQConnectionCreatedHandler extends ChannelInboundHandlerAdapter {
 	// =======================================================================
 	// private class
 
-	private class MessageConsumerCreateRunner implements Runnable {
-
-		/** logger */
-		private final Logger logger = LoggerFactory.getLogger( getClass() );
+	private class MessageConsumerCreateTask implements Runnable {
 
 		/** 成员变量定义 */
 		private final ChannelHandlerContext ctx;
@@ -69,7 +66,7 @@ public class MQConnectionCreatedHandler extends ChannelInboundHandlerAdapter {
 		private final SessionContext session;
 		private final MessageReceiver receiver;
 
-		public MessageConsumerCreateRunner( ChannelHandlerContext ctx, Connection conn, SessionContext session,
+		public MessageConsumerCreateTask( ChannelHandlerContext ctx, Connection conn, SessionContext session,
 				MessageReceiver receiver ) {
 			this.ctx = ctx;
 			this.session = session;

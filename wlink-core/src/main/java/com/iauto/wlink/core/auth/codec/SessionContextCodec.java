@@ -9,10 +9,17 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.Constant;
+import com.iauto.wlink.core.MessageWorker;
 import com.iauto.wlink.core.comm.CommunicationPackage;
 import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
-import com.iauto.wlink.core.message.worker.MessageWorker;
 
+/**
+ * 编解码用户会话
+ * 
+ * @author xiaofei.xu
+ * 
+ */
 public class SessionContextCodec extends MessageToMessageCodec<CommunicationPackage, SessionMessage> {
 
 	/** logger */
@@ -34,7 +41,7 @@ public class SessionContextCodec extends MessageToMessageCodec<CommunicationPack
 		byte[] sessionBytes = msg.toByteArray();
 
 		CommunicationPackage comm = new CommunicationPackage();
-		comm.setType( "session" );
+		comm.setType( Constant.MessageType.Session );
 		comm.setBody( sessionBytes );
 
 		// 传递到下一个处理器
@@ -47,16 +54,16 @@ public class SessionContextCodec extends MessageToMessageCodec<CommunicationPack
 	@Override
 	protected void decode( ChannelHandlerContext ctx, CommunicationPackage msg, List<Object> out ) throws Exception {
 
-		if ( !StringUtils.equals( "session", msg.getType() ) ) {
+		// 判断是否为会话消息，不是则流转
+		if ( !StringUtils.equals( Constant.MessageType.Session, msg.getType() ) ) {
 			out.add( msg );
 			return;
 		}
 
-		// 如果是会话消息，则创建会话上下文
+		// 如果是会话消息，则尝试重建会话上下文
 		// log
 		logger.info( "Processing the session message......" );
 
-		// 异步处理会话
 		if ( this.worker != null )
 			worker.process( ctx, msg.getHeader(), msg.getBody() );
 
