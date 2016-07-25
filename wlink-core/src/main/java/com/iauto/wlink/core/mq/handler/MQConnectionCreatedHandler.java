@@ -38,7 +38,7 @@ public class MQConnectionCreatedHandler extends ChannelInboundHandlerAdapter {
 			MQConnectionCreatedEvent event = (MQConnectionCreatedEvent) evt;
 
 			// info
-			logger.info( "MQ-Connection has been created, create a message consumer for user[{}].",
+			logger.info( "MQ-Connection has been created, create a message consumer for user[ID:{}].",
 				event.getSession().getUserId() );
 
 			// 设置当前线程的MQ连接
@@ -77,14 +77,14 @@ public class MQConnectionCreatedHandler extends ChannelInboundHandlerAdapter {
 		public void run() {
 			try {
 				// info
-				logger.info( "Creating a message listener for user[ID:{}]", session.getUserId() );
+				logger.info( "Creating a message consumer for user[ID:{}]", session.getUserId() );
 
 				// 在指定的会话上创建消息监听器
 				MessageConsumer consumer = receiver.createConsumer( session.getChannel(),
 					this.conn, session.getUserId() );
 
 				// 触发事件
-				ctx.fireUserEventTriggered( new MQMessageConsumerCreatedEvent( session.getId(), consumer ) );
+				ctx.fireUserEventTriggered( new MQMessageConsumerCreatedEvent( session, consumer ) );
 			} catch ( Exception e ) {
 				// error
 

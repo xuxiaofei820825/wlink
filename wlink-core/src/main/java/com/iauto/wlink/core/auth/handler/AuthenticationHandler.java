@@ -13,6 +13,7 @@ import com.iauto.wlink.core.auth.SessionContext;
 import com.iauto.wlink.core.auth.event.SessionContextEvent;
 import com.iauto.wlink.core.auth.service.AuthenticationProvider;
 import com.iauto.wlink.core.comm.CommunicationPackage;
+import com.iauto.wlink.core.exception.AuthenticationException;
 import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
 import com.iauto.wlink.core.tools.Executor;
@@ -57,12 +58,12 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 			return;
 		}
 
+		// debug
+		logger.debug( "Type of communication package: {}", msg.getType() );
+
 		// 以下判断消息类型是否为认证类型
 		if ( StringUtils.equals( msg.getType(), Constant.MessageType.Auth ) ) {
 			// 如果是，则进行认证处理
-
-			// info
-			logger.info( "Type of communication package: {}", msg.getType() );
 
 			// 解码
 			AuthMessage authMsg = AuthMessage.parseFrom( msg.getBody() );
@@ -104,33 +105,37 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 		}
 
 		public void run() {
-			// log
-			logger.info( "Processing the authentication. ticket:{}", this.ticket );
+			// debug
+			logger.debug( "Processing the authentication. ticket:{}", this.ticket );
+
+			// 默认值
+			String userId = StringUtils.EMPTY;
 
 			try {
-
 				// 进行认证
-				String userId = provider.authenticate( ticket );
-
-				// success log
-				logger.info( "Succeed to process the authentication of user:{}", userId );
-
-				// 创建会话上下文
-				SessionContext session = new SessionContext( userId, ctx.channel() );
-
-				// 保存到Channel的附件中
-				this.ctx.channel().attr( SessionKey ).set( session );
-
-				// log
-				logger.info( "Succeed to create a session context for user[{}]", userId );
-
-				// 触发用户会话创建成功的事件
-				this.ctx.fireUserEventTriggered( new SessionContextEvent( session ) );
-
-			} catch ( Exception e ) {
+				userId = provider.authenticate( ticket );
+			} catch ( AuthenticationException e ) {
 				// ignore
 				logger.info( "Error occoured when processing the authentication.", e );
+
+				// 返回认证错误
+				ErrorMessage error = ErrorMessage.newBuilder()
+					.setError( "UnAuthenticated" )
+					.build();
+				ctx.channel().writeAndFlush( error );
 			}
+
+			// success log
+			logger.info( "Succeed to authenticate user[ID:{}]", userId );
+
+			// 创建会话上下文
+			SessionContext session = new SessionContext( userId, ctx.channel() );
+
+			// 保存到Channel的附件中
+			this.ctx.channel().attr( SessionKey ).set( session );
+
+			// 触发用户会话创建成功的事件
+			this.ctx.fireUserEventTriggered( new SessionContextEvent( session ) );
 		}
 	}
 }

@@ -18,11 +18,9 @@ public class ReserveAccountTool {
 			encrypt( key, initVector, "U000001;" + System.currentTimeMillis() ) ) );
 	}
 
-	public static String generate( String userId ) {
+	public static String generate( long userId ) {
 		String result = StringUtils.EMPTY;
-
 		result = encrypt( key, initVector, userId + ";" + System.currentTimeMillis() );
-
 		return result;
 	}
 

@@ -1,5 +1,8 @@
 package com.iauto.wlink.core.auth.worker;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.netty.channel.ChannelHandlerContext;
 
 import com.iauto.wlink.core.MessageWorker;
@@ -9,6 +12,9 @@ import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
 import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
 
 public class SessionRebuildWorker implements MessageWorker {
+
+	/** logger */
+	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 	/** 签名密匙 */
 	private final String key;
@@ -31,6 +37,9 @@ public class SessionRebuildWorker implements MessageWorker {
 
 		// 对Session的签名进行验证
 		if ( SessionContext.validate( key, context, session.getSignature() ) ) {
+			// info
+			logger.info( "Signature of session is valid, try to rebuild session context of user[ID:{}].", session.getUserId() );
+
 			ctx.fireUserEventTriggered( new SessionContextEvent( context ) );
 		} else {
 			// 签名验证不通过，返回错误信息

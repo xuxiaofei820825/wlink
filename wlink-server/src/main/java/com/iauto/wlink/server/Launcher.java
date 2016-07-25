@@ -22,12 +22,6 @@ public class Launcher {
 			Launcher launcher = new Launcher();
 			properties.load( launcher.getClass().getClassLoader().getResourceAsStream( "application.properties" ) );
 
-// config = AppConfig.Builder.newBuilder()
-// .port( Integer.valueOf( properties.getProperty( PRO_PORT ) ) )
-// .useSSL( false )
-// .heartbeatInterval( Integer.valueOf( properties.getProperty( PRO_HEARTBEAT_INTERVAL ) ) )
-// .build();
-
 			// 加载应用配置项
 			ApplicationSetting.getInstance().load();
 
@@ -37,14 +31,6 @@ public class Launcher {
 			// warn
 			logger.warn( "Failed to load application configuration, use the default configuration." );
 
-// config = AppConfig.Builder.newBuilder()
-// .port( 2391 )
-// .useSSL( false )
-// .heartbeatInterval( 60 )
-// .cerFile( "ntc-server.crt" )
-// .keyFile( "ntc-server.key" )
-// .keyPassword( "suntec" )
-// .build();
 		}
 
 		DefaultServerBootstrap server = new DefaultServerBootstrap();

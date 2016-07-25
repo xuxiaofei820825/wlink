@@ -48,7 +48,7 @@ public class App
 		public void run() {
 			try {
 
-				DefaultClient client = new DefaultClient( "localhost", 2391 );
+				WlinkClient client = DefaultWlinkClient.newInstance( "localhost", 2391 );
 				client.connect();
 				client.auth( ticket );
 
@@ -61,7 +61,7 @@ public class App
 					String receiver = "U" + String.format( "%05d", rd_id );
 
 					// 向接收者发送消息
-					client.sendMessage( userId, receiver, "HI, I am " + userId );
+					//client.sendMessage( userId, receiver, "HI, I am " + userId );
 				}
 			} catch ( Exception ex ) {
 				// ignore

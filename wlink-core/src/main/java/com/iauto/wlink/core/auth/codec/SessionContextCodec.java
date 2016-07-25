@@ -26,11 +26,14 @@ public class SessionContextCodec extends MessageToMessageCodec<CommunicationPack
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 	/** 消息处理器 */
-	private final MessageWorker worker;
+	private MessageWorker worker;
 
-	public SessionContextCodec( MessageWorker worker ) {
-		this.worker = worker;
-	}
+//	public SessionContextCodec() {
+//	}
+//
+//	public SessionContextCodec( final MessageWorker worker ) {
+//		this.worker = worker;
+//	}
 
 	// ==================================================================================
 	// 编码
@@ -66,8 +69,12 @@ public class SessionContextCodec extends MessageToMessageCodec<CommunicationPack
 
 		if ( this.worker != null )
 			worker.process( ctx, msg.getHeader(), msg.getBody() );
+	}
 
-		// 返回
-		return;
+	// ==================================================================================
+	// setter/getter
+
+	public void setWorker( MessageWorker worker ) {
+		this.worker = worker;
 	}
 }

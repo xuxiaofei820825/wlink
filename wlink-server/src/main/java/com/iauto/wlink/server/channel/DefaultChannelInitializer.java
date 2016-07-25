@@ -100,8 +100,9 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		// 3.以下设置解码器
 
 		// 设置会话上下文解码器(进、出)
-		pipeline.addLast( "session_codec", new SessionContextCodec(
-			new SessionRebuildWorker( setting.getHmacKey() ) ) );
+		SessionContextCodec sessionCodec = new SessionContextCodec();
+		sessionCodec.setWorker( new SessionRebuildWorker( setting.getHmacKey() ) );
+		pipeline.addLast( "session_codec", sessionCodec );
 
 		// 处理用户身份认证
 		pipeline.addLast( "auth", new AuthenticationHandler( provider ) );
@@ -110,10 +111,10 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		pipeline.addLast( "message_codec", new CommMessageCodec( new SendCommMessageWorker( msgSender ) ) );
 
 		// 会话处理(建立会话，保存会话上下文等等)
-		pipeline.addLast( "session_handler", new SessionContextHandler( msgReceiver, setting.getHmacKey() ) );
+		pipeline.addLast( "session_handler", new SessionContextHandler( msgReceiver ) );
 		pipeline.addLast( "mq_connection_created_handler", new MQConnectionCreatedHandler( msgReceiver ) );
 		pipeline.addLast( "mq_reconnected_handler", new MQReconnectedHandler( msgReceiver ) );
-		pipeline.addLast( "mq_consumer_created_handler", new MQMessageConsumerCreatedHandler() );
+		pipeline.addLast( "mq_consumer_created_handler", new MQMessageConsumerCreatedHandler( setting.getHmacKey() ) );
 
 		// ===========================================================
 		// 4.设置服务器监控处理器

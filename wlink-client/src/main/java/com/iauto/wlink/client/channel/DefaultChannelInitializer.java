@@ -17,7 +17,6 @@ import com.iauto.wlink.core.message.codec.CommMessageCodec;
 import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
 import com.iauto.wlink.core.message.codec.MessageAcknowledgeCodec;
 import com.iauto.wlink.core.message.proto.CommMessageHeaderProto.CommMessageHeader;
-import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
 
 /**
  * 实现一个默认的客户端通道初始化器
@@ -46,16 +45,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		pipeline.addLast( "error", new ErrorMessageCodec() );
 
 		// 设置会话响应解码器
-		pipeline.addLast( "session", new SessionContextCodec( new MessageWorker() {
-
-			public void process( ChannelHandlerContext ctx, byte[] header, byte[] body ) throws Exception {
-				SessionMessage session = SessionMessage.parseFrom( body );
-
-				System.err.println( "UserId: " + session.getUserId() );
-				System.err.println( "Timestamp: " + session.getTimestamp() );
-				System.err.println( "Signature: " + session.getSignature() );
-			}
-		} ) );
+		pipeline.addLast( "session", new SessionContextCodec() );
 
 		// 设置消息确认响应解码器
 		pipeline.addLast( "msg_send_ack_decoder", new MessageAcknowledgeCodec() );
@@ -78,5 +68,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 		// 设置身份认证请求编码器
 		pipeline.addLast( "auth", new AuthenticationMessageEncoder() );
+		
+		
 	}
 }

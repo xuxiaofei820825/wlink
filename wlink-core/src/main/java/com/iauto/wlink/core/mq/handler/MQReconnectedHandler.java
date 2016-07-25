@@ -77,8 +77,9 @@ public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 
 			for ( String sessionId : sessions.keySet() ) {
 
-				String userId = this.sessions.get( sessionId ).getUserId();
-				Channel channel = this.sessions.get( sessionId ).getChannel();
+				SessionContext session = this.sessions.get( sessionId );
+				String userId = session.getUserId();
+				Channel channel = session.getChannel();
 
 				// info
 				logger.info( "Creating message consumer for user[ID:{}].", userId );
@@ -95,7 +96,7 @@ public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 							.createConsumer( channel, conn, userId );
 
 						// 触发消息监听器成功创建的事件
-						ctx.fireUserEventTriggered( new MQMessageConsumerCreatedEvent( sessionId, consumer ) );
+						ctx.fireUserEventTriggered( new MQMessageConsumerCreatedEvent( session, consumer ) );
 
 						// info
 						logger.info( "Succeed to create the message consumer for user[ID:{}].", userId );
