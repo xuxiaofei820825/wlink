@@ -6,19 +6,19 @@ import com.iauto.wlink.core.auth.SessionContext;
 
 public class MQConnectionCreatedEvent {
 
-	private final SessionContext session;
+	private final SessionContext sessionContext;
 	private final Connection connection;
 
-	public MQConnectionCreatedEvent( Connection connection, SessionContext session ) {
+	public MQConnectionCreatedEvent( Connection connection, SessionContext sessionContext ) {
 		this.connection = connection;
-		this.session = session;
+		this.sessionContext = sessionContext;
 	}
 
 	// =============================================================
 	// setter/getter
 
-	public SessionContext getSession() {
-		return session;
+	public SessionContext getSessionContext() {
+		return sessionContext;
 	}
 
 	public Connection getConnection() {

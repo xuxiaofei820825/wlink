@@ -4,10 +4,10 @@ import io.netty.channel.Channel;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import javax.jms.MessageConsumer;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
@@ -30,44 +30,50 @@ public class SessionContext {
 		}
 	};
 
-	/** 会话编号 */
-	private final String id;
-
-	/** 用户编号 */
-	private final String userId;
-
-	/** 时间戳 */
-	private long timestamp;
+	/** 会话 */
+	private final Session session;
 
 	/** 用户对应的Channel */
-	private Channel channel;
+	private final Channel channel;
 
-	public SessionContext( final String id, final String userId ) {
-		this.id = id;
-		this.userId = userId;
-	}
+	/** MQ消息监听器 */
+	private MessageConsumer consumer;
 
-	public SessionContext( final String userId, final Channel channel ) {
-		this.userId = userId;
-		this.id = UUID.randomUUID().toString().replace( "-", "" );
-		this.channel = channel;
-		this.timestamp = System.currentTimeMillis();
-	}
-
-	public SessionContext( final String id, final String userId, final Channel channel ) {
-		this.userId = userId;
-		this.id = id;
+	public SessionContext( Session session, Channel channel ) {
+		this.session = session;
 		this.channel = channel;
 	}
 
-	public static String sign( final String key, final SessionContext context )
+	// =================================================================================
+	// setter/getter
+
+	public Channel getChannel() {
+		return channel;
+	}
+
+	public MessageConsumer getConsumer() {
+		return consumer;
+	}
+
+	public void setConsumer( MessageConsumer consumer ) {
+		this.consumer = consumer;
+	}
+
+	public Session getSession() {
+		return session;
+	}
+
+	// =================================================================================
+	// static functions
+
+	public static String sign( final String key, final Session session )
 			throws Exception {
 
 		// 初始化
 		String result = StringUtils.EMPTY;
 
 		// 生成用来进行签名的字符串
-		String sessionContent = context.getId() + ";" + context.getUserId() + ";" + context.getTimestamp();
+		String sessionContent = session.getId() + ";" + session.getUserId() + ";" + session.getTimestamp();
 
 		// 生成会话信息的签名
 		SecretKeySpec signingKey = new SecretKeySpec( Base64.decodeBase64( key ), HMAC_SHA256 );
@@ -80,7 +86,7 @@ public class SessionContext {
 		return result;
 	}
 
-	public static boolean validate( String key, SessionContext session, String signature ) {
+	public static boolean validate( String key, Session session, String signature ) {
 
 		try {
 			String tmp = sign( key, session );
@@ -92,30 +98,14 @@ public class SessionContext {
 		return false;
 	}
 
-	// =====================================================
-	// setter/getter
+	public static void add( SessionContext sessionCtx ) {
+		if ( sessionCtx == null || sessionCtx.getSession() == null )
+			return;
 
-	public String getUserId() {
-		return userId;
+		sessions.get().put( sessionCtx.getSession().getId(), sessionCtx );
 	}
 
-	public String getId() {
-		return id;
-	}
-
-	public long getTimestamp() {
-		return timestamp;
-	}
-
-	public void setTimestamp( long timestamp ) {
-		this.timestamp = timestamp;
-	}
-
-	public static void add( SessionContext session ) {
-		sessions.get().put( session.getId(), session );
-	}
-
-	public static SessionContext getSession( String id ) {
+	public static SessionContext getSessionContext( String id ) {
 		if ( StringUtils.isBlank( id ) )
 			return null;
 		return sessions.get().get( id );
@@ -125,7 +115,4 @@ public class SessionContext {
 		return sessions.get();
 	}
 
-	public Channel getChannel() {
-		return channel;
-	}
 }

@@ -9,7 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.Constant;
+import com.iauto.wlink.core.auth.Session;
 import com.iauto.wlink.core.auth.SessionContext;
+import com.iauto.wlink.core.auth.SessionIdGenerator;
 import com.iauto.wlink.core.auth.event.SessionContextEvent;
 import com.iauto.wlink.core.auth.service.AuthenticationProvider;
 import com.iauto.wlink.core.comm.CommunicationPackage;
@@ -35,21 +37,24 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 	/** 会话键值 */
-	public static final AttributeKey<SessionContext> SessionKey =
+	public static final AttributeKey<Session> SessionKey =
 			AttributeKey.newInstance( "session" );
 
 	/** 认证提供者 */
 	private final AuthenticationProvider provider;
 
-	public AuthenticationHandler( final AuthenticationProvider provider ) {
+	private final SessionIdGenerator idGenerator;
+
+	public AuthenticationHandler( final AuthenticationProvider provider, SessionIdGenerator idGenerator ) {
 		this.provider = provider;
+		this.idGenerator = idGenerator;
 	}
 
 	@Override
 	protected void channelRead0( ChannelHandlerContext ctx, CommunicationPackage msg ) throws Exception {
 
 		// 获取用户会话
-		SessionContext session = ctx.channel().attr( SessionKey ).get();
+		Session session = ctx.channel().attr( SessionKey ).get();
 
 		// 检查用户会话是否已建立
 		// 如果已经建立，直接流转获取到的消息
@@ -61,7 +66,8 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 		// debug
 		logger.debug( "Type of communication package: {}", msg.getType() );
 
-		// 以下判断消息类型是否为认证类型
+		// 如果会话还未建立，则进行用户认证处理
+		// 判断消息类型是否为认证类型
 		if ( StringUtils.equals( msg.getType(), Constant.MessageType.Auth ) ) {
 			// 如果是，则进行认证处理
 
@@ -93,7 +99,7 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 		private final ChannelHandlerContext ctx;
 
 		/** 认证者 */
-		private AuthenticationProvider provider;
+		private final AuthenticationProvider provider;
 
 		/** 票据 */
 		private final String ticket;
@@ -105,15 +111,29 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 		}
 
 		public void run() {
-			// debug
-			logger.debug( "Processing the authentication. ticket:{}", this.ticket );
+			// info
+			logger.info( "Processing the authentication. ticket:{}", this.ticket );
 
 			// 默认值
-			String userId = StringUtils.EMPTY;
+			long userId = 0;
 
 			try {
 				// 进行认证
 				userId = provider.authenticate( ticket );
+
+				// success log
+				logger.info( "Succeed to authenticate the ticket. userId:{}", userId );
+
+				// 创建会话
+				Session session = new Session( idGenerator.generate(), userId, System.currentTimeMillis() );
+
+				// 保存到Channel的附件中
+				this.ctx.channel().attr( SessionKey ).set( session );
+
+				// 创建会话上下文
+				SessionContext sessionCtx = new SessionContext( session, ctx.channel() );
+				// 触发用户会话创建成功的事件
+				this.ctx.fireUserEventTriggered( new SessionContextEvent( sessionCtx ) );
 			} catch ( AuthenticationException e ) {
 				// ignore
 				logger.info( "Error occoured when processing the authentication.", e );
@@ -124,18 +144,6 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 					.build();
 				ctx.channel().writeAndFlush( error );
 			}
-
-			// success log
-			logger.info( "Succeed to authenticate user[ID:{}]", userId );
-
-			// 创建会话上下文
-			SessionContext session = new SessionContext( userId, ctx.channel() );
-
-			// 保存到Channel的附件中
-			this.ctx.channel().attr( SessionKey ).set( session );
-
-			// 触发用户会话创建成功的事件
-			this.ctx.fireUserEventTriggered( new SessionContextEvent( session ) );
 		}
 	}
 }

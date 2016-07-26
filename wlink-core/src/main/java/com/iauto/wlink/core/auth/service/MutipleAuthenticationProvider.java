@@ -4,7 +4,7 @@ import com.iauto.wlink.core.exception.AuthenticationException;
 
 public class MutipleAuthenticationProvider implements AuthenticationProvider {
 
-	public String authenticate( String ticket ) throws AuthenticationException {
-		return null;
+	public long authenticate( String ticket ) throws AuthenticationException {
+		return -1;
 	}
 }

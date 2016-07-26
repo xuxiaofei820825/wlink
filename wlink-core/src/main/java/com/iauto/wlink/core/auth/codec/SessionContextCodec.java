@@ -28,13 +28,6 @@ public class SessionContextCodec extends MessageToMessageCodec<CommunicationPack
 	/** 消息处理器 */
 	private MessageWorker worker;
 
-//	public SessionContextCodec() {
-//	}
-//
-//	public SessionContextCodec( final MessageWorker worker ) {
-//		this.worker = worker;
-//	}
-
 	// ==================================================================================
 	// 编码
 

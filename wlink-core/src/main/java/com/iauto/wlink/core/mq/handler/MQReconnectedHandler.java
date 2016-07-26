@@ -1,6 +1,5 @@
 package com.iauto.wlink.core.mq.handler;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
@@ -12,9 +11,9 @@ import javax.jms.MessageConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.auth.Session;
 import com.iauto.wlink.core.auth.SessionContext;
 import com.iauto.wlink.core.auth.handler.SessionContextHandler;
-import com.iauto.wlink.core.mq.event.MQMessageConsumerCreatedEvent;
 import com.iauto.wlink.core.mq.event.MQReconnectedEvent;
 import com.iauto.wlink.core.mq.router.MessageReceiver;
 import com.iauto.wlink.core.tools.Executor;
@@ -24,6 +23,7 @@ public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
+	/** 消息接收者 */
 	private final MessageReceiver receiver;
 
 	public MQReconnectedHandler( MessageReceiver receiver ) {
@@ -48,7 +48,7 @@ public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 
 			// 获取当前IO线程管理的用户
 			Map<String, SessionContext> sessions = SessionContext.getSessions();
-			Executor.execute( new ConsumerCreateRunner( event.getContext(), conn, sessions, receiver ) );
+			Executor.execute( new ConsumerCreateTask( conn, sessions, receiver ) );
 
 			// 处理结束，返回
 			return;
@@ -58,17 +58,15 @@ public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 		super.userEventTriggered( ctx, evt );
 	}
 
-	private class ConsumerCreateRunner implements Runnable {
+	private class ConsumerCreateTask implements Runnable {
 
 		private final Map<String, SessionContext> sessions;
-		private final ChannelHandlerContext ctx;
 		private final Connection conn;
 		private final MessageReceiver receiver;
 
-		public ConsumerCreateRunner( ChannelHandlerContext ctx, Connection conn, Map<String, SessionContext> sessions,
+		public ConsumerCreateTask( Connection conn, Map<String, SessionContext> sessions,
 				MessageReceiver receiver ) {
 			this.sessions = sessions;
-			this.ctx = ctx;
 			this.conn = conn;
 			this.receiver = receiver;
 		}
@@ -76,16 +74,13 @@ public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 		public void run() {
 
 			for ( String sessionId : sessions.keySet() ) {
-
-				SessionContext session = this.sessions.get( sessionId );
-				String userId = session.getUserId();
-				Channel channel = session.getChannel();
+				SessionContext sessionCtx = this.sessions.get( sessionId );
+				Session session = sessionCtx.getSession();
 
 				// info
-				logger.info( "Creating message consumer for user[ID:{}].", userId );
+				logger.info( "Creating message consumer for user[ID:{}].", session.getUserId() );
 
 				// 由于被重新连接，所以需要恢复原已注册的所有消息监听器
-
 				boolean isSuccess = false;
 
 				do {
@@ -93,14 +88,15 @@ public class MQReconnectedHandler extends ChannelInboundHandlerAdapter {
 
 						// 重建监听者
 						MessageConsumer consumer = receiver
-							.createConsumer( channel, conn, userId );
+							.createConsumer( sessionCtx.getChannel(), conn, String.valueOf( session.getUserId() ) );
 
-						// 触发消息监听器成功创建的事件
-						ctx.fireUserEventTriggered( new MQMessageConsumerCreatedEvent( session, consumer ) );
+						// 设置会话的消息监听器
+						sessionCtx.setConsumer( consumer );
 
 						// info
-						logger.info( "Succeed to create the message consumer for user[ID:{}].", userId );
+						logger.info( "Succeed to create the message consumer for user[ID:{}].", session.getUserId() );
 
+						// success
 						isSuccess = true;
 					} catch ( Exception e ) {
 						// error

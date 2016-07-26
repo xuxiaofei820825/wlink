@@ -33,7 +33,7 @@ public class MutipleClients {
 
 			} finally {
 				try {
-					client.disconnect();
+					//client.disconnect();
 				} catch ( Exception e ) {
 					// ignore
 				}

@@ -1,11 +1,12 @@
 package com.iauto.wlink.core.auth.worker;
 
+import io.netty.channel.ChannelHandlerContext;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.channel.ChannelHandlerContext;
-
 import com.iauto.wlink.core.MessageWorker;
+import com.iauto.wlink.core.auth.Session;
 import com.iauto.wlink.core.auth.SessionContext;
 import com.iauto.wlink.core.auth.event.SessionContextEvent;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
@@ -26,19 +27,19 @@ public class SessionRebuildWorker implements MessageWorker {
 	public void process( ChannelHandlerContext ctx, byte[] header, byte[] body ) throws Exception {
 
 		// 解码消息
-		SessionMessage session = SessionMessage.parseFrom( body );
+		SessionMessage sessionMsg = SessionMessage.parseFrom( body );
 
 		// 创建会话上下文
-		SessionContext context = new SessionContext(
-			session.getId(),
-			session.getUserId(),
-			ctx.channel() );
-		context.setTimestamp( session.getTimestamp() );
+		Session session = new Session( sessionMsg.getId(),
+			Long.valueOf( sessionMsg.getUserId() ),
+			sessionMsg.getTimestamp() );
+		SessionContext context = new SessionContext( session, ctx.channel() );
 
 		// 对Session的签名进行验证
-		if ( SessionContext.validate( key, context, session.getSignature() ) ) {
+		if ( SessionContext.validate( key, session, sessionMsg.getSignature() ) ) {
 			// info
-			logger.info( "Signature of session is valid, try to rebuild session context of user[ID:{}].", session.getUserId() );
+			logger.info( "Signature of session is valid, try to rebuild session context of user[ID:{}].",
+				session.getUserId() );
 
 			ctx.fireUserEventTriggered( new SessionContextEvent( context ) );
 		} else {

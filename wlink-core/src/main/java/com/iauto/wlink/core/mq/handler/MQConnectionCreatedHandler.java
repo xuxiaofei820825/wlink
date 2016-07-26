@@ -9,11 +9,12 @@ import javax.jms.MessageConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.auth.Session;
 import com.iauto.wlink.core.auth.SessionContext;
 import com.iauto.wlink.core.auth.handler.SessionContextHandler;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
+import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
 import com.iauto.wlink.core.mq.event.MQConnectionCreatedEvent;
-import com.iauto.wlink.core.mq.event.MQMessageConsumerCreatedEvent;
 import com.iauto.wlink.core.mq.router.MessageReceiver;
 import com.iauto.wlink.core.tools.Executor;
 
@@ -22,10 +23,15 @@ public class MQConnectionCreatedHandler extends ChannelInboundHandlerAdapter {
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
+	/** 消息接收者 */
 	private final MessageReceiver receiver;
 
-	public MQConnectionCreatedHandler( MessageReceiver receiver ) {
+	/** 签名密匙 */
+	private final String signKey;
+
+	public MQConnectionCreatedHandler( MessageReceiver receiver, String signKey ) {
 		this.receiver = receiver;
+		this.signKey = signKey;
 	}
 
 	@Override
@@ -36,16 +42,18 @@ public class MQConnectionCreatedHandler extends ChannelInboundHandlerAdapter {
 		if ( evt instanceof MQConnectionCreatedEvent ) {
 
 			MQConnectionCreatedEvent event = (MQConnectionCreatedEvent) evt;
+			SessionContext sessionContext = event.getSessionContext();
 
 			// info
 			logger.info( "MQ-Connection has been created, create a message consumer for user[ID:{}].",
-				event.getSession().getUserId() );
+				sessionContext.getSession().getUserId() );
 
 			// 设置当前线程的MQ连接
 			SessionContextHandler.addConnection( event.getConnection() );
 
 			// 为用户注册消息监听者
-			Executor.execute( new MessageConsumerCreateTask( ctx, event.getConnection(), event.getSession(), receiver ) );
+			Executor.execute( new MessageConsumerCreateTask(
+				event.getConnection(), event.getSessionContext(), receiver ) );
 
 			// 结束处理，返回
 			return;
@@ -61,40 +69,60 @@ public class MQConnectionCreatedHandler extends ChannelInboundHandlerAdapter {
 	private class MessageConsumerCreateTask implements Runnable {
 
 		/** 成员变量定义 */
-		private final ChannelHandlerContext ctx;
 		private final Connection conn;
-		private final SessionContext session;
-		private final MessageReceiver receiver;
+		private final SessionContext sessionCtx;
 
-		public MessageConsumerCreateTask( ChannelHandlerContext ctx, Connection conn, SessionContext session,
+		public MessageConsumerCreateTask( Connection conn, SessionContext sessionCtx,
 				MessageReceiver receiver ) {
-			this.ctx = ctx;
-			this.session = session;
+			this.sessionCtx = sessionCtx;
 			this.conn = conn;
-			this.receiver = receiver;
 		}
 
 		public void run() {
 			try {
+
 				// info
-				logger.info( "Creating a message consumer for user[ID:{}]", session.getUserId() );
+				logger.info( "Creating a message consumer......" );
+
+				// 获取会话
+				Session session = sessionCtx.getSession();
 
 				// 在指定的会话上创建消息监听器
-				MessageConsumer consumer = receiver.createConsumer( session.getChannel(),
-					this.conn, session.getUserId() );
+				MessageConsumer consumer = receiver.createConsumer( sessionCtx.getChannel(),
+					this.conn, String.valueOf( session.getUserId() ) );
 
-				// 触发事件
-				ctx.fireUserEventTriggered( new MQMessageConsumerCreatedEvent( session, consumer ) );
+				// 设置会话上下文的消息监听器
+				sessionCtx.setConsumer( consumer );
+
+				// info
+				logger.info( "Succeed to create a message consumer for user[ID:{}]", session.getUserId() );
+
+				// info
+				logger.info( "Succeed to create a session for user[ID:{}]. session:{}, channel:{}",
+					session.getUserId(), session.getId(), sessionCtx.getChannel() );
+
+				// 创建会话上下文对象，并返回给终端
+				// 终端可使用会话上下文重新建立与服务器的会话
+				long timestamp = System.currentTimeMillis();
+				String signature = SessionContext.sign( signKey, session );
+				SessionMessage sessionMsg = SessionMessage.newBuilder()
+					.setId( session.getId() )
+					.setUserId( String.valueOf( session.getUserId() ) )
+					.setTimestamp( timestamp )
+					.setSignature( signature )
+					.build();
+
+				// 把签名后的会话上下文返回给终端
+				sessionCtx.getChannel().writeAndFlush( sessionMsg );
 			} catch ( Exception e ) {
-				// error
-
+				// info
 				logger.info( "Failed to create a message listener for user!!!", e );
 
 				// 给终端反馈该错误
 				ErrorMessage error = ErrorMessage.newBuilder()
 					.setError( "Session_Create_Failure" )
 					.build();
-				ctx.channel().writeAndFlush( error );
+				this.sessionCtx.getChannel().writeAndFlush( error );
 			}
 		}
 	}

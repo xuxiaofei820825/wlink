@@ -3,14 +3,18 @@ package com.iauto.wlink.server.channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.timeout.IdleStateHandler;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.auth.SessionIdGenerator;
 import com.iauto.wlink.core.auth.codec.SessionContextCodec;
 import com.iauto.wlink.core.auth.handler.AuthenticationHandler;
 import com.iauto.wlink.core.auth.handler.SessionContextHandler;
@@ -25,7 +29,6 @@ import com.iauto.wlink.core.message.router.QpidMessageReceiver;
 import com.iauto.wlink.core.message.router.QpidMessageSender;
 import com.iauto.wlink.core.message.worker.SendCommMessageWorker;
 import com.iauto.wlink.core.mq.handler.MQConnectionCreatedHandler;
-import com.iauto.wlink.core.mq.handler.MQMessageConsumerCreatedHandler;
 import com.iauto.wlink.core.mq.handler.MQReconnectedHandler;
 import com.iauto.wlink.core.mq.router.MessageReceiver;
 import com.iauto.wlink.core.mq.router.MessageSender;
@@ -77,6 +80,8 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 			pipeline.addLast( sslCtx.newHandler( channel.alloc() ) );
 		}
 
+		pipeline.addLast( "logger", new LoggingHandler( LogLevel.DEBUG ) );
+
 		// 设置通讯包编解码器(进、出)
 		pipeline.addLast( "comm_codec", new CommunicationPackageCodec() );
 
@@ -105,16 +110,21 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		pipeline.addLast( "session_codec", sessionCodec );
 
 		// 处理用户身份认证
-		pipeline.addLast( "auth", new AuthenticationHandler( provider ) );
+		pipeline.addLast( "auth", new AuthenticationHandler( provider, new SessionIdGenerator() {
+			public String generate() {
+				return UUID.randomUUID().toString().replace( "-", "" );
+			}
+		} ) );
 
 		// 设置消息编解码器(进、出)
 		pipeline.addLast( "message_codec", new CommMessageCodec( new SendCommMessageWorker( msgSender ) ) );
 
 		// 会话处理(建立会话，保存会话上下文等等)
 		pipeline.addLast( "session_handler", new SessionContextHandler( msgReceiver ) );
-		pipeline.addLast( "mq_connection_created_handler", new MQConnectionCreatedHandler( msgReceiver ) );
+		pipeline.addLast( "mq_connection_created_handler",
+			new MQConnectionCreatedHandler( msgReceiver, setting.getHmacKey() ) );
 		pipeline.addLast( "mq_reconnected_handler", new MQReconnectedHandler( msgReceiver ) );
-		pipeline.addLast( "mq_consumer_created_handler", new MQMessageConsumerCreatedHandler( setting.getHmacKey() ) );
+// pipeline.addLast( "mq_consumer_created_handler", new MQMessageConsumerCreatedHandler( setting.getHmacKey() ) );
 
 		// ===========================================================
 		// 4.设置服务器监控处理器

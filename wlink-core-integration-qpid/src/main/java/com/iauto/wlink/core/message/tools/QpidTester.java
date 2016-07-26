@@ -65,7 +65,7 @@ public class QpidTester {
 
 			System.out.println( "Succeed to create a connection to MQ server." );
 		} finally {
-			SessionContext.getSession("");
+			SessionContext.getSessionContext("");
 		}
 	}
 

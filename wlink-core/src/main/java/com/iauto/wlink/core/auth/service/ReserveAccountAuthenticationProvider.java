@@ -5,7 +5,6 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang.StringUtils;
 
 import com.iauto.wlink.core.exception.AuthenticationException;
 
@@ -25,9 +24,9 @@ public class ReserveAccountAuthenticationProvider implements AuthenticationProvi
 		this.iv = iv;
 	}
 
-	public String authenticate( final String ticket ) throws AuthenticationException {
+	public long authenticate( final String ticket ) throws AuthenticationException {
 		// 设置默认值
-		String userId = StringUtils.EMPTY;
+		long userId = 0L;
 
 		try {
 
@@ -43,7 +42,7 @@ public class ReserveAccountAuthenticationProvider implements AuthenticationProvi
 			String info = new String( original );
 
 			// 截取用户编号
-			userId = info.split( ";" )[0];
+			userId = Long.valueOf( info.split( ";" )[0] );
 		} catch ( Exception ex ) {
 			throw new AuthenticationException();
 		}
