@@ -1,6 +1,6 @@
 package com.iauto.wlink.client;
 
-public class SessionContext {
+public class Session {
 
 	/** 会话编号 */
 	private String id;

@@ -16,7 +16,7 @@ import com.iauto.wlink.core.message.proto.CommMessageHeaderProto.CommMessageHead
 
 public class CommMessageCodec extends MessageToMessageCodec<CommunicationPackage, CommMessage> {
 
-	// logger
+	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 	/** 消息处理器 */
@@ -55,8 +55,8 @@ public class CommMessageCodec extends MessageToMessageCodec<CommunicationPackage
 			return;
 		}
 
-		// info
-		logger.info( "Channel:{} Processing the message......", ctx.channel() );
+		// debug
+		logger.debug( "Receive a message. Channel:{}", ctx.channel() );
 
 		// process
 		if ( this.worker != null )

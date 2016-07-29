@@ -14,7 +14,9 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.auth.HMacSessionSignatureHandler;
 import com.iauto.wlink.core.auth.SessionIdGenerator;
+import com.iauto.wlink.core.auth.SessionSignatureHandler;
 import com.iauto.wlink.core.auth.codec.SessionContextCodec;
 import com.iauto.wlink.core.auth.handler.AuthenticationHandler;
 import com.iauto.wlink.core.auth.handler.SessionContextHandler;
@@ -56,6 +58,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	private static final MessageReceiver msgReceiver = new QpidMessageReceiver( setting.getMqUrl() );
 	private static final AuthenticationProvider provider = new ReserveAccountAuthenticationProvider( "UhZr6vyeBu0KmlX9",
 		"UTbKkKQ335whZicI" );
+	private static final SessionSignatureHandler signHandler = new HMacSessionSignatureHandler( setting.getHmacKey() );
 
 	public DefaultChannelInitializer() {
 		this( null );
@@ -106,7 +109,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 		// 设置会话上下文解码器(进、出)
 		SessionContextCodec sessionCodec = new SessionContextCodec();
-		sessionCodec.setWorker( new SessionRebuildWorker( setting.getHmacKey() ) );
+		sessionCodec.setWorker( new SessionRebuildWorker( signHandler ) );
 		pipeline.addLast( "session_codec", sessionCodec );
 
 		// 处理用户身份认证
@@ -122,9 +125,8 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		// 会话处理(建立会话，保存会话上下文等等)
 		pipeline.addLast( "session_handler", new SessionContextHandler( msgReceiver ) );
 		pipeline.addLast( "mq_connection_created_handler",
-			new MQConnectionCreatedHandler( msgReceiver, setting.getHmacKey() ) );
+			new MQConnectionCreatedHandler( msgReceiver, signHandler ) );
 		pipeline.addLast( "mq_reconnected_handler", new MQReconnectedHandler( msgReceiver ) );
-// pipeline.addLast( "mq_consumer_created_handler", new MQMessageConsumerCreatedHandler( setting.getHmacKey() ) );
 
 		// ===========================================================
 		// 4.设置服务器监控处理器

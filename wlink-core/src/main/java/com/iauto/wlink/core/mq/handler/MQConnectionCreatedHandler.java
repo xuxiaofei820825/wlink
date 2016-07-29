@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.auth.Session;
 import com.iauto.wlink.core.auth.SessionContext;
+import com.iauto.wlink.core.auth.SessionSignatureHandler;
 import com.iauto.wlink.core.auth.handler.SessionContextHandler;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
 import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
@@ -26,12 +27,12 @@ public class MQConnectionCreatedHandler extends ChannelInboundHandlerAdapter {
 	/** 消息接收者 */
 	private final MessageReceiver receiver;
 
-	/** 签名密匙 */
-	private final String signKey;
+	/** 签名处理器 */
+	private final SessionSignatureHandler signHandler;
 
-	public MQConnectionCreatedHandler( MessageReceiver receiver, String signKey ) {
+	public MQConnectionCreatedHandler( MessageReceiver receiver, SessionSignatureHandler signHandler ) {
 		this.receiver = receiver;
-		this.signKey = signKey;
+		this.signHandler = signHandler;
 	}
 
 	@Override
@@ -82,7 +83,7 @@ public class MQConnectionCreatedHandler extends ChannelInboundHandlerAdapter {
 			try {
 
 				// info
-				logger.info( "Creating a message consumer......" );
+				logger.info( "Creating the message consumer......" );
 
 				// 获取会话
 				Session session = sessionCtx.getSession();
@@ -98,13 +99,13 @@ public class MQConnectionCreatedHandler extends ChannelInboundHandlerAdapter {
 				logger.info( "Succeed to create a message consumer for user[ID:{}]", session.getUserId() );
 
 				// info
-				logger.info( "Succeed to create a session for user[ID:{}]. session:{}, channel:{}",
+				logger.info( "Succeed to create a session for user. userId:{}, session:{}, channel:{}",
 					session.getUserId(), session.getId(), sessionCtx.getChannel() );
 
 				// 创建会话上下文对象，并返回给终端
 				// 终端可使用会话上下文重新建立与服务器的会话
 				long timestamp = System.currentTimeMillis();
-				String signature = SessionContext.sign( signKey, session );
+				String signature = signHandler.sign( session );
 				SessionMessage sessionMsg = SessionMessage.newBuilder()
 					.setId( session.getId() )
 					.setUserId( String.valueOf( session.getUserId() ) )

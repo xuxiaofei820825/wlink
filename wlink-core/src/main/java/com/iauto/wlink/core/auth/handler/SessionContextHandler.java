@@ -3,9 +3,6 @@ package com.iauto.wlink.core.auth.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.jms.Connection;
 import javax.jms.MessageConsumer;
 
@@ -40,14 +37,6 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 
 	/** 消息接收者 */
 	private final MessageReceiver receiver;
-
-	/** 当前IO线程创建的所有消息监听器 */
-	private final static ThreadLocal<Map<String, MessageConsumer>> consumers = new ThreadLocal<Map<String, MessageConsumer>>() {
-		@Override
-		protected Map<String, MessageConsumer> initialValue() {
-			return new HashMap<String, MessageConsumer>();
-		}
-	};
 
 	public SessionContextHandler( MessageReceiver receiver ) {
 		this.receiver = receiver;
@@ -113,6 +102,7 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 	@Override
 	public void channelInactive( ChannelHandlerContext ctx ) throws Exception {
 
+		// 获取当前Channel的Session
 		Session session = ctx.channel()
 			.attr( AuthenticationHandler.SessionKey ).get();
 
@@ -127,14 +117,27 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 			logger.info( "User[{}] is offline, removing session......", userId );
 
 			// 解绑消息监听器
-			MessageConsumer consumer = SessionContextHandler.getConsumers()
-				.get( sessionId );
-			if ( consumer != null )
+			SessionContext sessionContext = SessionContext.getSessionContext( sessionId );
+
+			// 如果会话上下文不存在，则报错
+			if ( sessionContext == null ) {
+				throw new RuntimeException( String.format( "Session context of user[ID:%s] is not exist!", userId ) );
+			}
+
+			// 关闭消息监听器
+			MessageConsumer consumer = sessionContext.getConsumer();
+			if ( consumer != null ) {
+				// close
 				consumer.close();
+				// log
+				logger.info( "Succeed to close message consumer for user[ID:{}]", userId );
+			}
 
 			// 删除当前管理的用户
-			SessionContextHandler.getConsumers().remove( sessionId );
 			SessionContext.getSessions().remove( sessionId );
+
+			// log
+			logger.info( "Succeed to remove session of user[ID:{}]", userId );
 		}
 
 		// 流转到下一个处理器
@@ -143,10 +146,6 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 
 	// ================================================================================================================
 	// setter/getter
-
-	public static Map<String, MessageConsumer> getConsumers() {
-		return consumers.get();
-	}
 
 	public static Connection getConnection() {
 		return connections.get();

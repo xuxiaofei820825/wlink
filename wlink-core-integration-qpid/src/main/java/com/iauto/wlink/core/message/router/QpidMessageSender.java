@@ -21,14 +21,14 @@ public class QpidMessageSender implements MessageSender {
 	public QpidMessageSender() {
 	}
 
-	public String send( final Connection conn, String sender, String receiver, String type, byte[] message ) {
+	public void send( final Connection conn, String sender, String receiver, String type, byte[] message ) {
 
 		Session session = null;
 
 		try {
 
 			// info
-			logger.info( "Send a message. [from:{}, to:{}]", sender, receiver );
+			logger.info( "Sending a message. from:{}, to:{}, type:{}", sender, receiver, type );
 
 			// 与broker建立Session
 			session = conn.createSession( false, Session.AUTO_ACKNOWLEDGE );
@@ -49,14 +49,6 @@ public class QpidMessageSender implements MessageSender {
 
 			// 发送消息
 			producer.send( msg );
-
-			// 获取消息编号
-			String msgId = msg.getJMSMessageID().substring( 3 );
-
-			// info
-			logger.info( "Succeed to send the message. ID:{}", msgId );
-
-			return msgId;
 		} catch ( Exception ex ) {
 			// error
 			logger.error( "Failed to send the message!!! Caused by: {}", ex.getMessage() );
@@ -71,7 +63,5 @@ public class QpidMessageSender implements MessageSender {
 				}
 			}
 		}
-
-		return null;
 	}
 }

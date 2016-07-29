@@ -1,8 +1,8 @@
 package com.iauto.wlink.core.message.worker;
 
-import java.util.UUID;
-
 import io.netty.channel.ChannelHandlerContext;
+
+import java.util.UUID;
 
 import javax.jms.Connection;
 
@@ -35,29 +35,27 @@ public class SendCommMessageWorker implements MessageWorker {
 		Connection conn = SessionContextHandler.getConnection();
 
 		// 执行处理
-		Executor.execute( new CommMessageSendRunner( conn, this.sender, ctx, header, body ) );
+		Executor.execute( new CommMessageSendTask( conn, ctx, header, body ) );
 	}
 
 	// =========================================================================
 	// private functions
 
-	private class CommMessageSendRunner implements Runnable {
+	private class CommMessageSendTask implements Runnable {
 
 		/** Handler context */
 		private final ChannelHandlerContext ctx;
 
 		/** 消息发送者 */
-		private final MessageSender sender;
 		private final Connection conn;
 
 		/** 消息头&消息体 */
 		private final byte[] header;
 		private final byte[] body;
 
-		public CommMessageSendRunner( final Connection conn, final MessageSender sender, final ChannelHandlerContext ctx,
+		public CommMessageSendTask( final Connection conn, final ChannelHandlerContext ctx,
 				final byte[] header, final byte[] body ) {
 			this.conn = conn;
-			this.sender = sender;
 			this.ctx = ctx;
 			this.header = header;
 			this.body = body;
@@ -66,7 +64,9 @@ public class SendCommMessageWorker implements MessageWorker {
 		public void run() {
 
 			// 创建一个消息编号
-			final String msgId = UUID.randomUUID().toString();
+			final String msgId = UUID.randomUUID()
+				.toString()
+				.replace( "-", "" );
 
 			try {
 
@@ -98,7 +98,7 @@ public class SendCommMessageWorker implements MessageWorker {
 				this.ctx.writeAndFlush( ack_send );
 
 				// info
-				logger.info( "Succeed to send the message, return a success acknowledge message." );
+				logger.info( "Succeed to send the message[ID:{}], return a success acknowledge message.", msgId );
 			} catch ( Exception e ) {
 
 				// 创建表示失败的响应，并发送给客户端

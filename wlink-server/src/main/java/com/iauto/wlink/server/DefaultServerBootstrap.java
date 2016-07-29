@@ -25,6 +25,7 @@ public class DefaultServerBootstrap {
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
+	/** 应用设置 */
 	private final ApplicationSetting setting = ApplicationSetting.getInstance();
 
 	/** Acceptor Reactor */
@@ -35,17 +36,7 @@ public class DefaultServerBootstrap {
 
 	public DefaultServerBootstrap() {
 		this.bossGroup = new NioEventLoopGroup();
-		this.workerGroup = new NioEventLoopGroup(2);
-	}
-
-	public DefaultServerBootstrap( int port ) {
-		this.bossGroup = new NioEventLoopGroup();
-		this.workerGroup = new NioEventLoopGroup(2);
-	}
-
-	public DefaultServerBootstrap( int port, int workerThreadNum ) {
-		this.bossGroup = new NioEventLoopGroup();
-		this.workerGroup = new NioEventLoopGroup( workerThreadNum );
+		this.workerGroup = new NioEventLoopGroup();
 	}
 
 	public void start() throws Exception {
@@ -101,8 +92,12 @@ public class DefaultServerBootstrap {
 				logger.info( "Succeed to start wlink server. listening in port: {}", setting.getPort() );
 			}
 
-			future.channel().closeFuture().sync();
+			// 等待关闭
+			future.channel()
+				.closeFuture()
+				.sync();
 		} finally {
+			// 关闭
 			bossGroup.shutdownGracefully();
 			workerGroup.shutdownGracefully();
 		}

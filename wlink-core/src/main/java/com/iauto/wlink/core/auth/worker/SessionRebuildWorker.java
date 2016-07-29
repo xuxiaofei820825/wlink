@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import com.iauto.wlink.core.MessageWorker;
 import com.iauto.wlink.core.auth.Session;
 import com.iauto.wlink.core.auth.SessionContext;
+import com.iauto.wlink.core.auth.SessionSignatureHandler;
 import com.iauto.wlink.core.auth.event.SessionContextEvent;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
 import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
@@ -17,11 +18,11 @@ public class SessionRebuildWorker implements MessageWorker {
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
-	/** 签名密匙 */
-	private final String key;
+	/** 签名处理器 */
+	private final SessionSignatureHandler signHandler;
 
-	public SessionRebuildWorker( String key ) {
-		this.key = key;
+	public SessionRebuildWorker( SessionSignatureHandler signHandler ) {
+		this.signHandler = signHandler;
 	}
 
 	public void process( ChannelHandlerContext ctx, byte[] header, byte[] body ) throws Exception {
@@ -36,7 +37,7 @@ public class SessionRebuildWorker implements MessageWorker {
 		SessionContext context = new SessionContext( session, ctx.channel() );
 
 		// 对Session的签名进行验证
-		if ( SessionContext.validate( key, session, sessionMsg.getSignature() ) ) {
+		if ( signHandler.validate( session, sessionMsg.getSignature() ) ) {
 			// info
 			logger.info( "Signature of session is valid, try to rebuild session context of user[ID:{}].",
 				session.getUserId() );
@@ -54,8 +55,4 @@ public class SessionRebuildWorker implements MessageWorker {
 
 	// =================================================================================
 	// setter/getter
-
-	public String getKey() {
-		return key;
-	}
 }

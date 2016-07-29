@@ -12,8 +12,8 @@ import com.iauto.wlink.core.comm.CommunicationPackage;
 
 public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
 
-	// logger
-	private final static Logger logger = LoggerFactory.getLogger( HeartbeatHandler.class );
+	/** logger */
+	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 	@Override
 	public void userEventTriggered( ChannelHandlerContext ctx, Object evt )

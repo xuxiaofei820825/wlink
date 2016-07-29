@@ -9,6 +9,8 @@ public interface WlinkClient {
 	void auth( String ticket ) throws AuthenticationException;
 
 	void auth( String id, String userId, long timestamp, String signature ) throws AuthenticationException;
-	
+
+	void sendMessage( long receiver, String type, byte[] body );
+
 	void disconnect() throws Exception;
 }

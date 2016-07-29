@@ -39,7 +39,7 @@ public class DefaultWlinkClient implements WlinkClient {
 	private EventLoopGroup group;
 
 	/** 会话键值 */
-	public static final AttributeKey<SessionContext> SessionKey =
+	public static final AttributeKey<Session> SessionKey =
 			AttributeKey.newInstance( "session" );
 
 	/** 线程锁 */
@@ -154,7 +154,7 @@ public class DefaultWlinkClient implements WlinkClient {
 			// info
 			logger.info( "Receive authentication response message." );
 
-			SessionContext sctx = channel.attr( SessionKey ).get();
+			Session sctx = channel.attr( SessionKey ).get();
 
 			// info
 			logger.info( "Succeed to process authentication. [session:{}, userId:{}, signature:{}]",
@@ -208,12 +208,15 @@ public class DefaultWlinkClient implements WlinkClient {
 		}
 	}
 
-	public void sendMessage( final String sender, final String receiver, final String message ) {
+	public void sendMessage( long receiver, String type, byte[] body ) {
+		
+		Session session = this.channel.attr( SessionKey ).get();
+		
 		CommMessage commMsg = new CommMessage();
-		commMsg.setFrom( sender );
-		commMsg.setTo( receiver );
-		commMsg.setType( "text" );
-		commMsg.setBody( message.getBytes() );
+		commMsg.setFrom( session.getUserId() );
+		commMsg.setTo( String.valueOf( receiver ) );
+		commMsg.setType( type );
+		commMsg.setBody( body );
 
 		// 发送文本消息
 		channel.writeAndFlush( commMsg );
@@ -234,7 +237,7 @@ public class DefaultWlinkClient implements WlinkClient {
 			// 解码
 			SessionMessage sessionMsg = SessionMessage.parseFrom( body );
 
-			SessionContext sctx = new SessionContext();
+			Session sctx = new Session();
 			sctx.setId( sessionMsg.getId() );
 			sctx.setUserId( sessionMsg.getUserId() );
 			sctx.setTimestamp( sessionMsg.getTimestamp() );
