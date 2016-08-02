@@ -11,7 +11,7 @@ import org.apache.qpid.client.AMQAnyDestination;
 import org.apache.qpid.client.PooledConnectionFactory;
 import org.apache.qpid.url.URLSyntaxException;
 
-import com.iauto.wlink.core.auth.SessionContext;
+import com.iauto.wlink.core.session.SessionContextManager;
 
 public class QpidTester {
 
@@ -65,7 +65,7 @@ public class QpidTester {
 
 			System.out.println( "Succeed to create a connection to MQ server." );
 		} finally {
-			SessionContext.getSessionContext("");
+			SessionContextManager.get( "" );
 		}
 	}
 

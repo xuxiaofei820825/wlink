@@ -80,7 +80,7 @@ public class QpidMessageReceiver implements MessageReceiver {
 			throws Exception {
 
 		// 在当前的会话上创建消费者，监听发送给用户的消息
-		String dest_url = String.format( "ADDR:message.topic/%s", userId );
+		String dest_url = String.format( "ADDR:wlink.message.topic/%s", userId );
 		Destination dest = new AMQAnyDestination( dest_url );
 
 		// debug

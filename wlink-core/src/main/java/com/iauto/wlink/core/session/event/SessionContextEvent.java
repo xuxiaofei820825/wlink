@@ -1,6 +1,6 @@
-package com.iauto.wlink.core.auth.event;
+package com.iauto.wlink.core.session.event;
 
-import com.iauto.wlink.core.auth.SessionContext;
+import com.iauto.wlink.core.session.SessionContext;
 
 public class SessionContextEvent {
 

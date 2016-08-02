@@ -16,10 +16,10 @@ import org.slf4j.LoggerFactory;
 import com.iauto.wlink.client.channel.DefaultChannelInitializer;
 import com.iauto.wlink.client.exception.AuthenticationException;
 import com.iauto.wlink.core.MessageWorker;
-import com.iauto.wlink.core.auth.codec.SessionContextCodec;
 import com.iauto.wlink.core.message.CommMessage;
 import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
 import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
+import com.iauto.wlink.core.session.codec.SessionContextCodec;
 
 public class DefaultWlinkClient implements WlinkClient {
 

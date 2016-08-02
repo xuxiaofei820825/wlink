@@ -10,11 +10,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.MessageWorker;
-import com.iauto.wlink.core.auth.handler.SessionContextHandler;
 import com.iauto.wlink.core.message.proto.CommMessageHeaderProto.CommMessageHeader;
 import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge;
 import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType;
 import com.iauto.wlink.core.mq.router.MessageSender;
+import com.iauto.wlink.core.session.handler.SessionContextHandler;
 import com.iauto.wlink.core.tools.Executor;
 
 public class SendCommMessageWorker implements MessageWorker {

@@ -2,7 +2,7 @@ package com.iauto.wlink.core.mq.event;
 
 import javax.jms.Connection;
 
-import com.iauto.wlink.core.auth.SessionContext;
+import com.iauto.wlink.core.session.SessionContext;
 
 public class MQConnectionCreatedEvent {
 

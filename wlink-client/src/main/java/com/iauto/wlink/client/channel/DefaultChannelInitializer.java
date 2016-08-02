@@ -11,12 +11,12 @@ import java.util.concurrent.TimeUnit;
 import com.iauto.wlink.client.channel.handler.HeartbeatHandler;
 import com.iauto.wlink.core.MessageWorker;
 import com.iauto.wlink.core.auth.codec.AuthenticationMessageEncoder;
-import com.iauto.wlink.core.auth.codec.SessionContextCodec;
 import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
 import com.iauto.wlink.core.message.codec.CommMessageCodec;
 import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
 import com.iauto.wlink.core.message.codec.MessageAcknowledgeCodec;
 import com.iauto.wlink.core.message.proto.CommMessageHeaderProto.CommMessageHeader;
+import com.iauto.wlink.core.session.codec.SessionContextCodec;
 
 /**
  * 实现一个默认的客户端通道初始化器

@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.auth.handler;
+package com.iauto.wlink.core.session.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -10,12 +10,14 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iauto.wlink.core.auth.Session;
-import com.iauto.wlink.core.auth.SessionContext;
-import com.iauto.wlink.core.auth.event.SessionContextEvent;
+import com.iauto.wlink.core.auth.handler.AuthenticationHandler;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
 import com.iauto.wlink.core.mq.event.MQConnectionCreatedEvent;
 import com.iauto.wlink.core.mq.router.MessageReceiver;
+import com.iauto.wlink.core.session.Session;
+import com.iauto.wlink.core.session.SessionContext;
+import com.iauto.wlink.core.session.SessionContextManager;
+import com.iauto.wlink.core.session.event.SessionContextEvent;
 
 /**
  * 完成用户会话创建后的处理 <br>
@@ -58,7 +60,7 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 		SessionContext sessionCtx = event.getSessionContext();
 
 		// 保存会话上下文到当前线程
-		SessionContext.add( sessionCtx );
+		SessionContextManager.add( sessionCtx );
 
 		// 创建与MQ服务的会话
 		createMQConnection( ctx, sessionCtx );
@@ -117,7 +119,7 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 			logger.info( "User[{}] is offline, removing session......", userId );
 
 			// 解绑消息监听器
-			SessionContext sessionContext = SessionContext.getSessionContext( sessionId );
+			SessionContext sessionContext = SessionContextManager.get( sessionId );
 
 			// 如果会话上下文不存在，则报错
 			if ( sessionContext == null ) {
@@ -133,8 +135,8 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 				logger.info( "Succeed to close message consumer for user[ID:{}]", userId );
 			}
 
-			// 删除当前管理的用户
-			SessionContext.getSessions().remove( sessionId );
+			// 删除当前管理的用户会话
+			SessionContextManager.remove( sessionId );
 
 			// log
 			logger.info( "Succeed to remove session of user[ID:{}]", userId );

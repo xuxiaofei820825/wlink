@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.auth.codec;
+package com.iauto.wlink.core.session.codec;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;

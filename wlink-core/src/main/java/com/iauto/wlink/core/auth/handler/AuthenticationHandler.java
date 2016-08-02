@@ -9,15 +9,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.Constant;
-import com.iauto.wlink.core.auth.Session;
-import com.iauto.wlink.core.auth.SessionContext;
-import com.iauto.wlink.core.auth.SessionIdGenerator;
-import com.iauto.wlink.core.auth.event.SessionContextEvent;
 import com.iauto.wlink.core.auth.service.AuthenticationProvider;
 import com.iauto.wlink.core.comm.CommunicationPackage;
 import com.iauto.wlink.core.exception.AuthenticationException;
 import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
+import com.iauto.wlink.core.session.Session;
+import com.iauto.wlink.core.session.SessionContext;
+import com.iauto.wlink.core.session.SessionIdGenerator;
+import com.iauto.wlink.core.session.event.SessionContextEvent;
 import com.iauto.wlink.core.tools.Executor;
 
 /**
@@ -43,6 +43,7 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 	/** 认证提供者 */
 	private final AuthenticationProvider provider;
 
+	/** 会话编号生成器 */
 	private final SessionIdGenerator idGenerator;
 
 	public AuthenticationHandler( final AuthenticationProvider provider, SessionIdGenerator idGenerator ) {

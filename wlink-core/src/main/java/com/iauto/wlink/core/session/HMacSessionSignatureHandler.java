@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.auth;
+package com.iauto.wlink.core.session;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -23,12 +23,20 @@ public class HMacSessionSignatureHandler implements SessionSignatureHandler {
 		this.key = key;
 	}
 
+	/**
+	 * 签名会话
+	 * 
+	 * @param session
+	 *          会话
+	 */
 	public String sign( Session session ) throws Exception {
 		// 初始化
 		String result = StringUtils.EMPTY;
 
 		// 生成用来进行签名的字符串
-		String sessionContent = session.getId() + ";" + session.getUserId() + ";" + session.getTimestamp();
+		String sessionContent = session.getId()
+				+ ";" + session.getUserId()
+				+ ";" + session.getTimestamp();
 
 		// 生成会话信息的签名
 		SecretKeySpec signingKey = new SecretKeySpec( Base64.decodeBase64( key ), HMAC_SHA256 );
@@ -41,14 +49,21 @@ public class HMacSessionSignatureHandler implements SessionSignatureHandler {
 		return result;
 	}
 
-	public boolean validate( Session session, String signature ) {
+	/**
+	 * 验证会话的签名
+	 * 
+	 * @param session
+	 *          会话
+	 * @param signature
+	 *          签名
+	 */
+	public boolean validate( Session session, String signature ) throws Exception {
 		try {
 			String tmp = sign( session );
 			return StringUtils.equals( tmp, signature );
 		} catch ( Exception ex ) {
 			logger.error( "Exception occoured!", ex );
 		}
-
 		return false;
 	}
 }

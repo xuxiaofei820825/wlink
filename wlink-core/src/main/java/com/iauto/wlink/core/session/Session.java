@@ -1,5 +1,11 @@
-package com.iauto.wlink.core.auth;
+package com.iauto.wlink.core.session;
 
+/**
+ * 用户会话
+ * 
+ * @author xiaofei.xu
+ * 
+ */
 public class Session {
 
 	/** 用户编号 */
@@ -16,6 +22,9 @@ public class Session {
 		this.userId = userId;
 		this.timestamp = timestamp;
 	}
+
+	// ============================================================
+	// setter/getter
 
 	public long getUserId() {
 		return userId;

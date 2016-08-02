@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.auth.worker;
+package com.iauto.wlink.core.session.worker;
 
 import io.netty.channel.ChannelHandlerContext;
 
@@ -6,12 +6,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.MessageWorker;
-import com.iauto.wlink.core.auth.Session;
-import com.iauto.wlink.core.auth.SessionContext;
-import com.iauto.wlink.core.auth.SessionSignatureHandler;
-import com.iauto.wlink.core.auth.event.SessionContextEvent;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
 import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
+import com.iauto.wlink.core.session.Session;
+import com.iauto.wlink.core.session.SessionContext;
+import com.iauto.wlink.core.session.SessionSignatureHandler;
+import com.iauto.wlink.core.session.event.SessionContextEvent;
 
 public class SessionRebuildWorker implements MessageWorker {
 

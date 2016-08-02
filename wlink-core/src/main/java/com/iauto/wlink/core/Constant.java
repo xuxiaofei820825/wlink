@@ -9,10 +9,9 @@ public class Constant {
 		public static final String Message = "message";
 	}
 
-	public enum MQStatus {
-		None,
-		Connecting,
-		Success,
-		Failure
+	/** 用户状态 */
+	public enum Status {
+		OnLine,
+		OffLine
 	}
 }

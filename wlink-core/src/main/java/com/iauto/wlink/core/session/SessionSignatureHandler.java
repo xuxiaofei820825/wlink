@@ -1,4 +1,5 @@
-package com.iauto.wlink.core.auth;
+package com.iauto.wlink.core.session;
+
 
 public interface SessionSignatureHandler {
 	String sign( Session session ) throws Exception;
