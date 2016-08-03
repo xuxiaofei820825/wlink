@@ -199,11 +199,9 @@ public class QpidMessageReceiver implements MessageReceiver {
 				byte[] body = new byte[(int) len];
 				bytes.readBytes( body );
 
-				CommMessage commMsg = new CommMessage();
+				CommMessage commMsg = new CommMessage( type, body );
 				commMsg.setFrom( from );
 				commMsg.setTo( to );
-				commMsg.setType( type );
-				commMsg.setBody( body );
 
 				// 发送给接收者
 				this.channel.writeAndFlush( commMsg );

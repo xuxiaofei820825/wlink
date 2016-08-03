@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.api;
+package com.iauto.wlink;
 
 /**
  * Hello world!

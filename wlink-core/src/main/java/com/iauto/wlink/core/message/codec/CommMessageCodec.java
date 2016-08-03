@@ -40,7 +40,7 @@ public class CommMessageCodec extends MessageToMessageCodec<CommunicationPackage
 		CommunicationPackage comm = new CommunicationPackage();
 		comm.setType( "message" );
 		comm.setHeader( header );
-		comm.setBody( msg.getBody() );
+		comm.setBody( msg.getPlayload() );
 
 		// 传递到下一个处理器
 		out.add( comm );

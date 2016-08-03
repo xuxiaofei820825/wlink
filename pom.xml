@@ -24,6 +24,7 @@
 		<module>wlink-client</module>
 		<module>wlink-core-api</module>
     <module>wlink-core-integration-qpid</module>
+    <module>wlink-core-integration-rabbitmq</module>
   </modules>
 
 	<dependencies>

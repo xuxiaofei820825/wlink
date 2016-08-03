@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.Constant;
-import com.iauto.wlink.core.auth.service.AuthenticationProvider;
+import com.iauto.wlink.core.auth.AuthenticationProvider;
 import com.iauto.wlink.core.comm.CommunicationPackage;
 import com.iauto.wlink.core.exception.AuthenticationException;
 import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;

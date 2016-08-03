@@ -209,14 +209,12 @@ public class DefaultWlinkClient implements WlinkClient {
 	}
 
 	public void sendMessage( long receiver, String type, byte[] body ) {
-		
+
 		Session session = this.channel.attr( SessionKey ).get();
-		
-		CommMessage commMsg = new CommMessage();
+
+		CommMessage commMsg = new CommMessage( type, body );
 		commMsg.setFrom( session.getUserId() );
 		commMsg.setTo( String.valueOf( receiver ) );
-		commMsg.setType( type );
-		commMsg.setBody( body );
 
 		// 发送文本消息
 		channel.writeAndFlush( commMsg );

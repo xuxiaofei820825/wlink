@@ -5,6 +5,12 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 
+/**
+ * 该类实现对会话上下文的统一管理
+ * 
+ * @author xiaofei.xu
+ * 
+ */
 public abstract class SessionContextManager {
 
 	/** 线程级会话上下文存储器 */
@@ -19,7 +25,7 @@ public abstract class SessionContextManager {
 	// static functions
 
 	/**
-	 * 添加会话上下文
+	 * 添加会话上下文到当前的线程
 	 * 
 	 * @param sessionCtx
 	 *          会话上下文
@@ -29,6 +35,7 @@ public abstract class SessionContextManager {
 		if ( sessionCtx == null || sessionCtx.getSession() == null )
 			throw new NullPointerException( "Session" );
 
+		// 保存
 		sessions.get().put( sessionCtx.getSession().getId(), sessionCtx );
 	}
 
@@ -45,9 +52,16 @@ public abstract class SessionContextManager {
 		return sessions.get().get( id );
 	}
 
+	/**
+	 * 从当前线程中删除指定的会话上下文
+	 * 
+	 * @param id
+	 *          会话ID
+	 */
 	public static void remove( String id ) {
 		if ( StringUtils.isBlank( id ) )
 			throw new IllegalArgumentException( "id is blank." );
+		// 删除
 		sessions.get().remove( id );
 	}
 

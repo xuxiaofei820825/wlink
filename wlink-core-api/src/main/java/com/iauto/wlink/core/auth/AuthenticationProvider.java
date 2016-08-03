@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.auth.service;
+package com.iauto.wlink.core.auth;
 
 import com.iauto.wlink.core.exception.AuthenticationException;
 

@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.auth.service;
+package com.iauto.wlink.core.auth;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -6,6 +6,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
 
+import com.iauto.wlink.core.auth.AuthenticationProvider;
 import com.iauto.wlink.core.exception.AuthenticationException;
 
 public class ReserveAccountAuthenticationProvider implements AuthenticationProvider {
