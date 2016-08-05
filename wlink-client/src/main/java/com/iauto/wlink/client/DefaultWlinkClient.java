@@ -16,10 +16,10 @@ import org.slf4j.LoggerFactory;
 import com.iauto.wlink.client.channel.DefaultChannelInitializer;
 import com.iauto.wlink.client.exception.AuthenticationException;
 import com.iauto.wlink.core.MessageWorker;
-import com.iauto.wlink.core.message.CommMessage;
-import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
-import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
+import com.iauto.wlink.core.auth.proto.AuthMessageProto.AuthMessage;
+import com.iauto.wlink.core.message.DefaultCommMessage;
 import com.iauto.wlink.core.session.codec.SessionContextCodec;
+import com.iauto.wlink.core.session.proto.SessionMessageProto.SessionMessage;
 
 public class DefaultWlinkClient implements WlinkClient {
 
@@ -212,9 +212,7 @@ public class DefaultWlinkClient implements WlinkClient {
 
 		Session session = this.channel.attr( SessionKey ).get();
 
-		CommMessage commMsg = new CommMessage( type, body );
-		commMsg.setFrom( session.getUserId() );
-		commMsg.setTo( String.valueOf( receiver ) );
+		DefaultCommMessage<byte[]> commMsg = new DefaultCommMessage<byte[]>( type, body, session.getUserId(), receiver );
 
 		// 发送文本消息
 		channel.writeAndFlush( commMsg );
@@ -237,7 +235,7 @@ public class DefaultWlinkClient implements WlinkClient {
 
 			Session sctx = new Session();
 			sctx.setId( sessionMsg.getId() );
-			sctx.setUserId( sessionMsg.getUserId() );
+			sctx.setUserId( Long.valueOf( sessionMsg.getUserId() ) );
 			sctx.setTimestamp( sessionMsg.getTimestamp() );
 			sctx.setSignature( sessionMsg.getSignature() );
 

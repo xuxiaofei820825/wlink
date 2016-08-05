@@ -18,11 +18,6 @@
 			<artifactId>geronimo-jms_1.1_spec</artifactId>
 			<version>1.1.1</version>
 		</dependency>
-		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>19.0</version>
-		</dependency>
 		<!-- wlink-core-api -->
 		<dependency>
 			<groupId>com.iauto</groupId>

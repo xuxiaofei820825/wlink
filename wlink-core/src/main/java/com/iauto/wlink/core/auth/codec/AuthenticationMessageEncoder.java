@@ -6,8 +6,8 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 import java.util.List;
 
 import com.iauto.wlink.core.Constant;
+import com.iauto.wlink.core.auth.proto.AuthMessageProto.AuthMessage;
 import com.iauto.wlink.core.comm.CommunicationPackage;
-import com.iauto.wlink.core.message.proto.AuthMessageProto.AuthMessage;
 
 /**
  * 对认证消息进行编码

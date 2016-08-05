@@ -25,6 +25,7 @@
 		<module>wlink-core-api</module>
     <module>wlink-core-integration-qpid</module>
     <module>wlink-core-integration-rabbitmq</module>
+    <module>wlink-core-codec</module>
   </modules>
 
 	<dependencies>
@@ -81,6 +82,12 @@
 			<groupId>com.google.protobuf</groupId>
 			<artifactId>protobuf-java</artifactId>
 			<version>${google.protobuf.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>19.0</version>
 		</dependency>
 	</dependencies>
 </project>

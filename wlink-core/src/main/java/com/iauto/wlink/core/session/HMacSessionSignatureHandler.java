@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
+import com.iauto.wlink.core.exception.AuthenticationException;
 
 /**
  * 该类使用HMACSHA256算法对会话进行签名
@@ -37,7 +38,7 @@ public class HMacSessionSignatureHandler implements SessionSignatureHandler {
 	 * @param session
 	 *          会话
 	 */
-	public String sign( Session session ) throws Exception {
+	public String sign( Session session ) throws AuthenticationException {
 		// 初始化
 		String result = StringUtils.EMPTY;
 
@@ -46,16 +47,21 @@ public class HMacSessionSignatureHandler implements SessionSignatureHandler {
 		joiner.join( session.getId(), session.getUserId(), session.getTimestamp() );
 		String content = joiner.toString();
 
-		// 生成会话信息的签名
-		SecretKeySpec signingKey = new SecretKeySpec( Base64.decodeBase64( key ), HMAC_SHA256 );
-		Mac mac = Mac.getInstance( HMAC_SHA256 );
-		mac.init( signingKey );
-		byte[] rawHmac = mac.doFinal( content.getBytes() );
+		try {
 
-		// 进行Base64编码
-		result = Base64.encodeBase64URLSafeString( rawHmac );
+			// 生成会话信息的签名
+			SecretKeySpec signingKey = new SecretKeySpec( Base64.decodeBase64( key ), HMAC_SHA256 );
+			Mac mac = Mac.getInstance( HMAC_SHA256 );
+			mac.init( signingKey );
+			byte[] rawHmac = mac.doFinal( content.getBytes() );
 
-		return result;
+			// 进行Base64编码
+			result = Base64.encodeBase64URLSafeString( rawHmac );
+
+			return result;
+		} catch ( Exception ex ) {
+			throw new AuthenticationException();
+		}
 	}
 
 	/**
@@ -66,7 +72,10 @@ public class HMacSessionSignatureHandler implements SessionSignatureHandler {
 	 * @param signature
 	 *          签名
 	 */
-	public boolean validate( final Session session, final String signature ) throws Exception {
+	public boolean validate( final Session session, final String signature ) throws AuthenticationException {
+		if ( session == null || StringUtils.isBlank( signature ) )
+			throw new IllegalArgumentException();
+
 		try {
 			String tmp = sign( session );
 			return StringUtils.equals( tmp, signature );

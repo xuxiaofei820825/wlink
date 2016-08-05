@@ -3,5 +3,6 @@ package com.iauto.wlink.core.auth;
 import com.iauto.wlink.core.exception.AuthenticationException;
 
 public interface AuthenticationProvider {
-	long authenticate( String ticket ) throws AuthenticationException;
+	Authentication authenticate( Authentication authentication ) throws AuthenticationException;
+	boolean supports( Class<?> authentication ) ;
 }

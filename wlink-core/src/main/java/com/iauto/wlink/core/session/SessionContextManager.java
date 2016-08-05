@@ -5,6 +5,8 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 
+import com.iauto.wlink.core.session.SessionContext;
+
 /**
  * 该类实现对会话上下文的统一管理
  * 

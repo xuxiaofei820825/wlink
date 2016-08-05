@@ -9,12 +9,24 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.Constant;
 import com.iauto.wlink.core.MessageWorker;
 import com.iauto.wlink.core.comm.CommunicationPackage;
-import com.iauto.wlink.core.message.CommMessage;
+import com.iauto.wlink.core.message.AbstractCommMessage;
 import com.iauto.wlink.core.message.proto.CommMessageHeaderProto.CommMessageHeader;
 
-public class CommMessageCodec extends MessageToMessageCodec<CommunicationPackage, CommMessage> {
+/**
+ * 通讯消息编解码器<br/>
+ * 
+ * <ul>
+ * <li>编码:把CommMessage对象转化为CommunicationPackage对象
+ * <li>解码:把CommunicationPackage对象转化为CommMessage对象
+ * </ul>
+ * 
+ * @author xiaofei.xu
+ * 
+ */
+public class CommMessageCodec extends MessageToMessageCodec<CommunicationPackage, AbstractCommMessage<byte[]>> {
 
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
@@ -27,30 +39,31 @@ public class CommMessageCodec extends MessageToMessageCodec<CommunicationPackage
 	}
 
 	@Override
-	protected void encode( ChannelHandlerContext ctx, CommMessage msg, List<Object> out ) throws Exception {
+	protected void encode( ChannelHandlerContext ctx, AbstractCommMessage<byte[]> msg, List<Object> out )
+			throws Exception {
 
+		// 对消息头进行编码
 		CommMessageHeader commMsgHeader = CommMessageHeader.newBuilder()
-			.setFrom( msg.getFrom() )
-			.setTo( msg.getTo() )
-			.setType( msg.getType() )
+			.setFrom( String.valueOf( msg.from() ) )
+			.setTo( String.valueOf( msg.to() ) )
+			.setType( msg.type() )
 			.build();
-
 		byte[] header = commMsgHeader.toByteArray();
 
-		CommunicationPackage comm = new CommunicationPackage();
-		comm.setType( "message" );
-		comm.setHeader( header );
-		comm.setBody( msg.getPlayload() );
+		CommunicationPackage commPkg = new CommunicationPackage();
+		commPkg.setType( Constant.MessageType.Message );
+		commPkg.setHeader( header );
+		commPkg.setBody( msg.payload() );
 
 		// 传递到下一个处理器
-		out.add( comm );
+		out.add( commPkg );
 	}
 
 	@Override
 	protected void decode( ChannelHandlerContext ctx, CommunicationPackage msg, List<Object> out ) throws Exception {
 
 		// 如果不是文本消息，则流转到下一个处理器
-		if ( !StringUtils.equals( "message", msg.getType() ) ) {
+		if ( !StringUtils.equals( Constant.MessageType.Message, msg.getType() ) ) {
 			out.add( msg );
 			return;
 		}

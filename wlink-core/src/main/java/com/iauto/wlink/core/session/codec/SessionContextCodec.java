@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.iauto.wlink.core.Constant;
 import com.iauto.wlink.core.MessageWorker;
 import com.iauto.wlink.core.comm.CommunicationPackage;
-import com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage;
+import com.iauto.wlink.core.session.proto.SessionMessageProto.SessionMessage;
 
 /**
  * 编解码用户会话

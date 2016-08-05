@@ -15,29 +15,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.auth.AuthenticationProvider;
-import com.iauto.wlink.core.auth.ReserveAccountAuthenticationProvider;
-import com.iauto.wlink.core.auth.handler.AuthenticationHandler;
+import com.iauto.wlink.core.auth.provider.ReserveAccountTicketAuthenticationProvider;
 import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
-import com.iauto.wlink.core.message.SendCommMessageWorker;
+import com.iauto.wlink.core.message.MessageRouter;
+import com.iauto.wlink.core.message.QpidMessageRouter;
 import com.iauto.wlink.core.message.codec.CommMessageCodec;
 import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
 import com.iauto.wlink.core.message.codec.MessageAcknowledgeCodec;
-import com.iauto.wlink.core.message.router.QpidMessageReceiver;
-import com.iauto.wlink.core.message.router.QpidMessageSender;
-import com.iauto.wlink.core.mq.handler.MQConnectionCreatedHandler;
-import com.iauto.wlink.core.mq.handler.MQReconnectedHandler;
-import com.iauto.wlink.core.mq.router.MessageReceiver;
-import com.iauto.wlink.core.mq.router.MessageSender;
 import com.iauto.wlink.core.session.HMacSessionSignatureHandler;
 import com.iauto.wlink.core.session.SessionIdGenerator;
 import com.iauto.wlink.core.session.SessionSignatureHandler;
 import com.iauto.wlink.core.session.codec.SessionContextCodec;
-import com.iauto.wlink.core.session.handler.SessionContextHandler;
-import com.iauto.wlink.core.session.worker.SessionRebuildWorker;
 import com.iauto.wlink.server.ApplicationSetting;
 import com.iauto.wlink.server.ServerStateStatistics;
+import com.iauto.wlink.server.auth.handler.AuthenticationHandler;
 import com.iauto.wlink.server.channel.handler.HeartbeatHandler;
 import com.iauto.wlink.server.channel.handler.StateStatisticsHandler;
+import com.iauto.wlink.server.message.SendCommMessageWorker;
+import com.iauto.wlink.server.session.SessionRebuildWorker;
+import com.iauto.wlink.server.session.handler.SessionContextHandler;
 
 public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel> {
 
@@ -54,9 +50,12 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	private static final ServerStateStatistics statistics = new ServerStateStatistics();
 
 	/** 消息队列组件 */
-	private static final MessageSender msgSender = new QpidMessageSender();
-	private static final MessageReceiver msgReceiver = new QpidMessageReceiver( setting.getMqUrl() );
-	private static final AuthenticationProvider provider = new ReserveAccountAuthenticationProvider( "UhZr6vyeBu0KmlX9",
+// private static final MessageSender msgSender = new QpidMessageSender();
+// private static final MessageReceiver msgReceiver = new QpidMessageReceiver( setting.getMqUrl() );
+
+	private static final MessageRouter messageRouter = new QpidMessageRouter( setting.getMqUrl() );
+	private static final AuthenticationProvider provider = new ReserveAccountTicketAuthenticationProvider(
+		"UhZr6vyeBu0KmlX9",
 		"UTbKkKQ335whZicI" );
 	private static final SessionSignatureHandler signHandler = new HMacSessionSignatureHandler( setting.getHmacKey() );
 
@@ -120,13 +119,13 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		} ) );
 
 		// 设置消息编解码器(进、出)
-		pipeline.addLast( "message_codec", new CommMessageCodec( new SendCommMessageWorker( msgSender ) ) );
+		pipeline.addLast( "message_codec", new CommMessageCodec( new SendCommMessageWorker( messageRouter ) ) );
 
 		// 会话处理(建立会话，保存会话上下文等等)
-		pipeline.addLast( "session_handler", new SessionContextHandler( msgReceiver ) );
-		pipeline.addLast( "mq_connection_created_handler",
-			new MQConnectionCreatedHandler( msgReceiver, signHandler ) );
-		pipeline.addLast( "mq_reconnected_handler", new MQReconnectedHandler( msgReceiver ) );
+		pipeline.addLast( "session_handler", new SessionContextHandler( messageRouter ) );
+//		pipeline.addLast( "mq_connection_created_handler",
+//			new MQConnectionCreatedHandler( msgReceiver, signHandler ) );
+//		pipeline.addLast( "mq_reconnected_handler", new MQReconnectedHandler( msgReceiver ) );
 
 		// ===========================================================
 		// 4.设置服务器监控处理器
