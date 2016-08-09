@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * QPID消息处理器
+ * QPID消息处理器，该类执行接收到用户消息后的动作
  * 
  * @author xiaofei.xu
  * 
@@ -20,12 +20,20 @@ public class QpidMessageListener implements MessageListener {
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
-	/** 通道 */
+	/** 用户通道 */
 	private final Channel channel;
 
-	/** 监听消息的用户 */
+	/** 用户编号 */
 	private final long userId;
 
+	/**
+	 * 构造函数
+	 * 
+	 * @param channel
+	 *          用户通道
+	 * @param userId
+	 *          用户编号
+	 */
 	public QpidMessageListener( Channel channel, long userId ) {
 		this.channel = channel;
 		this.userId = userId;
@@ -52,10 +60,11 @@ public class QpidMessageListener implements MessageListener {
 			byte[] payload = new byte[(int) len];
 			bytes.readBytes( payload );
 
-			AbstractCommMessage<byte[]> commMsg = new DefaultCommMessage<byte[]>( type, payload, from, to );
+			AbstractCommMessage<byte[]> commMsg =
+					new DefaultCommMessage<byte[]>( type, payload, from, to );
 
 			// 发送给接收者
-			this.channel.writeAndFlush( commMsg );
+			channel.writeAndFlush( commMsg );
 
 			// 给MQ服务器发送确认消息
 			message.acknowledge();

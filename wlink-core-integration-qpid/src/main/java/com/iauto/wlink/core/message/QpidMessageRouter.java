@@ -4,6 +4,7 @@ import io.netty.channel.Channel;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -19,13 +20,15 @@ import org.apache.qpid.client.AMQConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.iauto.wlink.core.exception.MessageRouteException;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
 import com.iauto.wlink.core.session.SessionContext;
 import com.iauto.wlink.core.tools.Executor;
 
 /**
- * 使用QPID实现消息路由
+ * 集成QPID实现消息路由
  * 
  * @author xiaofei.xu
  * 
@@ -35,7 +38,7 @@ public class QpidMessageRouter implements MessageRouter {
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
-	/** 与MQ服务端的会话(每个IO线程创建一个连接，每个连接创建一个会话) */
+	/** 与QPID服务器的连接(每个I/O线程创建一个连接) */
 	private final static ThreadLocal<Connection> connections = new ThreadLocal<Connection>();
 
 	/** 会话编号与消息监听器的对应 */
@@ -47,6 +50,12 @@ public class QpidMessageRouter implements MessageRouter {
 	/** 连接异常监听器 */
 	private ExceptionListener exceptionListener;
 
+	/**
+	 * 构造函数
+	 * 
+	 * @param url
+	 *          连接URL
+	 */
 	public QpidMessageRouter( String url ) {
 		this.url = url;
 	}
@@ -54,10 +63,10 @@ public class QpidMessageRouter implements MessageRouter {
 	/**
 	 * 发送消息
 	 */
-	public void send( AbstractCommMessage<byte[]> message ) throws MessageRouteException {
+	public ListenableFuture<Object> send( AbstractCommMessage<byte[]> message ) throws MessageRouteException {
 
-		// 初始化
-		Session session = null;
+		// 初始化为NULL
+		ListenableFuture<Object> future = null;
 
 		try {
 			// 获取当前线程的连接
@@ -66,43 +75,18 @@ public class QpidMessageRouter implements MessageRouter {
 			// 如果当前线程没有连接，则为当前线程创建一个
 			if ( conn == null ) {
 				// 新建一个连接
-				conn = newConnection( this.exceptionListener );
-				// 添加到连接管理管理
-				addConnection( conn );
+				conn = newConnection();
 			}
 
-			// 与broker建立Session
-			session = conn.createSession( false, Session.AUTO_ACKNOWLEDGE );
-
-			// 设置连接的节点名，如果不存在该topic节点，则新建一个
-			Destination dest = new AMQAnyDestination( "ADDR:wlink.message.topic/" + message.to()
-					+ ";{create:always, node:{ type:topic }}" );
-
-			// 为指定的节点创建消息发送者
-			MessageProducer producer = session.createProducer( dest );
-
-			// 创建字节消息
-			BytesMessage msg = session.createBytesMessage();
-			msg.writeBytes( message.payload() );
-			msg.setLongProperty( "from", message.from() );
-			msg.setLongProperty( "to", message.to() );
-			msg.setStringProperty( "type", message.type() );
-
-			// 发送消息
-			producer.send( msg );
+			// 执行异步任务
+			future = MoreExecutors.listeningDecorator( Executors.newFixedThreadPool( 10 ) )
+				.submit( new MessageSendTask( conn, message ), null );
 		} catch ( Exception ex ) {
 			// error
 			logger.error( "Failed to send the message!!! Caused by: {}", ex.getMessage() );
-		} finally {
-			// 关闭会话
-			if ( session != null ) {
-				try {
-					session.close();
-				} catch ( JMSException e ) {
-					// ignore
-				}
-			}
 		}
+
+		return future;
 	}
 
 	/**
@@ -116,9 +100,7 @@ public class QpidMessageRouter implements MessageRouter {
 			// 如果当前线程没有连接，则为当前线程创建一个
 			if ( conn == null ) {
 				// 新建一个连接
-				conn = newConnection( this.exceptionListener );
-				// 添加到连接管理管理
-				addConnection( conn );
+				conn = newConnection();
 			}
 
 			// 为用户注册消息监听者
@@ -151,23 +133,95 @@ public class QpidMessageRouter implements MessageRouter {
 	// =======================================================================
 	// private functions
 
-	private Connection newConnection( final ExceptionListener exceptionListener ) throws Exception {
+	/*
+	 * 创建新的QPID服务连接
+	 */
+	private Connection newConnection() throws Exception {
+
+		// info
+		logger.info( "Connection of current I/O thread is not exist, create a connection first!" );
+
 		// 与broker创建一个连接
 		AMQConnection conn = new AMQConnection( url );
+
 		// 添加异常监听器
-		conn.setExceptionListener( exceptionListener );
+		conn.setExceptionListener( this.exceptionListener );
 		// 创建连接
 		conn.start();
+
+		// 添加到连接管理管理
+		addConnection( conn );
+
 		return conn;
 	}
 
 	// =======================================================================
 	// private class
 
+	private class MessageSendTask implements Runnable {
+
+		private final Connection conn;
+		private final AbstractCommMessage<byte[]> message;
+
+		public MessageSendTask( Connection conn, AbstractCommMessage<byte[]> message ) {
+			this.conn = conn;
+			this.message = message;
+		}
+
+		public void run() {
+
+			// 初始化
+			Session session = null;
+
+			try {
+
+				// 与broker建立Session
+				session = conn.createSession( false, Session.AUTO_ACKNOWLEDGE );
+
+				// 设置连接的节点名，如果不存在该topic节点，则新建一个
+				Destination dest = new AMQAnyDestination( "ADDR:wlink.message.topic/" + message.to()
+						+ ";{create:always, node:{ type:topic }}" );
+
+				// 为指定的节点创建消息发送者
+				MessageProducer producer = session.createProducer( dest );
+
+				// 创建字节消息
+				BytesMessage msg = session.createBytesMessage();
+				msg.writeBytes( message.payload() );
+				msg.setLongProperty( "from", message.from() );
+				msg.setLongProperty( "to", message.to() );
+				msg.setStringProperty( "type", message.type() );
+
+				// 发送消息
+				producer.send( msg );
+			} catch ( Exception ex ) {
+				// error
+				logger.error( "Failed to send the message!!! Caused by: {}", ex.getMessage() );
+			} finally {
+				// 关闭会话
+				if ( session != null ) {
+					try {
+						session.close();
+					} catch ( JMSException e ) {
+						// ignore
+					}
+				}
+			}
+		}
+
+	}
+
+	/**
+	 * 创建消息监听器任务
+	 * 
+	 * @author xiaofei.xu
+	 */
 	private class MessageConsumerCreateTask implements Runnable {
 
-		/** 成员变量定义 */
+		/** QPID连接 */
 		private final Connection conn;
+
+		/** 会话上下文 */
 		private final SessionContext ctx;
 
 		public MessageConsumerCreateTask( Connection conn, SessionContext ctx ) {
@@ -203,7 +257,7 @@ public class QpidMessageRouter implements MessageRouter {
 
 	// =======================================================================
 	// static functions
-	
+
 	/*
 	 * 创建消息监听器
 	 */

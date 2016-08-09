@@ -44,14 +44,14 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 			AttributeKey.newInstance( "session" );
 
 	/** 认证信息编解码器 */
-	private MessageCodec<Authentication> authMsgCodec;
+	private MessageCodec<? extends Authentication> messageCodec;
 
 	/** 认证提供者 */
 	private final AuthenticationProvider provider;
 
 	/** 会话编号生成器 */
 	private final SessionIdGenerator idGenerator;
-	
+
 	private SessionSignatureHandler signHandler;
 
 	public AuthenticationHandler( final AuthenticationProvider provider, SessionIdGenerator idGenerator ) {
@@ -81,7 +81,7 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 			// 如果是，则进行认证处理
 
 			// 解码
-			Message<Authentication> authMsg = authMsgCodec.decode( msg.getBody() );
+			Message<? extends Authentication> authMsg = messageCodec.decode( msg.getBody() );
 
 			// 进行用户身份认证
 			Executor.execute( new AuthenticationTask( ctx, authMsg.payload(), provider ) );
@@ -169,5 +169,24 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 				ctx.channel().writeAndFlush( error );
 			}
 		}
+	}
+
+	// ===========================================================================
+	// setter/getter
+
+	public MessageCodec<? extends Authentication> getMessageCodec() {
+		return messageCodec;
+	}
+
+	public void setMessageCodec( MessageCodec<? extends Authentication> messageCodec ) {
+		this.messageCodec = messageCodec;
+	}
+
+	public SessionSignatureHandler getSignHandler() {
+		return signHandler;
+	}
+
+	public void setSignHandler( SessionSignatureHandler signHandler ) {
+		this.signHandler = signHandler;
 	}
 }

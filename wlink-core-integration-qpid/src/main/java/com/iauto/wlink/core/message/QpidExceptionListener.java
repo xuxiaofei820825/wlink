@@ -15,6 +15,12 @@ import com.iauto.wlink.core.session.Session;
 import com.iauto.wlink.core.session.SessionContext;
 import com.iauto.wlink.core.session.SessionContextManager;
 
+/**
+ * QPID连接异常处理器
+ * 
+ * @author xiaofei.xu
+ * 
+ */
 public class QpidExceptionListener implements ExceptionListener {
 
 	/** logger */
@@ -55,9 +61,6 @@ public class QpidExceptionListener implements ExceptionListener {
 				// info
 				logger.info( "Succeed to reconnect MQ server!!!" );
 
-				// 触发事件
-				// ctx.fireUserEventTriggered( new QpidReconnectedEvent( conn, ctx ) );
-
 				// 重连成功
 				isSuccess = true;
 
@@ -79,9 +82,9 @@ public class QpidExceptionListener implements ExceptionListener {
 		}
 
 		public void run() {
-			
+
 			QpidMessageRouter.addConnection( conn );
-			
+
 			Map<String, SessionContext> ctxs = SessionContextManager.getSessions();
 
 			for ( SessionContext ctx : ctxs.values() ) {

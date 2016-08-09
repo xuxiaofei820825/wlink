@@ -7,13 +7,15 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.iauto.wlink.core.MessageWorker;
 import com.iauto.wlink.core.message.DefaultCommMessage;
 import com.iauto.wlink.core.message.MessageRouter;
 import com.iauto.wlink.core.message.proto.CommMessageHeaderProto.CommMessageHeader;
 import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge;
 import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType;
-import com.iauto.wlink.core.tools.Executor;
 
 public class SendCommMessageWorker implements MessageWorker {
 
@@ -28,58 +30,35 @@ public class SendCommMessageWorker implements MessageWorker {
 	}
 
 	public void process( final ChannelHandlerContext ctx, final byte[] header, final byte[] body ) throws Exception {
-		// 执行处理
-		Executor.execute( new CommMessageSendTask( ctx, header, body ) );
-	}
+		// 解码
+		CommMessageHeader msgHeader = CommMessageHeader.parseFrom( header );
 
-	// =========================================================================
-	// private functions
+		// debug
+		logger.debug( "A message: [from:{}, to:{}, content:{} bytes]",
+			msgHeader.getFrom(), msgHeader.getTo(), body.length );
 
-	private class CommMessageSendTask implements Runnable {
+		// 创建一个消息编号
+		final String msgId = UUID.randomUUID()
+			.toString().replace( "-", "" );
 
-		/** Handler context */
-		private final ChannelHandlerContext ctx;
+		// 给终端返回一个确认信息，表明服务端已收到该消息，准备推送给接收者
+		MessageAcknowledge ack_rev = MessageAcknowledge.newBuilder()
+			.setResult( MessageAcknowledge.Result.SUCCESS )
+			.setMessageId( msgId )
+			.setAckType( AckType.RECEIVE )
+			.build();
+		ctx.writeAndFlush( ack_rev );
 
-		/** 消息头&消息体 */
-		private final byte[] header;
-		private final byte[] body;
+		// 把消息路由给接收者
+		// TODO 有问题：不是I/O线程，send方法中会不停的建连接
+		ListenableFuture<Object> future = messageRouter.send( new DefaultCommMessage<byte[]>(
+			msgHeader.getType(), body,
+			Long.valueOf( msgHeader.getFrom() ),
+			Long.valueOf( msgHeader.getTo() ) ) );
 
-		public CommMessageSendTask( final ChannelHandlerContext ctx,
-				final byte[] header, final byte[] body ) {
-			this.ctx = ctx;
-			this.header = header;
-			this.body = body;
-		}
-
-		public void run() {
-
-			// 创建一个消息编号
-			final String msgId = UUID.randomUUID()
-				.toString()
-				.replace( "-", "" );
-
-			try {
-
-				// 解码
-				CommMessageHeader msgHeader = CommMessageHeader.parseFrom( this.header );
-
-				// debug
-				logger.debug( "A message: [from:{}, to:{}, content:{} bytes]",
-					msgHeader.getFrom(), msgHeader.getTo(), body.length );
-
-				// 给终端返回一个确认信息，表明服务端已收到该消息，准备推送给接收者
-				MessageAcknowledge ack_rev = MessageAcknowledge.newBuilder()
-					.setResult( MessageAcknowledge.Result.SUCCESS )
-					.setMessageId( msgId )
-					.setAckType( AckType.RECEIVE )
-					.build();
-				this.ctx.writeAndFlush( ack_rev );
-
-				// 把消息路由给接收者
-				messageRouter.send( new DefaultCommMessage<byte[]>(
-					msgHeader.getType(), body,
-					Long.valueOf( msgHeader.getFrom() ),
-					Long.valueOf( msgHeader.getTo() ) ) );
+		Futures.addCallback( future, new FutureCallback<Object>() {
+			public void onSuccess( Object result ) {
+				// 成功
 
 				// 给终端返回一个确认信息，表明服务端已经把消息推送给接收者
 				MessageAcknowledge ack_send = MessageAcknowledge.newBuilder()
@@ -87,11 +66,14 @@ public class SendCommMessageWorker implements MessageWorker {
 					.setMessageId( msgId )
 					.setAckType( AckType.SEND )
 					.build();
-				this.ctx.writeAndFlush( ack_send );
+				ctx.writeAndFlush( ack_send );
 
 				// info
 				logger.info( "Succeed to send the message[ID:{}], return a success acknowledge message.", msgId );
-			} catch ( Exception e ) {
+			}
+
+			public void onFailure( Throwable t ) {
+				// 失败
 
 				// 创建表示失败的响应，并发送给客户端
 				MessageAcknowledge ack = MessageAcknowledge.newBuilder()
@@ -99,11 +81,11 @@ public class SendCommMessageWorker implements MessageWorker {
 					.setAckType( AckType.SEND )
 					.setMessageId( msgId )
 					.build();
-				this.ctx.writeAndFlush( ack );
+				ctx.writeAndFlush( ack );
 
 				// info
 				logger.info( "Failed to send the message, return a failure acknowledge message." );
 			}
-		}
+		} );
 	}
 }

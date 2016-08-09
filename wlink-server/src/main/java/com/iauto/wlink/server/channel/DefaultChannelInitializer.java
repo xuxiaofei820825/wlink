@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.auth.AuthenticationProvider;
+import com.iauto.wlink.core.auth.DefaultTicketAuthMessageCodec;
 import com.iauto.wlink.core.auth.provider.ReserveAccountTicketAuthenticationProvider;
 import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
 import com.iauto.wlink.core.message.MessageRouter;
@@ -49,14 +50,9 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	/** 服务器状态统计 */
 	private static final ServerStateStatistics statistics = new ServerStateStatistics();
 
-	/** 消息队列组件 */
-// private static final MessageSender msgSender = new QpidMessageSender();
-// private static final MessageReceiver msgReceiver = new QpidMessageReceiver( setting.getMqUrl() );
-
 	private static final MessageRouter messageRouter = new QpidMessageRouter( setting.getMqUrl() );
 	private static final AuthenticationProvider provider = new ReserveAccountTicketAuthenticationProvider(
-		"UhZr6vyeBu0KmlX9",
-		"UTbKkKQ335whZicI" );
+		"UhZr6vyeBu0KmlX9", "UTbKkKQ335whZicI" );
 	private static final SessionSignatureHandler signHandler = new HMacSessionSignatureHandler( setting.getHmacKey() );
 
 	public DefaultChannelInitializer() {
@@ -112,20 +108,21 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		pipeline.addLast( "session_codec", sessionCodec );
 
 		// 处理用户身份认证
-		pipeline.addLast( "auth", new AuthenticationHandler( provider, new SessionIdGenerator() {
+		AuthenticationHandler authHandler = new AuthenticationHandler( provider, new SessionIdGenerator() {
 			public String generate() {
 				return UUID.randomUUID().toString().replace( "-", "" );
 			}
-		} ) );
+		} );
+		authHandler.setMessageCodec( new DefaultTicketAuthMessageCodec() );
+		authHandler.setSignHandler( signHandler );
+
+		pipeline.addLast( "auth", authHandler );
 
 		// 设置消息编解码器(进、出)
 		pipeline.addLast( "message_codec", new CommMessageCodec( new SendCommMessageWorker( messageRouter ) ) );
 
 		// 会话处理(建立会话，保存会话上下文等等)
 		pipeline.addLast( "session_handler", new SessionContextHandler( messageRouter ) );
-//		pipeline.addLast( "mq_connection_created_handler",
-//			new MQConnectionCreatedHandler( msgReceiver, signHandler ) );
-//		pipeline.addLast( "mq_reconnected_handler", new MQReconnectedHandler( msgReceiver ) );
 
 		// ===========================================================
 		// 4.设置服务器监控处理器

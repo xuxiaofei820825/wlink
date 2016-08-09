@@ -11,7 +11,6 @@ public class DefaultTicketAuthMessageCodec implements MessageCodec<TicketAuthent
 		AuthMessage msg = AuthMessage.newBuilder()
 			.setTicket( ticket )
 			.build();
-
 		return msg.toByteArray();
 	}
 
@@ -19,6 +18,6 @@ public class DefaultTicketAuthMessageCodec implements MessageCodec<TicketAuthent
 		// 解码
 		AuthMessage authMsg = AuthMessage.parseFrom( bytes );
 		TicketAuthentication authentication = new TicketAuthentication( authMsg.getTicket() );
-		return new com.iauto.wlink.core.auth.TicketAuthMessage( authentication );
+		return new TicketAuthMessage( authentication );
 	}
 }
