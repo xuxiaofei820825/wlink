@@ -8,10 +8,10 @@ import java.util.Map;
 import javax.jms.Connection;
 
 import org.apache.qpid.client.AMQConnection;
+import org.apache.qpid.transport.ConnectionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iauto.wlink.core.message.event.QpidDisconnectEvent;
 import com.iauto.wlink.core.session.Session;
 import com.iauto.wlink.core.session.SessionContext;
 import com.iauto.wlink.core.session.SessionContextManager;
@@ -22,23 +22,31 @@ import com.iauto.wlink.core.session.SessionContextManager;
  * @author xiaofei.xu
  * 
  */
-public class QpidDisconnectHandler extends ChannelInboundHandlerAdapter {
+public class QpidReconnectHandler extends ChannelInboundHandlerAdapter {
 
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
-	@Override
-	public void userEventTriggered( ChannelHandlerContext ctx, Object evt ) throws Exception {
+	private final String url;
 
-		if ( !( evt instanceof QpidDisconnectEvent ) ) {
-			ctx.fireUserEventTriggered( evt );
-			return;
+	public QpidReconnectHandler( String url ) {
+		this.url = url;
+	}
+
+	@Override
+	public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
+			throws Exception {
+
+		if ( !( cause.getCause() != null
+		&& cause.getCause() instanceof ConnectionException ) ) {
+			ctx.fireExceptionCaught( cause );
 		}
 
-		QpidDisconnectEvent event = (QpidDisconnectEvent) evt;
+		// log
+		logger.info( "try to reconnect qpid server......" );
 
 		// 创建新的QPID连接
-		Connection conn = newConnection( ctx, event.getUrl() );
+		AMQConnection conn = newConnection( url );
 
 		// 使用新的连接恢复所有的消息监听器
 		createConsumers( conn );
@@ -47,21 +55,36 @@ public class QpidDisconnectHandler extends ChannelInboundHandlerAdapter {
 	/*
 	 * 创建新的QPID服务连接
 	 */
-	private Connection newConnection( ChannelHandlerContext ctx, String url ) throws Exception {
-		// info
-		logger.info( "Connection of current I/O thread is not exist, create a connection first!" );
+	private AMQConnection newConnection( String url ) {
 
-		// 与broker创建一个连接
-		AMQConnection conn = new AMQConnection( url );
+		AMQConnection conn = null;
+		boolean isSuccess = false;
 
-		// 添加异常监听器
-		conn.setExceptionListener( new QpidExceptionListener( ctx, url ) );
+		while ( !isSuccess ) {
+			try {
 
-		// 创建连接
-		conn.start();
+				// 与broker创建一个连接
+				conn = new AMQConnection( url );
 
-		// 添加到连接管理管理
-		QpidConnectionManager.add( conn );
+				// 创建连接
+				conn.start();
+
+				// succeed to reconnect
+				isSuccess = true;
+
+				// 添加到连接管理管理
+				QpidConnectionManager.add( conn );
+			} catch ( Exception ex ) {
+				// info
+				logger.info( "Failed to reconnect qpid server, 5 seconds later, try to reconnect again. Caused by:{}",
+					ex.getMessage() );
+				try {
+					Thread.sleep( 5000 );
+				} catch ( InterruptedException e ) {
+					// ignore
+				}
+			}
+		}
 
 		return conn;
 	}
@@ -95,11 +118,8 @@ public class QpidDisconnectHandler extends ChannelInboundHandlerAdapter {
 					// success
 					isSuccess = true;
 				} catch ( Exception ex ) {
-					// error
-					logger.error( "Failed to create message consumer. Caused by: {}", ex.getMessage() );
-
-					// info
-					logger.info( "5 seconds later, try again." );
+					logger.error( "Failed to create message consumer, 5 seconds later, try again. Caused by:{}",
+						ex.getMessage() );
 
 					try {
 						Thread.sleep( 5000 );

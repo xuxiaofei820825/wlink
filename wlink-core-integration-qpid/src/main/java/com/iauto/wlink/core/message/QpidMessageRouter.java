@@ -41,13 +41,6 @@ public class QpidMessageRouter implements MessageRouter {
 	private final static Map<String, MessageConsumer> consumers = new HashMap<String, MessageConsumer>();
 
 	/**
-	 * 构造函数
-	 * 
-	 */
-	public QpidMessageRouter() {
-	}
-
-	/**
 	 * 发送消息
 	 */
 	public ListenableFuture<Object> send( AbstractCommMessage<byte[]> message )
@@ -56,22 +49,17 @@ public class QpidMessageRouter implements MessageRouter {
 		// 初始化为NULL
 		ListenableFuture<Object> future = null;
 
-		try {
-			// 获取当前线程的连接
-			AMQConnection conn = QpidConnectionManager.get();
+		// 获取当前线程的连接
+		AMQConnection conn = QpidConnectionManager.get();
 
-			// 不能为NULL
-			if ( conn == null ) {
-				throw new MessageRouteException();
-			}
-
-			// 执行异步任务
-			future = MoreExecutors.listeningDecorator( Executors.newFixedThreadPool( 10 ) )
-				.submit( new MessageSendTask( conn, message ), null );
-		} catch ( Exception ex ) {
-			// error
-			logger.error( "Failed to send the message!!! Caused by: {}", ex.getMessage() );
+		// 不能为NULL
+		if ( conn.isClosed() ) {
+			throw new MessageRouteException();
 		}
+
+		// 执行异步任务
+		future = MoreExecutors.listeningDecorator( Executors.newFixedThreadPool( 10 ) )
+			.submit( new MessageSendTask( conn, message ), null );
 
 		return future;
 	}
@@ -121,10 +109,10 @@ public class QpidMessageRouter implements MessageRouter {
 
 	private class MessageSendTask implements Runnable {
 
-		private final Connection conn;
+		private final AMQConnection conn;
 		private final AbstractCommMessage<byte[]> message;
 
-		public MessageSendTask( Connection conn, AbstractCommMessage<byte[]> message ) {
+		public MessageSendTask( AMQConnection conn, AbstractCommMessage<byte[]> message ) {
 			this.conn = conn;
 			this.message = message;
 		}

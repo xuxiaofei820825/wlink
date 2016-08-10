@@ -1,5 +1,8 @@
 package com.iauto.wlink.core.message;
 
+import javax.jms.ExceptionListener;
+import javax.jms.JMSException;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
@@ -26,7 +29,7 @@ public class QpidConnectionHandler extends ChannelInboundHandlerAdapter {
 	}
 
 	@Override
-	public void channelRegistered( ChannelHandlerContext ctx ) throws Exception {
+	public void channelActive( ChannelHandlerContext ctx ) throws Exception {
 		// 获取当前I/O线程的连接
 		AMQConnection conn = QpidConnectionManager.get();
 
@@ -36,21 +39,24 @@ public class QpidConnectionHandler extends ChannelInboundHandlerAdapter {
 		}
 
 		// 流转
-		ctx.fireChannelRegistered();
+		ctx.fireChannelActive();
 	}
 
 	/*
 	 * 创建新的QPID服务连接
 	 */
-	private void newConnection( ChannelHandlerContext ctx, String url ) throws Exception {
+	private void newConnection( final ChannelHandlerContext ctx, final String url ) throws Exception {
 		// info
 		logger.info( "Connection of current I/O thread is not exist, create a connection first!" );
 
 		// 与broker创建一个连接
 		AMQConnection conn = new AMQConnection( url );
 
-		// 添加异常监听器
-		conn.setExceptionListener( new QpidExceptionListener( ctx, url ) );
+		conn.setExceptionListener( new ExceptionListener() {
+			public void onException( JMSException exception ) {
+				ctx.fireExceptionCaught( exception );
+			}
+		} );
 
 		// 创建连接
 		conn.start();

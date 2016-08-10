@@ -20,7 +20,7 @@ import com.iauto.wlink.core.auth.provider.ReserveAccountTicketAuthenticationProv
 import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
 import com.iauto.wlink.core.message.MessageRouter;
 import com.iauto.wlink.core.message.QpidConnectionHandler;
-import com.iauto.wlink.core.message.QpidDisconnectHandler;
+import com.iauto.wlink.core.message.QpidReconnectHandler;
 import com.iauto.wlink.core.message.QpidMessageRouter;
 import com.iauto.wlink.core.message.codec.CommMessageCodec;
 import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
@@ -103,7 +103,6 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 		// 创建QPID连接
 		pipeline.addLast( "qpid_connect", new QpidConnectionHandler( setting.getMqUrl() ) );
-		pipeline.addLast( "qpid_disconnect", new QpidDisconnectHandler() );
 
 		// ===========================================================
 		// 3.以下设置解码器
@@ -123,6 +122,8 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		authHandler.setSignHandler( signHandler );
 
 		pipeline.addLast( "auth", authHandler );
+
+		pipeline.addLast( "qpid_disconnect", new QpidReconnectHandler( setting.getMqUrl() ) );
 
 		// 设置消息编解码器(进、出)
 		pipeline.addLast( "message_codec", new CommMessageCodec( new SendCommMessageWorker( messageRouter ) ) );
