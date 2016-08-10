@@ -19,6 +19,8 @@ import com.iauto.wlink.core.auth.DefaultTicketAuthMessageCodec;
 import com.iauto.wlink.core.auth.provider.ReserveAccountTicketAuthenticationProvider;
 import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
 import com.iauto.wlink.core.message.MessageRouter;
+import com.iauto.wlink.core.message.QpidConnectionHandler;
+import com.iauto.wlink.core.message.QpidDisconnectHandler;
 import com.iauto.wlink.core.message.QpidMessageRouter;
 import com.iauto.wlink.core.message.codec.CommMessageCodec;
 import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
@@ -50,7 +52,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	/** 服务器状态统计 */
 	private static final ServerStateStatistics statistics = new ServerStateStatistics();
 
-	private static final MessageRouter messageRouter = new QpidMessageRouter( setting.getMqUrl() );
+	private static final MessageRouter messageRouter = new QpidMessageRouter();
 	private static final AuthenticationProvider provider = new ReserveAccountTicketAuthenticationProvider(
 		"UhZr6vyeBu0KmlX9", "UTbKkKQ335whZicI" );
 	private static final SessionSignatureHandler signHandler = new HMacSessionSignatureHandler( setting.getHmacKey() );
@@ -98,6 +100,10 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 			setting.getHeartbeatInterval(), 0, 0, TimeUnit.SECONDS );
 		pipeline.addLast( "idle", idleStateHandler )
 			.addLast( "heartbeat", new HeartbeatHandler() );
+
+		// 创建QPID连接
+		pipeline.addLast( "qpid_connect", new QpidConnectionHandler( setting.getMqUrl() ) );
+		pipeline.addLast( "qpid_disconnect", new QpidDisconnectHandler() );
 
 		// ===========================================================
 		// 3.以下设置解码器

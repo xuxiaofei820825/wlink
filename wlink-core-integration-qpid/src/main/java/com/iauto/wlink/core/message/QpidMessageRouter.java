@@ -9,7 +9,6 @@ import java.util.concurrent.Executors;
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.Destination;
-import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
@@ -38,44 +37,32 @@ public class QpidMessageRouter implements MessageRouter {
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
-	/** 与QPID服务器的连接(每个I/O线程创建一个连接) */
-	private final static ThreadLocal<Connection> connections = new ThreadLocal<Connection>();
-
 	/** 会话编号与消息监听器的对应 */
 	private final static Map<String, MessageConsumer> consumers = new HashMap<String, MessageConsumer>();
-
-	/** 连接用URL */
-	private final String url;
-
-	/** 连接异常监听器 */
-	private ExceptionListener exceptionListener;
 
 	/**
 	 * 构造函数
 	 * 
-	 * @param url
-	 *          连接URL
 	 */
-	public QpidMessageRouter( String url ) {
-		this.url = url;
+	public QpidMessageRouter() {
 	}
 
 	/**
 	 * 发送消息
 	 */
-	public ListenableFuture<Object> send( AbstractCommMessage<byte[]> message ) throws MessageRouteException {
+	public ListenableFuture<Object> send( AbstractCommMessage<byte[]> message )
+			throws MessageRouteException {
 
 		// 初始化为NULL
 		ListenableFuture<Object> future = null;
 
 		try {
 			// 获取当前线程的连接
-			Connection conn = getConnection();
+			AMQConnection conn = QpidConnectionManager.get();
 
-			// 如果当前线程没有连接，则为当前线程创建一个
+			// 不能为NULL
 			if ( conn == null ) {
-				// 新建一个连接
-				conn = newConnection();
+				throw new MessageRouteException();
 			}
 
 			// 执行异步任务
@@ -94,13 +81,12 @@ public class QpidMessageRouter implements MessageRouter {
 	 */
 	public void register( SessionContext ctx ) throws MessageRouteException {
 		try {
-			// 获取当前线程的连接
-			Connection conn = getConnection();
+			// 获取当前I/O线程的连接
+			AMQConnection conn = QpidConnectionManager.get();
 
-			// 如果当前线程没有连接，则为当前线程创建一个
+			// 不能为NULL
 			if ( conn == null ) {
-				// 新建一个连接
-				conn = newConnection();
+				throw new MessageRouteException();
 			}
 
 			// 为用户注册消息监听者
@@ -128,31 +114,6 @@ public class QpidMessageRouter implements MessageRouter {
 		} catch ( Exception ex ) {
 			throw new MessageRouteException();
 		}
-	}
-
-	// =======================================================================
-	// private functions
-
-	/*
-	 * 创建新的QPID服务连接
-	 */
-	private Connection newConnection() throws Exception {
-
-		// info
-		logger.info( "Connection of current I/O thread is not exist, create a connection first!" );
-
-		// 与broker创建一个连接
-		AMQConnection conn = new AMQConnection( url );
-
-		// 添加异常监听器
-		conn.setExceptionListener( this.exceptionListener );
-		// 创建连接
-		conn.start();
-
-		// 添加到连接管理管理
-		addConnection( conn );
-
-		return conn;
 	}
 
 	// =======================================================================
@@ -283,16 +244,8 @@ public class QpidMessageRouter implements MessageRouter {
 		return consumer;
 	}
 
-	public static void addConnection( Connection conn ) {
-		connections.set( conn );
-	}
-
 	public static void addConsumer( String id, MessageConsumer consumer ) {
 		consumers.put( id, consumer );
-	}
-
-	public static Connection getConnection() {
-		return connections.get();
 	}
 
 	public static MessageConsumer getConsumer( String id ) {

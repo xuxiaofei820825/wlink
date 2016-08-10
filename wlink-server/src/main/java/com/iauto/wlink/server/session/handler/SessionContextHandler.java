@@ -54,8 +54,6 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 		// 保存会话上下文到当前线程
 		SessionContextManager.add( sessionCtx );
 		
-		logger.info( "DDDDDDDDDDDDDDDDD" );
-
 		// 为会话用户创建监听
 		this.messageRouter.register( sessionCtx );
 	}

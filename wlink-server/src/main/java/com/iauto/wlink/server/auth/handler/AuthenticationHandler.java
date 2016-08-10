@@ -127,9 +127,10 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 			try {
 				// 进行认证
 				Authentication res = provider.authenticate( authentication );
+				userId = res.principal();
 
 				// info
-				logger.info( "Succeed to authenticate. userId:{}", res.principal() );
+				logger.info( "Succeed to authenticate. userId:{}", userId );
 
 				// 创建会话
 				Session session = new Session( idGenerator.generate(),

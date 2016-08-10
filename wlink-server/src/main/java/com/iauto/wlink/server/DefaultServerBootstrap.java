@@ -36,7 +36,7 @@ public class DefaultServerBootstrap {
 
 	public DefaultServerBootstrap() {
 		this.bossGroup = new NioEventLoopGroup();
-		this.workerGroup = new NioEventLoopGroup();
+		this.workerGroup = new NioEventLoopGroup(2);
 	}
 
 	public void start() throws Exception {
