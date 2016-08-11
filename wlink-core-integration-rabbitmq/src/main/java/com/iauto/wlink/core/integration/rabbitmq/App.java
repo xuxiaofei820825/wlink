@@ -1,4 +1,4 @@
-package com.iauto.wlink;
+package com.iauto.wlink.core.integration.rabbitmq;
 
 /**
  * Hello world!

@@ -8,7 +8,7 @@ public class MutipleClients {
 
 	private static final String TEXT_MESSAGE = "It is a static message!!";
 	private static final long MIN_USER_ID = 1;
-	private static final long MAX_USER_ID = 110;
+	private static final long MAX_USER_ID = 10;
 
 	public static void main( String[] args ) throws Exception {
 
@@ -16,6 +16,8 @@ public class MutipleClients {
 		for ( int idx = 1; idx <= MAX_USER_ID; idx++ ) {
 			Thread thread = new Thread( new ClientRunnable( idx ) );
 			thread.start();
+			
+			Thread.sleep( 2000 );
 		}
 	}
 

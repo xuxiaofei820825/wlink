@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.message;
+package com.iauto.wlink.core.integration.qpid;
 
 import io.netty.channel.Channel;
 
@@ -22,9 +22,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.iauto.wlink.core.Constant;
 import com.iauto.wlink.core.exception.MessageRouteException;
-import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
+import com.iauto.wlink.core.message.CommMessage;
+import com.iauto.wlink.core.message.MessageRouter;
 import com.iauto.wlink.core.session.SessionContext;
-import com.iauto.wlink.core.tools.Executor;
 
 /**
  * 集成QPID实现消息路由
@@ -67,21 +67,24 @@ public class QpidMessageRouter implements MessageRouter {
 	/**
 	 * 注册会话
 	 */
-	public void register( SessionContext ctx ) throws MessageRouteException {
-		try {
-			// 获取当前I/O线程的连接
-			AMQConnection conn = QpidConnectionManager.get();
+	public ListenableFuture<Object> register( SessionContext ctx ) throws MessageRouteException {
 
-			// 不能为NULL
-			if ( conn == null ) {
-				throw new MessageRouteException();
-			}
+		// 初始化为NULL
+		ListenableFuture<Object> future = null;
 
-			// 为用户注册消息监听者
-			Executor.execute( new MessageConsumerCreateTask( conn, ctx ) );
-		} catch ( Exception ex ) {
+		// 获取当前I/O线程的连接
+		AMQConnection conn = QpidConnectionManager.get();
+
+		// 不能为NULL
+		if ( conn == null ) {
 			throw new MessageRouteException();
 		}
+
+		// 执行异步任务
+		future = MoreExecutors.listeningDecorator( Constant.executors )
+			.submit( new MessageConsumerCreateTask( conn, ctx ), null );
+
+		return future;
 	}
 
 	/**
@@ -96,6 +99,7 @@ public class QpidMessageRouter implements MessageRouter {
 			if ( consumer != null ) {
 				// close
 				consumer.close();
+				removeConsumer( ctx.getSession().getId() );
 				// log
 				logger.info( "Succeed to close message consumer for user[ID:{}]", ctx.getSession().getUserId() );
 			}
@@ -188,18 +192,8 @@ public class QpidMessageRouter implements MessageRouter {
 
 				// 添加到管理
 				addConsumer( ctx.getSession().getId(), consumer );
-
-				// info
-				logger.info( "Succeed to create a message consumer for user[ID:{}]", ctx.getSession().getUserId() );
 			} catch ( Exception e ) {
-				// info
-				logger.info( "Failed to create a message listener for user!!!", e );
-
-				// 给终端反馈该错误
-				ErrorMessage error = ErrorMessage.newBuilder()
-					.setError( "Session_Create_Failure" )
-					.build();
-				ctx.getChannel().writeAndFlush( error );
+				throw new RuntimeException( e );
 			}
 		}
 	}
@@ -238,5 +232,9 @@ public class QpidMessageRouter implements MessageRouter {
 
 	public static MessageConsumer getConsumer( String id ) {
 		return consumers.get( id );
+	}
+
+	public static void removeConsumer( String id ) {
+		consumers.remove( id );
 	}
 }

@@ -17,6 +17,12 @@ import com.iauto.wlink.core.message.proto.CommMessageHeaderProto.CommMessageHead
 import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge;
 import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge.AckType;
 
+/**
+ * 处理消息的发送
+ * 
+ * @author xiaofei.xu
+ * 
+ */
 public class SendCommMessageWorker implements MessageWorker {
 
 	/** logger */
@@ -50,7 +56,6 @@ public class SendCommMessageWorker implements MessageWorker {
 		ctx.writeAndFlush( ack_rev );
 
 		// 把消息路由给接收者
-		// TODO 有问题：不是I/O线程，send方法中会不停的建连接
 		ListenableFuture<Object> future = messageRouter.send( new DefaultCommMessage<byte[]>(
 			msgHeader.getType(), body,
 			Long.valueOf( msgHeader.getFrom() ),

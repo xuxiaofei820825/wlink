@@ -7,7 +7,11 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.iauto.wlink.core.message.MessageRouter;
+import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
 import com.iauto.wlink.core.session.Session;
 import com.iauto.wlink.core.session.SessionContext;
 import com.iauto.wlink.core.session.SessionContextManager;
@@ -48,14 +52,36 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 
 		// 处理由认证处理器触发的建立会话上下文的事件
 		// 获取会话上下文
-		SessionContextEvent event = (SessionContextEvent) evt;
-		SessionContext sessionCtx = event.getSessionContext();
+		final SessionContextEvent event = (SessionContextEvent) evt;
+		final SessionContext sessionCtx = event.getSessionContext();
 
 		// 保存会话上下文到当前线程
 		SessionContextManager.add( sessionCtx );
-		
+
 		// 为会话用户创建监听
-		this.messageRouter.register( sessionCtx );
+		ListenableFuture<Object> future = this.messageRouter.register( sessionCtx );
+
+		Futures.addCallback( future, new FutureCallback<Object>() {
+			public void onSuccess( Object result ) {
+				// 成功
+
+				// info
+				logger.info( "Succeed to create a message consumer for user[ID:{}]", sessionCtx.getSession().getUserId() );
+			}
+
+			public void onFailure( Throwable t ) {
+				// 失败
+
+				// info
+				logger.info( "Failed to create a message listener for user!!! Caused by:{}", t.getMessage() );
+
+				// 给终端反馈该错误
+				ErrorMessage error = ErrorMessage.newBuilder()
+					.setError( "Session_Create_Failure" )
+					.build();
+				sessionCtx.getChannel().writeAndFlush( error );
+			}
+		} );
 	}
 
 	@Override

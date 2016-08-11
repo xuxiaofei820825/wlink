@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.message;
+package com.iauto.wlink.core.integration.qpid;
 
 import javax.jms.ExceptionListener;
 import javax.jms.JMSException;

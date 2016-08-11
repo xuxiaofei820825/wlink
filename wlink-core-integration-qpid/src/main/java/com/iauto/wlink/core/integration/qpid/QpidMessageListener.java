@@ -1,4 +1,4 @@
-package com.iauto.wlink.core.message;
+package com.iauto.wlink.core.integration.qpid;
 
 import io.netty.channel.Channel;
 
@@ -8,6 +8,9 @@ import javax.jms.MessageListener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.iauto.wlink.core.message.CommMessage;
+import com.iauto.wlink.core.message.DefaultCommMessage;
 
 /**
  * QPID消息处理器，该类执行接收到用户消息后的动作
@@ -60,7 +63,7 @@ public class QpidMessageListener implements MessageListener {
 			byte[] payload = new byte[(int) len];
 			bytes.readBytes( payload );
 
-			AbstractCommMessage<byte[]> commMsg =
+			CommMessage<byte[]> commMsg =
 					new DefaultCommMessage<byte[]>( type, payload, from, to );
 
 			// 发送给接收者
