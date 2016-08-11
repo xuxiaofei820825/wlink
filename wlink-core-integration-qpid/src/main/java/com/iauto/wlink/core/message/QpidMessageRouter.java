@@ -4,7 +4,6 @@ import io.netty.channel.Channel;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executors;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -21,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.iauto.wlink.core.Constant;
 import com.iauto.wlink.core.exception.MessageRouteException;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
 import com.iauto.wlink.core.session.SessionContext;
@@ -43,7 +43,7 @@ public class QpidMessageRouter implements MessageRouter {
 	/**
 	 * 发送消息
 	 */
-	public ListenableFuture<Object> send( AbstractCommMessage<byte[]> message )
+	public ListenableFuture<Object> send( CommMessage<byte[]> message )
 			throws MessageRouteException {
 
 		// 初始化为NULL
@@ -58,7 +58,7 @@ public class QpidMessageRouter implements MessageRouter {
 		}
 
 		// 执行异步任务
-		future = MoreExecutors.listeningDecorator( Executors.newFixedThreadPool( 10 ) )
+		future = MoreExecutors.listeningDecorator( Constant.executors )
 			.submit( new MessageSendTask( conn, message ), null );
 
 		return future;
@@ -110,9 +110,9 @@ public class QpidMessageRouter implements MessageRouter {
 	private class MessageSendTask implements Runnable {
 
 		private final AMQConnection conn;
-		private final AbstractCommMessage<byte[]> message;
+		private final CommMessage<byte[]> message;
 
-		public MessageSendTask( AMQConnection conn, AbstractCommMessage<byte[]> message ) {
+		public MessageSendTask( AMQConnection conn, CommMessage<byte[]> message ) {
 			this.conn = conn;
 			this.message = message;
 		}

@@ -5,7 +5,7 @@ import com.iauto.wlink.core.exception.MessageRouteException;
 import com.iauto.wlink.core.session.SessionContext;
 
 public interface MessageRouter {
-	ListenableFuture<Object> send( AbstractCommMessage<byte[]> message ) throws MessageRouteException;
+	ListenableFuture<Object> send( CommMessage<byte[]> message ) throws MessageRouteException;
 
 	void register( SessionContext ctx ) throws MessageRouteException;
 

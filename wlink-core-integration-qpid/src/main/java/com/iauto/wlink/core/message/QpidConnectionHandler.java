@@ -52,8 +52,12 @@ public class QpidConnectionHandler extends ChannelInboundHandlerAdapter {
 		// 与broker创建一个连接
 		AMQConnection conn = new AMQConnection( url );
 
+		// 设置异常处理器
 		conn.setExceptionListener( new ExceptionListener() {
 			public void onException( JMSException exception ) {
+				// error
+				logger.error( "Error occoured. Caused by:{}",
+					exception.getCause() != null ? exception.getCause().getMessage() : exception.getMessage() );
 				ctx.fireExceptionCaught( exception );
 			}
 		} );

@@ -6,6 +6,8 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import java.util.Map;
 
 import javax.jms.Connection;
+import javax.jms.ExceptionListener;
+import javax.jms.JMSException;
 
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.transport.ConnectionException;
@@ -27,6 +29,7 @@ public class QpidReconnectHandler extends ChannelInboundHandlerAdapter {
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
+	/** 连接用URL */
 	private final String url;
 
 	public QpidReconnectHandler( String url ) {
@@ -34,7 +37,7 @@ public class QpidReconnectHandler extends ChannelInboundHandlerAdapter {
 	}
 
 	@Override
-	public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
+	public void exceptionCaught( final ChannelHandlerContext ctx, Throwable cause )
 			throws Exception {
 
 		if ( !( cause.getCause() != null
@@ -47,6 +50,16 @@ public class QpidReconnectHandler extends ChannelInboundHandlerAdapter {
 
 		// 创建新的QPID连接
 		AMQConnection conn = newConnection( url );
+
+		// 设置异常处理器
+		conn.setExceptionListener( new ExceptionListener() {
+			public void onException( JMSException exception ) {
+				// error
+				logger.error( "Error occoured. Caused by:{}",
+					exception.getCause() != null ? exception.getCause().getMessage() : exception.getMessage() );
+				ctx.fireExceptionCaught( exception );
+			}
+		} );
 
 		// 使用新的连接恢复所有的消息监听器
 		createConsumers( conn );
@@ -75,9 +88,9 @@ public class QpidReconnectHandler extends ChannelInboundHandlerAdapter {
 				// 添加到连接管理管理
 				QpidConnectionManager.add( conn );
 			} catch ( Exception ex ) {
-				// info
-				logger.info( "Failed to reconnect qpid server, 5 seconds later, try to reconnect again. Caused by:{}",
-					ex.getMessage() );
+				// error
+				logger.error( "Failed to reconnect qpid server, 5 seconds later, try to reconnect again. Caused by:{}",
+					ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage() );
 				try {
 					Thread.sleep( 5000 );
 				} catch ( InterruptedException e ) {
