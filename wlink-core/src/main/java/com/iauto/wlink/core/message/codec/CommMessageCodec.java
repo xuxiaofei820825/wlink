@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.iauto.wlink.core.Constant;
 import com.iauto.wlink.core.MessageWorker;
 import com.iauto.wlink.core.comm.CommunicationPackage;
-import com.iauto.wlink.core.message.AbstractCommMessage;
+import com.iauto.wlink.core.message.AbstractPointToPointMessage;
 import com.iauto.wlink.core.message.proto.CommMessageHeaderProto.CommMessageHeader;
 
 /**
@@ -26,7 +26,7 @@ import com.iauto.wlink.core.message.proto.CommMessageHeaderProto.CommMessageHead
  * @author xiaofei.xu
  * 
  */
-public class CommMessageCodec extends MessageToMessageCodec<CommunicationPackage, AbstractCommMessage<byte[]>> {
+public class CommMessageCodec extends MessageToMessageCodec<CommunicationPackage, AbstractPointToPointMessage<byte[]>> {
 
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
@@ -39,7 +39,7 @@ public class CommMessageCodec extends MessageToMessageCodec<CommunicationPackage
 	}
 
 	@Override
-	protected void encode( ChannelHandlerContext ctx, AbstractCommMessage<byte[]> msg, List<Object> out )
+	protected void encode( ChannelHandlerContext ctx, AbstractPointToPointMessage<byte[]> msg, List<Object> out )
 			throws Exception {
 
 		// 对消息头进行编码

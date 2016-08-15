@@ -59,7 +59,7 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 		SessionContextManager.add( sessionCtx );
 
 		// 为会话用户创建监听
-		ListenableFuture<Object> future = this.messageRouter.register( sessionCtx );
+		ListenableFuture<?> future = this.messageRouter.register( sessionCtx );
 
 		Futures.addCallback( future, new FutureCallback<Object>() {
 			public void onSuccess( Object result ) {

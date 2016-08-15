@@ -11,7 +11,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.iauto.wlink.core.MessageWorker;
-import com.iauto.wlink.core.message.DefaultCommMessage;
+import com.iauto.wlink.core.message.DefaultPointToPointMessage;
 import com.iauto.wlink.core.message.MessageRouter;
 import com.iauto.wlink.core.message.proto.CommMessageHeaderProto.CommMessageHeader;
 import com.iauto.wlink.core.message.proto.MessageAcknowledgeProto.MessageAcknowledge;
@@ -56,7 +56,7 @@ public class SendCommMessageWorker implements MessageWorker {
 		ctx.writeAndFlush( ack_rev );
 
 		// 把消息路由给接收者
-		ListenableFuture<Object> future = messageRouter.send( new DefaultCommMessage<byte[]>(
+		ListenableFuture<?> future = messageRouter.send( new DefaultPointToPointMessage<byte[]>(
 			msgHeader.getType(), body,
 			Long.valueOf( msgHeader.getFrom() ),
 			Long.valueOf( msgHeader.getTo() ) ) );

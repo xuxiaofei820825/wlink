@@ -2,8 +2,8 @@ package com.iauto.wlink.core.message;
 
 import com.iauto.wlink.core.AbstractMessage;
 
-public abstract class AbstractCommMessage<T> extends AbstractMessage<T>
-		implements CommMessage<T> {
+public abstract class AbstractPointToPointMessage<T> extends AbstractMessage<T>
+		implements PointToPointMessage<T> {
 
 	/** 发送者ID */
 	private final long from;
@@ -11,7 +11,7 @@ public abstract class AbstractCommMessage<T> extends AbstractMessage<T>
 	/** 接收者ID */
 	private final long to;
 
-	public AbstractCommMessage( String type, T payload, long from, long to ) {
+	public AbstractPointToPointMessage( String type, T payload, long from, long to ) {
 		// super
 		super( type, payload );
 

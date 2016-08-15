@@ -9,8 +9,8 @@ import javax.jms.MessageListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iauto.wlink.core.message.CommMessage;
-import com.iauto.wlink.core.message.DefaultCommMessage;
+import com.iauto.wlink.core.message.PointToPointMessage;
+import com.iauto.wlink.core.message.DefaultPointToPointMessage;
 
 /**
  * QPID消息处理器，该类执行接收到用户消息后的动作
@@ -18,7 +18,7 @@ import com.iauto.wlink.core.message.DefaultCommMessage;
  * @author xiaofei.xu
  * 
  */
-public class QpidMessageListener implements MessageListener {
+public class PointToPointMessageListener implements MessageListener {
 
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
@@ -37,7 +37,7 @@ public class QpidMessageListener implements MessageListener {
 	 * @param userId
 	 *          用户编号
 	 */
-	public QpidMessageListener( Channel channel, long userId ) {
+	public PointToPointMessageListener( Channel channel, long userId ) {
 		this.channel = channel;
 		this.userId = userId;
 	}
@@ -63,8 +63,8 @@ public class QpidMessageListener implements MessageListener {
 			byte[] payload = new byte[(int) len];
 			bytes.readBytes( payload );
 
-			CommMessage<byte[]> commMsg =
-					new DefaultCommMessage<byte[]>( type, payload, from, to );
+			PointToPointMessage<byte[]> commMsg =
+					new DefaultPointToPointMessage<byte[]>( type, payload, from, to );
 
 			// 发送给接收者
 			channel.writeAndFlush( commMsg );

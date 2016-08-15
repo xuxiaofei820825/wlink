@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
  * @author xiaofei.xu
  * 
  */
-public class QpidConnectionHandler extends ChannelInboundHandlerAdapter {
+public class ConnectionHandler extends ChannelInboundHandlerAdapter {
 
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
@@ -24,14 +24,14 @@ public class QpidConnectionHandler extends ChannelInboundHandlerAdapter {
 	/** 连接用URL */
 	private final String url;
 
-	public QpidConnectionHandler( String url ) {
+	public ConnectionHandler( String url ) {
 		this.url = url;
 	}
 
 	@Override
 	public void channelActive( ChannelHandlerContext ctx ) throws Exception {
 		// 获取当前I/O线程的连接
-		AMQConnection conn = QpidConnectionManager.get();
+		AMQConnection conn = ConnectionManager.get();
 
 		if ( conn == null ) {
 			// 如果未建立，则为当前I/O线程创建一个连接
@@ -66,6 +66,6 @@ public class QpidConnectionHandler extends ChannelInboundHandlerAdapter {
 		conn.start();
 
 		// 添加到连接管理管理
-		QpidConnectionManager.add( conn );
+		ConnectionManager.add( conn );
 	}
 }

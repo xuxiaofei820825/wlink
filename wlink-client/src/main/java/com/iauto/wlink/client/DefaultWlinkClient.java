@@ -17,7 +17,7 @@ import com.iauto.wlink.client.channel.DefaultChannelInitializer;
 import com.iauto.wlink.client.exception.AuthenticationException;
 import com.iauto.wlink.core.MessageWorker;
 import com.iauto.wlink.core.auth.proto.AuthMessageProto.AuthMessage;
-import com.iauto.wlink.core.message.DefaultCommMessage;
+import com.iauto.wlink.core.message.DefaultPointToPointMessage;
 import com.iauto.wlink.core.session.codec.SessionContextCodec;
 import com.iauto.wlink.core.session.proto.SessionMessageProto.SessionMessage;
 
@@ -212,7 +212,7 @@ public class DefaultWlinkClient implements WlinkClient {
 
 		Session session = this.channel.attr( SessionKey ).get();
 
-		DefaultCommMessage<byte[]> commMsg = new DefaultCommMessage<byte[]>( type, body, session.getUserId(), receiver );
+		DefaultPointToPointMessage<byte[]> commMsg = new DefaultPointToPointMessage<byte[]>( type, body, session.getUserId(), receiver );
 
 		// 发送文本消息
 		channel.writeAndFlush( commMsg );

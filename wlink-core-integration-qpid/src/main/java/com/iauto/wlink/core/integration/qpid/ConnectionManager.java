@@ -2,7 +2,7 @@ package com.iauto.wlink.core.integration.qpid;
 
 import org.apache.qpid.client.AMQConnection;
 
-public class QpidConnectionManager {
+public class ConnectionManager {
 
 	/** 与QPID服务器的连接(每个I/O线程创建一个连接) */
 	private final static ThreadLocal<AMQConnection> connections = new ThreadLocal<AMQConnection>();

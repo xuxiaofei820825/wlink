@@ -5,7 +5,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.util.Map;
 
-import javax.jms.Connection;
 import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 
@@ -24,7 +23,7 @@ import com.iauto.wlink.core.session.SessionContextManager;
  * @author xiaofei.xu
  * 
  */
-public class QpidReconnectHandler extends ChannelInboundHandlerAdapter {
+public class ReconnectHandler extends ChannelInboundHandlerAdapter {
 
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
@@ -32,7 +31,7 @@ public class QpidReconnectHandler extends ChannelInboundHandlerAdapter {
 	/** 连接用URL */
 	private final String url;
 
-	public QpidReconnectHandler( String url ) {
+	public ReconnectHandler( String url ) {
 		this.url = url;
 	}
 
@@ -86,7 +85,7 @@ public class QpidReconnectHandler extends ChannelInboundHandlerAdapter {
 				isSuccess = true;
 
 				// 添加到连接管理管理
-				QpidConnectionManager.add( conn );
+				ConnectionManager.add( conn );
 			} catch ( Exception ex ) {
 				// error
 				logger.error( "Failed to reconnect qpid server, 5 seconds later, try to reconnect again. Caused by:{}",
@@ -105,7 +104,7 @@ public class QpidReconnectHandler extends ChannelInboundHandlerAdapter {
 	/*
 	 * 恢复所有消息监听器
 	 */
-	private void createConsumers( Connection conn ) {
+	private void createConsumers( AMQConnection conn ) {
 
 		// 获取当前I/O线程所有会话
 		Map<String, SessionContext> ctxs = SessionContextManager.getSessions();
