@@ -59,7 +59,7 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 		SessionContextManager.add( sessionCtx );
 
 		// 为会话用户创建监听
-		ListenableFuture<?> future = this.messageRouter.register( sessionCtx );
+		ListenableFuture<?> future = this.messageRouter.subscribe( sessionCtx );
 
 		Futures.addCallback( future, new FutureCallback<Object>() {
 			public void onSuccess( Object result ) {
@@ -73,7 +73,8 @@ public class SessionContextHandler extends ChannelInboundHandlerAdapter {
 				// 失败
 
 				// info
-				logger.info( "Failed to create a message listener for user!!! Caused by:{}", t.getMessage() );
+				logger.info( "Failed to create a message listener for user!!! Caused by:{}",
+					t.getCause() != null ? t.getCause().getMessage() : t.getMessage() );
 
 				// 给终端反馈该错误
 				ErrorMessage error = ErrorMessage.newBuilder()

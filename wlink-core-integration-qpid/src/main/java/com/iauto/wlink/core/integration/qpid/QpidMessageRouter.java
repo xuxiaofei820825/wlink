@@ -1,7 +1,5 @@
 package com.iauto.wlink.core.integration.qpid;
 
-import io.netty.channel.Channel;
-
 import javax.jms.BytesMessage;
 import javax.jms.Destination;
 import javax.jms.JMSException;
@@ -35,19 +33,19 @@ public class QpidMessageRouter implements MessageRouter {
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 	/** exchange name */
-	private final static String P2P_EXCHANGE_NAME = "wlink.message.p2p.topic";
-	private final static String BROADCAST_EXCHANGE_NAME = "wlink.message.broadcast.topic";
+	public final static String P2P_EXCHANGE_NAME = "wlink.message.p2p.topic";
+	public final static String BROADCAST_EXCHANGE_NAME = "wlink.message.broadcast.topic";
 
 	/**
 	 * 注册用户会话
 	 */
-	public ListenableFuture<?> register( SessionContext ctx ) throws MessageRouteException {
+	public ListenableFuture<?> subscribe( final SessionContext ctx ) throws MessageRouteException {
 
 		// 初始化为NULL
 		ListenableFuture<?> future = null;
 
 		// 获取当前I/O线程的连接
-		AMQConnection conn = ConnectionManager.get();
+		final AMQConnection conn = ConnectionManager.get();
 
 		// 不能为NULL
 		if ( conn == null || conn.isClosed() ) {
@@ -55,8 +53,26 @@ public class QpidMessageRouter implements MessageRouter {
 		}
 
 		// 执行异步任务
+		final long userId = ctx.getSession().getUserId();
+		final String sessionId = ctx.getSession().getId();
+
 		future = MoreExecutors.listeningDecorator( Constant.executors )
-			.submit( new PointToPointMessageConsumerCreateTask( conn, ctx ) );
+			.submit( new Runnable() {
+				public void run() {
+					try {
+
+						// 创建消息监听
+						MessageConsumer consumer = QpidTools.createConsumer(
+							String.format( "ADDR:%s/%s", P2P_EXCHANGE_NAME, userId ),
+							conn, new PointToPointMessageListener( ctx.getChannel() ) );
+
+						// 添加到管理
+						ConsumerManager.add( sessionId, consumer );
+					} catch ( Exception ex ) {
+						throw new RuntimeException( ex );
+					}
+				}
+			} );
 
 		return future;
 	}
@@ -102,7 +118,7 @@ public class QpidMessageRouter implements MessageRouter {
 				logger.info( "Succeed to close message consumer for user[ID:{}]", ctx.getSession().getUserId() );
 			}
 		} catch ( Exception ex ) {
-			throw new MessageRouteException();
+			throw new RuntimeException( ex );
 		}
 	}
 
@@ -126,12 +142,12 @@ public class QpidMessageRouter implements MessageRouter {
 		return future;
 	}
 
-	public ListenableFuture<?> subscribe( SessionContext ctx, long userId ) throws MessageRouteException {
+	public ListenableFuture<?> subscribe( final SessionContext ctx, final long userId ) throws MessageRouteException {
 		// 初始化为NULL
 		ListenableFuture<?> future = null;
 
 		// 获取当前线程的连接
-		AMQConnection conn = ConnectionManager.get();
+		final AMQConnection conn = ConnectionManager.get();
 
 		// 判定连接是否有效
 		if ( conn == null || conn.isClosed() ) {
@@ -140,7 +156,17 @@ public class QpidMessageRouter implements MessageRouter {
 
 		// 执行异步任务
 		future = MoreExecutors.listeningDecorator( Constant.executors )
-			.submit( new BroadMessageSubscribeTask( conn, ctx, userId ) );
+			.submit( new Runnable() {
+				public void run() {
+					try {
+						// 创建消息监听
+						QpidTools.createConsumer( String.format( "ADDR:%s/%s", BROADCAST_EXCHANGE_NAME, userId ),
+							conn, new BroadcastMessageListener( ctx.getChannel() ) );
+					} catch ( Exception ex ) {
+						throw new RuntimeException( ex );
+					}
+				}
+			} );
 
 		return future;
 	}
@@ -201,76 +227,6 @@ public class QpidMessageRouter implements MessageRouter {
 		}
 	}
 
-	/**
-	 * 创建消息监听器任务
-	 * 
-	 * @author xiaofei.xu
-	 */
-	private class PointToPointMessageConsumerCreateTask implements Runnable {
-
-		/** QPID连接 */
-		private final AMQConnection conn;
-
-		/** 会话上下文 */
-		private final SessionContext ctx;
-
-		public PointToPointMessageConsumerCreateTask( AMQConnection conn, SessionContext ctx ) {
-			this.ctx = ctx;
-			this.conn = conn;
-		}
-
-		public void run() {
-			try {
-				// info
-				logger.info( "Creating the message consumer......" );
-
-				long userId = ctx.getSession().getUserId();
-				String sessionId = ctx.getSession().getId();
-
-				// 为指定的会话创建消息监听器
-				MessageConsumer consumer = createConsumer( ctx.getChannel(), this.conn, userId );
-
-				// 添加到管理
-				ConsumerManager.add( sessionId, consumer );
-
-				// 广播出席状态
-				// presence( ctx.getSession().getUserId() );
-			} catch ( Exception e ) {
-				throw new RuntimeException( e );
-			}
-		}
-	}
-
-	private class BroadMessageSubscribeTask implements Runnable {
-
-		private final AMQConnection conn;
-		private final SessionContext ctx;
-		private final long userId;
-
-		public BroadMessageSubscribeTask( AMQConnection conn, SessionContext ctx, long userId ) {
-			this.ctx = ctx;
-			this.conn = conn;
-			this.userId = userId;
-		}
-
-		public void run() {
-
-			try {
-				// 获取会话
-				Session session = conn.getSessions().size() == 0 ?
-						conn.createSession( false, Session.CLIENT_ACKNOWLEDGE ) : conn.getSession( 0 );
-
-				// 监听指定用户的广播消息
-				Destination dest = new AMQAnyDestination(
-					String.format( "ADDR:%s/%s", BROADCAST_EXCHANGE_NAME, userId ) );
-				MessageConsumer consumer = session.createConsumer( dest );
-				consumer.setMessageListener( new BroadcastMessageListener( ctx.getChannel() ) );
-			} catch ( Exception ex ) {
-				throw new MessageRouteException();
-			}
-		}
-	}
-
 	private class MessageBroadcastTask implements Runnable {
 
 		private final AMQConnection conn;
@@ -303,7 +259,7 @@ public class QpidMessageRouter implements MessageRouter {
 				// 发送
 				producer.send( msg );
 			} catch ( Exception ex ) {
-				throw new MessageRouteException();
+				throw new RuntimeException( ex );
 			} finally {
 				if ( session != null ) {
 					try {
@@ -315,32 +271,4 @@ public class QpidMessageRouter implements MessageRouter {
 			}
 		}
 	}
-
-	// =======================================================================
-	// static functions
-
-	/*
-	 * 创建消息监听器
-	 */
-	public static MessageConsumer createConsumer( final Channel channel, final AMQConnection conn, final long userId )
-			throws Exception {
-
-		// 在当前的会话上创建消费者，监听发送给用户的消息
-		String dest_url = String.format( "ADDR:%s/%s", P2P_EXCHANGE_NAME, userId );
-		Destination dest = new AMQAnyDestination( dest_url );
-
-		Session session = null;
-		if ( conn.getSessions().size() == 0 ) {
-			session = conn.createSession( false, Session.CLIENT_ACKNOWLEDGE );
-		} else {
-			session = conn.getSession( 0 );
-		}
-
-		// 设置监听器
-		MessageConsumer consumer = session.createConsumer( dest );
-		consumer.setMessageListener( new PointToPointMessageListener( channel, userId ) );
-
-		return consumer;
-	}
-
 }

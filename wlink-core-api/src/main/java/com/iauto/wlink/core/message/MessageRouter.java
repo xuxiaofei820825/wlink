@@ -7,17 +7,17 @@ import com.iauto.wlink.core.session.SessionContext;
 public interface MessageRouter {
 
 	/**
-	 * 在系统中注册用户会话，使用户能够接收到其他用户发送给自己的消息。
+	 * 订阅者订阅发送给自己的消息。
 	 * 
 	 * @param ctx
-	 *          用户会话上下文
+	 *          订阅者会话上下文
 	 * @return {@link ListenableFuture}
 	 * @throws MessageRouteException
 	 */
-	ListenableFuture<?> register( SessionContext ctx ) throws MessageRouteException;
+	ListenableFuture<?> subscribe( SessionContext ctx ) throws MessageRouteException;
 
 	/**
-	 * 订阅指定用户的消息
+	 * 订阅者订阅指定用户的消息。
 	 * 
 	 * @param ctx
 	 *          订阅者会话上下文
@@ -39,7 +39,7 @@ public interface MessageRouter {
 	ListenableFuture<?> send( PointToPointMessage<byte[]> message ) throws MessageRouteException;
 
 	/**
-	 * 广播用户消息
+	 * 广播指定的用户消息
 	 * 
 	 * @param message
 	 *          消息

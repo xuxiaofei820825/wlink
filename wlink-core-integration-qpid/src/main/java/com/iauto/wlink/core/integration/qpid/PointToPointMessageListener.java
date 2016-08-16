@@ -9,8 +9,8 @@ import javax.jms.MessageListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iauto.wlink.core.message.PointToPointMessage;
 import com.iauto.wlink.core.message.DefaultPointToPointMessage;
+import com.iauto.wlink.core.message.PointToPointMessage;
 
 /**
  * QPID消息处理器，该类执行接收到用户消息后的动作
@@ -26,9 +26,6 @@ public class PointToPointMessageListener implements MessageListener {
 	/** 用户通道 */
 	private final Channel channel;
 
-	/** 用户编号 */
-	private final long userId;
-
 	/**
 	 * 构造函数
 	 * 
@@ -37,9 +34,8 @@ public class PointToPointMessageListener implements MessageListener {
 	 * @param userId
 	 *          用户编号
 	 */
-	public PointToPointMessageListener( Channel channel, long userId ) {
+	public PointToPointMessageListener( Channel channel ) {
 		this.channel = channel;
-		this.userId = userId;
 	}
 
 	public void onMessage( Message message ) {
@@ -48,12 +44,6 @@ public class PointToPointMessageListener implements MessageListener {
 			long from = message.getLongProperty( "from" );
 			long to = message.getLongProperty( "to" );
 			String type = message.getStringProperty( "type" );
-
-			if ( userId != to ) {
-				// 消息接收者不一致
-				logger.info( "The message receiver is not matched!!!" );
-				return;
-			}
 
 			// log
 			logger.info( "The user[ID:{}] receive a message. [from:{}, type:{}]", to, from, type );

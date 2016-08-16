@@ -122,7 +122,9 @@ public class ReconnectHandler extends ChannelInboundHandlerAdapter {
 				try {
 
 					// 创建消息监听器
-					QpidMessageRouter.createConsumer( ctx.getChannel(), conn, session.getUserId() );
+					QpidTools.createConsumer(
+						String.format( "ADDR:%s/%s", QpidMessageRouter.P2P_EXCHANGE_NAME, session.getUserId() ),
+						conn, new PointToPointMessageListener( ctx.getChannel() ) );
 
 					// info
 					logger.info( "Succeed to create the message consumer for user[ID:{}].", session.getUserId() );
