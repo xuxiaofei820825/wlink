@@ -90,7 +90,7 @@ public class QpidMessageRouter implements MessageRouter {
 		AMQConnection conn = ConnectionManager.get();
 
 		// 不能为NULL
-		if ( conn.isClosed() ) {
+		if ( conn == null || conn.isClosed() ) {
 			throw new MessageRouteException();
 		}
 

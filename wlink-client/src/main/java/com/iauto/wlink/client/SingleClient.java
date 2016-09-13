@@ -8,7 +8,7 @@ public class SingleClient {
 
 	public static void main( String[] args ) throws Exception {
 
-		WlinkClient client = DefaultWlinkClient.newInstance( "localhost", 2391 );
+		WlinkClient client = DefaultWlinkClient.newInstance( "172.26.188.173", 2391 );
 
 		client.connect();
 		client.auth( ReserveAccountTool.generate( 2391L ) );

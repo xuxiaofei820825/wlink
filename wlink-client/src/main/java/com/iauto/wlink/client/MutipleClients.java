@@ -8,7 +8,7 @@ public class MutipleClients {
 
 	private static final String TEXT_MESSAGE = "It is a static message!!";
 	private static final long MIN_USER_ID = 1;
-	private static final long MAX_USER_ID = 10;
+	private static final long MAX_USER_ID = 500;
 
 	public static void main( String[] args ) throws Exception {
 
@@ -17,7 +17,7 @@ public class MutipleClients {
 			Thread thread = new Thread( new ClientRunnable( idx ) );
 			thread.start();
 			
-			Thread.sleep( 2000 );
+			Thread.sleep( 1000 );
 		}
 	}
 
@@ -36,13 +36,14 @@ public class MutipleClients {
 				client.connect();
 				client.auth( ReserveAccountTool.generate( userId ) );
 
+				/*
 				while ( true ) {
 					Random random = new Random();
 					long receiver = random.nextInt( (int) MAX_USER_ID ) % ( MAX_USER_ID - MIN_USER_ID + 1 ) + MIN_USER_ID;
 
 					client.sendMessage( receiver, "text", TEXT_MESSAGE.getBytes() );
 					Thread.sleep( 5000 );
-				}
+				}*/
 			} catch ( Exception ex ) {
 
 			} finally {

@@ -13,6 +13,7 @@ maxShutdownTime=15
 JAVA_EXE="{{{JAVA_HOME}}}/bin/java"
 JAR_HOME="{{{IPROAPP_HOME}}}/wlink-server"
 VERSION="0.0.1-SNAPSHOT"
+JAVA_CMD="java"
 JAR_FILE_NAME="wlink-server-${VERSION}.jar"
 SERVICE_CMD_LINE="${JAVA_EXE} -jar ${JAR_HOME}/${JAR_FILE_NAME}"
 
