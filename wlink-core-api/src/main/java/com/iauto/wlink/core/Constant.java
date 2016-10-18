@@ -4,20 +4,19 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Constant {
-	
+
 	public static final ExecutorService executors = Executors.newFixedThreadPool( 10 );
 
 	/** 消息类型 */
 	public class MessageType {
-		public static final String Session = "basic.session";
-		public static final String Auth = "basic.auth";
-		public static final String Message = "comm.message";
-		public static final String Text = "comm.message.text";
-	}
+		// =======================================================
+		// system message type
+		public static final String Session = "system.session";
+		public static final String Auth = "system.auth";
+		public static final String Heartbeat = "system.heartbeat";
 
-	/** 用户状态 */
-	public enum Status {
-		OnLine,
-		OffLine
+		public static final String P2PMessage = "terminal.p2p";
+		public static final String BroadcastMessage = "terminal.broadcast";
+		public static final String Terminal = "terminal.message";
 	}
 }

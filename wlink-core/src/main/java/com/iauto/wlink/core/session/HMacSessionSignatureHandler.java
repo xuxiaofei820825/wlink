@@ -44,7 +44,7 @@ public class HMacSessionSignatureHandler implements SessionSignatureHandler {
 
 		// 生成用来进行签名的字符串
 		Joiner joiner = Joiner.on( ";" ).skipNulls();
-		joiner.join( session.getId(), session.getUserId(), session.getTimestamp() );
+		joiner.join( session.getId(), session.getUuId(), session.getTimestamp() );
 		String content = joiner.toString();
 
 		try {

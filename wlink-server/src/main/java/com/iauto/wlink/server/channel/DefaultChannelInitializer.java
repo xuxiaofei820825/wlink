@@ -6,45 +6,29 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.timeout.IdleStateHandler;
 
-import java.util.UUID;
+import java.io.File;
+import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
 
-import com.iauto.wlink.core.auth.AuthenticationProvider;
-import com.iauto.wlink.core.auth.DefaultTicketAuthMessageCodec;
-import com.iauto.wlink.core.auth.provider.ReserveAccountTicketAuthenticationProvider;
-import com.iauto.wlink.core.comm.codec.CommunicationPackageCodec;
-import com.iauto.wlink.core.integration.qpid.ConnectionHandler;
-import com.iauto.wlink.core.integration.qpid.QpidMessageRouter;
-import com.iauto.wlink.core.integration.qpid.ReconnectHandler;
-import com.iauto.wlink.core.message.MessageRouter;
-import com.iauto.wlink.core.message.codec.CommMessageCodec;
-import com.iauto.wlink.core.message.codec.ErrorMessageCodec;
-import com.iauto.wlink.core.message.codec.MessageAcknowledgeCodec;
-import com.iauto.wlink.core.session.HMacSessionSignatureHandler;
-import com.iauto.wlink.core.session.SessionIdGenerator;
-import com.iauto.wlink.core.session.SessionSignatureHandler;
-import com.iauto.wlink.core.session.codec.SessionContextCodec;
-import com.iauto.wlink.server.ApplicationSetting;
 import com.iauto.wlink.server.ServerStateStatistics;
-import com.iauto.wlink.server.auth.handler.AuthenticationHandler;
+import com.iauto.wlink.server.channel.handler.AuthenticationHandler;
+import com.iauto.wlink.server.channel.handler.ChannelTableManagementHandler;
 import com.iauto.wlink.server.channel.handler.HeartbeatHandler;
 import com.iauto.wlink.server.channel.handler.StateStatisticsHandler;
-import com.iauto.wlink.server.message.SendCommMessageWorker;
-import com.iauto.wlink.server.session.SessionRebuildWorker;
-import com.iauto.wlink.server.session.handler.SessionContextHandler;
+import com.iauto.wlink.server.codec.CommunicationPayloadCodec;
 
-public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel> {
+public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel> implements InitializingBean {
 
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
-
-	/** 应用配置项 */
-	private static final ApplicationSetting setting = ApplicationSetting.getInstance();
 
 	/** SSL Context */
 	private SslContext sslCtx;
@@ -52,17 +36,43 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	/** 服务器状态统计 */
 	private static final ServerStateStatistics statistics = new ServerStateStatistics();
 
-	private static final MessageRouter messageRouter = new QpidMessageRouter();
-	private static final AuthenticationProvider provider = new ReserveAccountTicketAuthenticationProvider(
-		"UhZr6vyeBu0KmlX9", "UTbKkKQ335whZicI" );
-	private static final SessionSignatureHandler signHandler = new HMacSessionSignatureHandler( setting.getHmacKey() );
+	/** 认证处理器 */
+	private AuthenticationHandler authHandler;
 
-	public DefaultChannelInitializer() {
-		this( null );
+	private ChannelTableManagementHandler channelTableManagementHandler;
+
+	/** SSL相关配置 */
+	private boolean isSSLEnabled = false;
+	private String crtFileName;
+	private String pkFileName;
+	private String keyPassword;
+
+	/** 心跳保活间隔(默认30秒) */
+	private int heartbeatInterval = 30000;
+
+	public void afterPropertiesSet() throws Exception {
+		Assert.notNull( this.authHandler, "Terminal Authentication handler is required." );
+
+		if ( isSSLEnabled ) {
+			// 加载证书和密匙文件
+			URL crtFileUrl = this.getClass().getClassLoader().getResource( crtFileName );
+			URL keyFileUrl = this.getClass().getClassLoader().getResource( pkFileName );
+
+			if ( crtFileUrl == null )
+				// log
+				logger.warn( "Failed to load certificate file." );
+
+			if ( keyFileUrl == null )
+				// log
+				logger.warn( "Failed to load key file." );
+
+			sslCtx = SslContextBuilder.forServer(
+				new File( crtFileUrl.toURI() ), new File( keyFileUrl.toURI() ), keyPassword ).build();
+		}
 	}
 
-	public DefaultChannelInitializer( final SslContext sslCtx ) {
-		this.sslCtx = sslCtx;
+	public DefaultChannelInitializer() {
+		channelTableManagementHandler = new ChannelTableManagementHandler();
 	}
 
 	@Override
@@ -73,67 +83,62 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		ChannelPipeline pipeline = channel.pipeline();
 
 		// SSL
-		if ( setting.isSSLEnabled() ) {
+		if ( isSSLEnabled ) {
 			if ( this.sslCtx == null ) {
 				throw new IllegalArgumentException( "SSL context is required." );
 			}
 			pipeline.addLast( sslCtx.newHandler( channel.alloc() ) );
 		}
 
+		// 设置日志级别
 		pipeline.addLast( "logger", new LoggingHandler( LogLevel.DEBUG ) );
 
-		// 设置通讯包编解码器(进、出)
-		pipeline.addLast( "comm_codec", new CommunicationPackageCodec() );
-
-		// ===========================================================
-		// 1.以下设置编码器
-
-		// 设置错误响应编码器(出)
-		pipeline.addLast( "error_encoder", new ErrorMessageCodec() );
-
-		// 设置消息确认响应编码器(出)
-		pipeline.addLast( "msg_send_ack_encoder", new MessageAcknowledgeCodec() );
+		// 设置通讯包编/解码器(进、出)
+		pipeline.addLast( "comm_codec", new CommunicationPayloadCodec() );
 
 		// ===========================================================
 		// 2.设置心跳检测处理器
 		IdleStateHandler idleStateHandler = new IdleStateHandler(
-			setting.getHeartbeatInterval(), 0, 0, TimeUnit.SECONDS );
+			heartbeatInterval, 0, 0, TimeUnit.SECONDS );
 		pipeline.addLast( "idle", idleStateHandler )
 			.addLast( "heartbeat", new HeartbeatHandler() );
 
-		// 创建QPID连接
-		pipeline.addLast( "qpid_connect", new ConnectionHandler( setting.getMqUrl() ) );
-
 		// ===========================================================
-		// 3.以下设置解码器
+		// 1.以下设置编码器
 
-		// 设置会话上下文解码器(进、出)
-		SessionContextCodec sessionCodec = new SessionContextCodec();
-		sessionCodec.setWorker( new SessionRebuildWorker( signHandler ) );
-		pipeline.addLast( "session_codec", sessionCodec );
-
-		// 处理用户身份认证
-		AuthenticationHandler authHandler = new AuthenticationHandler( provider, new SessionIdGenerator() {
-			public String generate() {
-				return UUID.randomUUID().toString().replace( "-", "" );
-			}
-		} );
-		authHandler.setMessageCodec( new DefaultTicketAuthMessageCodec() );
-		authHandler.setSignHandler( signHandler );
-
+		// 处理终端身份认证
 		pipeline.addLast( "auth", authHandler );
 
-		// 处理QPID的重连
-		pipeline.addLast( "qpid_disconnect", new ReconnectHandler( setting.getMqUrl() ) );
+		// 通道对应表处理器
+		pipeline.addLast( "channel_table_management", channelTableManagementHandler );
 
 		// 设置消息编解码器(进、出)
-		pipeline.addLast( "message_codec", new CommMessageCodec( new SendCommMessageWorker( messageRouter ) ) );
+		// pipeline.addLast( "message_codec", new CommMessageCodec( new SendCommMessageWorker( messageRouter ) ) );
 
 		// 会话处理(建立会话，保存会话上下文等等)
-		pipeline.addLast( "session_handler", new SessionContextHandler( messageRouter ) );
+		// pipeline.addLast( "session_handler", new SessionContextHandler( messageRouter ) );
 
 		// ===========================================================
 		// 4.设置服务器监控处理器
 		pipeline.addLast( new StateStatisticsHandler( statistics ) );
+	}
+
+	// ===========================================================================
+	// setter/getter
+
+	public void setAuthHandler( AuthenticationHandler authHandler ) {
+		this.authHandler = authHandler;
+	}
+
+	public void setChannelTableManagementHandler( ChannelTableManagementHandler channelTableManagementHandler ) {
+		this.channelTableManagementHandler = channelTableManagementHandler;
+	}
+
+	public void setHeartbeatInterval( int heartbeatInterval ) {
+		this.heartbeatInterval = heartbeatInterval;
+	}
+
+	public void setSSLEnabled( boolean isSSLEnabled ) {
+		this.isSSLEnabled = isSSLEnabled;
 	}
 }

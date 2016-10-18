@@ -7,4 +7,8 @@ public class MessageRouteException extends RuntimeException {
 	 */
 	private static final long serialVersionUID = -2892468163467522011L;
 
+	public MessageRouteException( Throwable ex ) {
+		super( ex );
+	}
+
 }

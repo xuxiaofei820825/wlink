@@ -1,44 +1,40 @@
 package com.iauto.wlink.server;
 
-import java.util.Properties;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+/**
+ * 服务启动入口
+ * 
+ * @author xiaofei.xu
+ * 
+ */
 public class Launcher {
 
-	// logger
+	/** logger */
 	private final static Logger logger = LoggerFactory.getLogger( Launcher.class );
 
 	public static void main( String[] args ) {
 
+		ClassPathXmlApplicationContext appContext = null;
+
 		try {
-			// info
-			logger.info( "Loading application configuration......" );
 
-			// 应用配置
-			Properties properties = new Properties();
+			// info log
+			logger.info( "Loading application context......" );
 
-			Launcher launcher = new Launcher();
-			properties.load( launcher.getClass().getClassLoader().getResourceAsStream( "application.properties" ) );
+			appContext = new ClassPathXmlApplicationContext( "applicationContext.xml" );
 
-			// 加载应用配置项
-			ApplicationSetting.getInstance().load();
+			// info log
+			logger.info( "Succeed to load application context." );
 
-			// info
-			logger.info( "Succeed to load application configuration!!!" );
+			DefaultServerBootstrap bootstrap = (DefaultServerBootstrap) appContext.getBean( "bootstrap" );
+			bootstrap.start();
+
 		} catch ( Exception ex ) {
 			// warn
-			logger.warn( "Failed to load application configuration, use the default configuration." );
-
-		}
-
-		DefaultServerBootstrap server = new DefaultServerBootstrap();
-
-		try {
-			server.start();
-		} catch ( Exception e ) {
-			logger.error( "Failed to start the service.", e );
+			logger.warn( "Failed to start wlink service." );
 		}
 	}
 }

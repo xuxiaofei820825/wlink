@@ -9,24 +9,16 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-
-import java.io.File;
-import java.net.URL;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
 
-import com.iauto.wlink.server.channel.DefaultChannelInitializer;
-
-public class DefaultServerBootstrap {
+public class DefaultServerBootstrap implements InitializingBean {
 
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
-
-	/** 应用设置 */
-	private final ApplicationSetting setting = ApplicationSetting.getInstance();
 
 	/** Acceptor Reactor */
 	private final EventLoopGroup bossGroup;
@@ -34,9 +26,24 @@ public class DefaultServerBootstrap {
 	/** Event Reactor */
 	private final EventLoopGroup workerGroup;
 
+	/** 服务监听端口 */
+	private int port = 2391;
+
+	/** 通道初始化器 */
+	private ChannelInitializer<SocketChannel> channelInitializer;
+
+	public void afterPropertiesSet() throws Exception {
+		Assert.notNull( channelInitializer );
+	}
+
 	public DefaultServerBootstrap() {
 		this.bossGroup = new NioEventLoopGroup();
-		this.workerGroup = new NioEventLoopGroup(3);
+		this.workerGroup = new NioEventLoopGroup();
+	}
+
+	public DefaultServerBootstrap( int bossthread, int workerthread ) {
+		this.bossGroup = new NioEventLoopGroup( bossthread );
+		this.workerGroup = new NioEventLoopGroup( workerthread );
 	}
 
 	public void start() throws Exception {
@@ -45,51 +52,17 @@ public class DefaultServerBootstrap {
 
 		try {
 
-			ChannelInitializer<SocketChannel> initializer = null;
-
-			if ( setting.isSSLEnabled() ) {
-				// 如果需要通信加密
-
-				// log
-				logger.info( "Setting the SSL context......" );
-
-				// 加载证书和密匙文件
-				URL crtFileUrl = this.getClass().getClassLoader().getResource( setting.getCrtFileName() );
-				URL keyFileUrl = this.getClass().getClassLoader().getResource( setting.getPkFileName() );
-
-				if ( crtFileUrl == null )
-					// log
-					logger.warn( "Failed to load certificate file." );
-
-				if ( keyFileUrl == null )
-					// log
-					logger.warn( "Failed to load key file." );
-
-				SslContext sslCtx = SslContextBuilder
-					.forServer( new File( crtFileUrl.toURI() ), new File( keyFileUrl.toURI() ), setting.getKeyPassword() )
-					.build();
-
-				// log
-				logger.info( "Succeed to set SSL context." );
-
-				// 使用SSL协议进行通信加密
-				initializer = new DefaultChannelInitializer( sslCtx );
-			}
-			else {
-				initializer = new DefaultChannelInitializer();
-			}
-
 			ServerBootstrap b = new ServerBootstrap();
 			b.group( bossGroup, workerGroup )
 				.channel( NioServerSocketChannel.class )
 				.handler( new LoggingHandler( LogLevel.INFO ) )
-				.childHandler( initializer );
+				.childHandler( channelInitializer );
 
 			// 绑定监听端口
-			ChannelFuture future = b.bind( setting.getPort() ).sync();
+			ChannelFuture future = b.bind( port ).sync();
 			if ( future.isSuccess() ) {
 				// log
-				logger.info( "Succeed to start wlink server. listening in port: {}", setting.getPort() );
+				logger.info( "Succeed to start wlink server. listening in port: {}", port );
 			}
 
 			// 等待关闭
@@ -101,5 +74,16 @@ public class DefaultServerBootstrap {
 			bossGroup.shutdownGracefully();
 			workerGroup.shutdownGracefully();
 		}
+	}
+
+	// ====================================================================
+	// setter/getter
+
+	public void setPort( int port ) {
+		this.port = port;
+	}
+
+	public void setChannelInitializer( ChannelInitializer<SocketChannel> channelInitializer ) {
+		this.channelInitializer = channelInitializer;
 	}
 }

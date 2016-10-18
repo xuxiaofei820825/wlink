@@ -1,7 +1,5 @@
 package com.iauto.wlink.client;
 
-import java.util.Random;
-
 import com.iauto.wlink.core.tools.ReserveAccountTool;
 
 public class MutipleClients {

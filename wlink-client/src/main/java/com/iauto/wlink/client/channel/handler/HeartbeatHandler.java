@@ -8,7 +8,8 @@ import io.netty.handler.timeout.IdleStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iauto.wlink.core.comm.CommunicationPackage;
+import com.iauto.wlink.core.Constant.MessageType;
+import com.iauto.wlink.core.comm.CommunicationPayload;
 
 public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
 
@@ -29,10 +30,9 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
 				// debug
 				logger.info( "Channel is idle, send a hearbeat message." );
 
-				CommunicationPackage comm = new CommunicationPackage();
-				comm.setType( "heartbeat" );
-				comm.setHeader( new byte[] {} );
-				comm.setBody( new byte[] {} );
+				CommunicationPayload comm = new CommunicationPayload();
+				comm.setType( MessageType.Heartbeat );
+				comm.setPayload( new byte[] {} );
 
 				// 发送一个无消息体的数据包
 				// 这里必须调用writeAndFlush方法，立即发送一条消息

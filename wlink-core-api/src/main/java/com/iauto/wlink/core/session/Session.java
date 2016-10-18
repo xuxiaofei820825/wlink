@@ -9,7 +9,7 @@ package com.iauto.wlink.core.session;
 public class Session {
 
 	/** 用户编号 */
-	private final long userId;
+	private final String uuid;
 
 	/** 会话编号 */
 	private final String id;
@@ -17,17 +17,17 @@ public class Session {
 	/** 创建时间戳 */
 	private final long timestamp;
 
-	public Session( String id, long userId, long timestamp ) {
+	public Session( String id, String userId, long timestamp ) {
 		this.id = id;
-		this.userId = userId;
+		this.uuid = userId;
 		this.timestamp = timestamp;
 	}
 
 	// ============================================================
 	// setter/getter
 
-	public long getUserId() {
-		return userId;
+	public String getUuId() {
+		return uuid;
 	}
 
 	public String getId() {

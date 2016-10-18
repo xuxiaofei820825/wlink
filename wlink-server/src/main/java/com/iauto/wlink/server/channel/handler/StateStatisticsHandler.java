@@ -1,5 +1,6 @@
 package com.iauto.wlink.server.channel.handler;
 
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
@@ -8,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.server.ServerStateStatistics;
 
+@Sharable
 public class StateStatisticsHandler extends ChannelInboundHandlerAdapter {
 
 	/** logger */
