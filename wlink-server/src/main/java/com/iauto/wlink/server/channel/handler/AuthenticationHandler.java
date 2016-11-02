@@ -23,6 +23,7 @@ import com.iauto.wlink.core.auth.TicketAuthentication;
 import com.iauto.wlink.core.comm.CommunicationPayload;
 import com.iauto.wlink.core.message.MessageCodec;
 import com.iauto.wlink.core.message.SessionMessage;
+import com.iauto.wlink.core.message.TerminalMessageRouter;
 import com.iauto.wlink.core.message.TicketAuthMessage;
 import com.iauto.wlink.core.message.codec.ProtoSessionMessageCodec;
 import com.iauto.wlink.core.message.proto.ErrorMessageProto.ErrorMessage;
@@ -67,12 +68,15 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 	/** 会话签名处理器 */
 	private SessionSignatureHandler signHandler;
 
+	private TerminalMessageRouter messageRouter;
+
 	public void afterPropertiesSet() throws Exception {
 		Assert.notNull( authMessageCodec, "Authentication codec is required." );
 		Assert.notNull( sessionMessageCodec, "Session message codec is required." );
 		Assert.notNull( provider, "Authentication provider is required." );
 		Assert.notNull( idGenerator, "Session id generator is required." );
 		Assert.notNull( signHandler, "Session signature handler is required." );
+		Assert.notNull( messageRouter, "Session signature handler is required." );
 	}
 
 	/**
@@ -183,6 +187,24 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 				ctx.channel()
 					.attr( Constant.SessionKey ).set( session );
 
+				// info log
+				logger.info( "Starting to subscribe message of terminal(UID:{})", session.getUuId() );
+
+				if ( !ChannelTableManager.channels.contains( userId ) ) {
+					ListenableFuture<?> future = messageRouter.subscribe( String.valueOf( userId ) );
+					Futures.addCallback( future, new FutureCallback<Object>() {
+						public void onSuccess( Object result ) {
+							// info log
+							logger.info( "Succeed to subscribe message." );
+						}
+
+						public void onFailure( Throwable t ) {
+							// info log
+							logger.info( "Failed to subscribe message.", t );
+						}
+					} );
+				}
+
 				ChannelTableManager.add( String.valueOf( userId ), sessionId, ctx.channel() );
 
 				// 创建会话上下文对象，并返回给终端
@@ -255,6 +277,10 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 
 	public void setAuthMessageCodec( MessageCodec<? extends TicketAuthMessage> authMessageCodec ) {
 		this.authMessageCodec = authMessageCodec;
+	}
+
+	public void setMessageRouter( TerminalMessageRouter messageRouter ) {
+		this.messageRouter = messageRouter;
 	}
 
 }

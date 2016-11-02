@@ -10,7 +10,7 @@ public final class ChannelTableManager {
 	 * 系统唯一号与通道的对应表<br/>
 	 * 可能存在一个系统唯一号的持有者(如用户)，登入了同一个服务器的情况，所有一个系统唯一号对应一个通道的列表
 	 */
-	private static ConcurrentHashMap<String, ConcurrentHashMap<String, Channel>> channels =
+	public static ConcurrentHashMap<String, ConcurrentHashMap<String, Channel>> channels =
 			new ConcurrentHashMap<String, ConcurrentHashMap<String, Channel>>();
 
 	private ChannelTableManager() {

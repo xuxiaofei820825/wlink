@@ -6,6 +6,13 @@ import com.iauto.wlink.core.exception.MessageRouteException;
 public interface TerminalMessageRouter {
 
 	/**
+	 * 初始化
+	 */
+	void init();
+
+	void setMessageReceivedHandler( MessageReceivedHandler messageReceivedHandler );
+
+	/**
 	 * 订阅指定用户的消息。
 	 * 
 	 * @param publisher
@@ -13,7 +20,7 @@ public interface TerminalMessageRouter {
 	 * @return {@link ListenableFuture}
 	 * @throws MessageRouteException
 	 */
-	ListenableFuture<?> subscribe( long publisher )
+	ListenableFuture<?> subscribe( String publisher )
 			throws MessageRouteException;
 
 	/**
@@ -46,17 +53,4 @@ public interface TerminalMessageRouter {
 	 */
 	ListenableFuture<?> broadcast( String type, String from, byte[] message ) throws MessageRouteException;
 
-	/**
-	 * 接收到消息时的处理
-	 * 
-	 * @param type
-	 *          消息类型
-	 * @param from
-	 *          发送者
-	 * @param to
-	 *          接收者
-	 * @param payload
-	 *          有效荷载
-	 */
-	void onMessageReceived( String type, String from, String to, byte[] payload );
 }

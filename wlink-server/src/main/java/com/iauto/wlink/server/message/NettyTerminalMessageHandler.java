@@ -13,8 +13,8 @@ import com.iauto.wlink.core.Constant.MessageType;
 import com.iauto.wlink.core.comm.CommunicationPayload;
 import com.iauto.wlink.core.message.DefaultTerminalMessage;
 import com.iauto.wlink.core.message.MessageCodec;
+import com.iauto.wlink.core.message.MessageReceivedHandler;
 import com.iauto.wlink.core.message.TerminalMessage;
-import com.iauto.wlink.core.message.TerminalMessageHandler;
 import com.iauto.wlink.server.channel.ChannelTableManager;
 
 /**
@@ -29,7 +29,7 @@ import com.iauto.wlink.server.channel.ChannelTableManager;
  * @author xiaofei.xu
  * 
  */
-public class NettyTerminalMessageHandler implements TerminalMessageHandler,
+public class NettyTerminalMessageHandler implements MessageReceivedHandler,
 		InitializingBean {
 
 	/** logger */
@@ -42,7 +42,7 @@ public class NettyTerminalMessageHandler implements TerminalMessageHandler,
 		Assert.notNull( messageCodec, "Terminal message codec is required." );
 	}
 
-	public void process( String type, String from, String to, byte[] payload ) {
+	public void onMessage( String type, String from, String to, byte[] payload ) {
 		// info log
 		logger.info( "Receive a message. [type:{}, from:{}, to:{}]", type, from, to );
 
@@ -68,5 +68,9 @@ public class NettyTerminalMessageHandler implements TerminalMessageHandler,
 
 		// info log
 		logger.info( "Succeed to send message to receiver." );
+	}
+
+	public void setMessageCodec( MessageCodec<TerminalMessage> messageCodec ) {
+		this.messageCodec = messageCodec;
 	}
 }

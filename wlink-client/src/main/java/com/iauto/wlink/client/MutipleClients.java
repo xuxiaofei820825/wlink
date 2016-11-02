@@ -4,18 +4,18 @@ import com.iauto.wlink.core.tools.ReserveAccountTool;
 
 public class MutipleClients {
 
-	private static final String TEXT_MESSAGE = "It is a static message!!";
-	private static final long MIN_USER_ID = 1;
-	private static final long MAX_USER_ID = 500;
+	public static final String TEXT_MESSAGE = "It is a static message!!";
+	public static final long MIN_USER_ID = 1;
+	public static final long MAX_USER_ID = 100;
 
 	public static void main( String[] args ) throws Exception {
 
-		// 创建用户现场
+		// 创建用户线程
 		for ( int idx = 1; idx <= MAX_USER_ID; idx++ ) {
 			Thread thread = new Thread( new ClientRunnable( idx ) );
 			thread.start();
 			
-			Thread.sleep( 1000 );
+			Thread.sleep( 100 );
 		}
 	}
 
@@ -43,7 +43,7 @@ public class MutipleClients {
 					Thread.sleep( 5000 );
 				}*/
 			} catch ( Exception ex ) {
-
+				throw new RuntimeException(ex);
 			} finally {
 				try {
 					// client.disconnect();

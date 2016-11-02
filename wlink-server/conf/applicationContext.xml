@@ -11,9 +11,16 @@
 
 	<!-- 配置文件 -->
 	<context:property-placeholder location="classpath:application.properties" />
+	
+	<import resource="applicationContext_auth.xml"/>
 
 	<bean id="bootstrap" class="com.iauto.wlink.server.DefaultServerBootstrap">
+	
+		<constructor-arg value="${server.netty.boss.nthread}" />
+		<constructor-arg value="${server.netty.worker.nthread}" />
+	
 		<property name="channelInitializer" ref="channelInitializer" />
+		<property name="messageRouter" ref="messageRouter" />
 	</bean>
 
 	<!-- 通道初始化器 -->
@@ -25,7 +32,15 @@
 	<!-- 集成QPID实现消息的路由 -->
 	<bean id="messageRouter" class="com.iauto.wlink.core.integration.qpid.QpidMessageRouter">
 		<constructor-arg value="${server.qpid.url}" />
+		<constructor-arg value="${server.message.router.nthread}" />
+		<property name="messageReceivedHandler" ref="messageHandler" />
 	</bean>
+	
+	<bean id="messageHandler" class="com.iauto.wlink.server.message.NettyTerminalMessageHandler">
+		<property name="messageCodec" ref="messageCodec" />
+	</bean>
+	
+	<bean id="messageCodec" class="com.iauto.wlink.core.message.codec.ProtoTerminalMessageCodec" />
 
 	<!-- 终端认证处理器 -->
 	<bean id="authHandler"
@@ -36,6 +51,7 @@
 		<property name="signHandler" ref="sessionSignatureHandler" />
 		<property name="sessionMessageCodec" ref="sessionMessageCodec" />
 		<property name="authMessageCodec" ref="authMessageCodec" />
+		<property name="messageRouter" ref="messageRouter" />
 	</bean>
 
 	<!-- 提供对保留账号的终端认证 -->

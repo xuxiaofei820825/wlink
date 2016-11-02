@@ -13,8 +13,12 @@ import io.netty.handler.logging.LoggingHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import com.iauto.wlink.core.message.TerminalMessageRouter;
+
+@Service
 public class DefaultServerBootstrap implements InitializingBean {
 
 	/** logger */
@@ -29,11 +33,14 @@ public class DefaultServerBootstrap implements InitializingBean {
 	/** 服务监听端口 */
 	private int port = 2391;
 
+	private TerminalMessageRouter messageRouter;
+
 	/** 通道初始化器 */
 	private ChannelInitializer<SocketChannel> channelInitializer;
 
 	public void afterPropertiesSet() throws Exception {
 		Assert.notNull( channelInitializer );
+		Assert.notNull( messageRouter );
 	}
 
 	public DefaultServerBootstrap() {
@@ -51,6 +58,8 @@ public class DefaultServerBootstrap implements InitializingBean {
 		logger.info( "Starting the wlink server......" );
 
 		try {
+
+			messageRouter.init();
 
 			ServerBootstrap b = new ServerBootstrap();
 			b.group( bossGroup, workerGroup )
@@ -85,5 +94,9 @@ public class DefaultServerBootstrap implements InitializingBean {
 
 	public void setChannelInitializer( ChannelInitializer<SocketChannel> channelInitializer ) {
 		this.channelInitializer = channelInitializer;
+	}
+
+	public void setMessageRouter( TerminalMessageRouter messageRouter ) {
+		this.messageRouter = messageRouter;
 	}
 }

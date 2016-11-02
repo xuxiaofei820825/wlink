@@ -1,7 +1,5 @@
 package com.iauto.wlink.core.integration.qpid;
 
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -10,21 +8,24 @@ import javax.jms.Destination;
 import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 import javax.jms.Message;
-import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 
 import org.apache.qpid.client.AMQAnyDestination;
 import org.apache.qpid.client.AMQConnection;
+import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.client.Closeable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.iauto.wlink.core.exception.MessageRouteException;
-import com.iauto.wlink.core.message.TerminalMessageHandler;
+import com.iauto.wlink.core.message.MessageReceivedHandler;
 import com.iauto.wlink.core.message.TerminalMessageRouter;
 
 /**
@@ -33,13 +34,15 @@ import com.iauto.wlink.core.message.TerminalMessageRouter;
  * @author xiaofei.xu
  * 
  */
-public class QpidMessageRouter implements TerminalMessageRouter {
+@Component
+public class QpidMessageRouter implements TerminalMessageRouter, InitializingBean {
 
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 	/** 执行线程池 */
-	private final ExecutorService executors = Executors.newFixedThreadPool( 10 );
+	private ExecutorService executors;
+	private int nthread;
 
 	/** exchange name */
 	public final static String P2P_EXCHANGE_NAME = "wlink.message.p2p.topic";
@@ -51,22 +54,27 @@ public class QpidMessageRouter implements TerminalMessageRouter {
 	/** QPID服务器连接 */
 	private AMQConnection conn;
 
-	/** 订阅者列表 */
-	private final Set<Long> consumers = ConcurrentHashMap.newKeySet();
+	/** 终端消息处理器 */
+	private MessageReceivedHandler messageReceivedHandler;
 
-	private TerminalMessageHandler messageHandler;
-
-	/** 会话集合 */
+	/** 与Broker的会话集合(对应每个线程) */
 	private final static ThreadLocal<Session> sessions = new ThreadLocal<Session>();
 
-	public QpidMessageRouter( final String url ) {
+	public void afterPropertiesSet() throws Exception {
+		Assert.notNull( this.url, "Url of broker is required." );
+		Assert.notNull( this.messageReceivedHandler, "Message received handler is required." );
+	}
+
+	public QpidMessageRouter( final String url, int nthread ) {
 		this.url = url;
+		this.nthread = nthread;
 	}
 
 	/**
 	 * 开始
 	 */
-	public void start() {
+	public void init() {
+		executors = Executors.newFixedThreadPool( nthread );
 		createConnection();
 	}
 
@@ -78,7 +86,7 @@ public class QpidMessageRouter implements TerminalMessageRouter {
 	 * @param listener
 	 *          消息监听器
 	 */
-	public ListenableFuture<?> subscribe( final long publisher )
+	public ListenableFuture<?> subscribe( final String publisher )
 			throws MessageRouteException {
 
 		// 初始化为NULL
@@ -89,13 +97,17 @@ public class QpidMessageRouter implements TerminalMessageRouter {
 				try {
 					Session session = getSession();
 
-					// 设置监听器
-					Destination dest = new AMQAnyDestination(
-						String.format( "ADDR:%s/%s", P2P_EXCHANGE_NAME, publisher ) );
-					MessageConsumer consumer = session.createConsumer( dest );
-					consumer.setMessageListener( new QpidMessageListener() );
+					// info log
+					logger.info( "Starting to subscribe message of terminal(ID:{})", publisher );
 
-					consumers.add( publisher );
+					// 设置监听器
+					AMQAnyDestination dest = new AMQAnyDestination(
+						String.format( "ADDR:%s/%s;{create:always,node:{type:topic}}", P2P_EXCHANGE_NAME, publisher ) );
+
+					if ( !( (AMQSession<?, ?>) session ).hasConsumer( dest ) ) {
+						session.createConsumer( dest )
+							.setMessageListener( new QpidMessageListener() );
+					}
 				} catch ( Exception ex ) {
 					throw new MessageRouteException( ex );
 				}
@@ -103,11 +115,6 @@ public class QpidMessageRouter implements TerminalMessageRouter {
 		} );
 
 		return future;
-	}
-
-	public void onMessageReceived( String type, String from, String to, byte[] payload ) {
-		// 处理消息
-		messageHandler.process( type, from, to, payload );
 	}
 
 	/**
@@ -252,45 +259,13 @@ public class QpidMessageRouter implements TerminalMessageRouter {
 	private class QpidConnectionExceptionListener implements ExceptionListener {
 
 		public void onException( JMSException exception ) {
+			// error
 			logger.error( "Error occoured. Caused by:{}",
 				exception.getCause() != null ? exception.getCause().getMessage() : exception.getMessage() );
-
-			boolean isSuccess = false;
-
-			while ( !isSuccess ) {
-				try {
-
-					// 与QPID服务器创建一个连接
-					conn = new AMQConnection( url );
-					conn.start();
-
-					// 重新订阅用户消息
-					for ( Long uuid : consumers ) {
-						subscribe( uuid );
-					}
-
-					// succeed to reconnect QPID server
-					isSuccess = true;
-				} catch ( Exception ex ) {
-					// error
-					logger.error( "Failed to reconnect qpid server, 5 seconds later, try to reconnect again. Caused by:{}",
-						ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage() );
-
-					// sleep 5 seconds
-					try {
-						Thread.sleep( 5000 );
-					} catch ( InterruptedException e ) {
-						// ignore
-					}
-				}
-			}
 		}
 	}
 
 	private class QpidMessageListener implements MessageListener {
-
-		/** logger */
-		private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 		public void onMessage( Message message ) {
 			try {
@@ -305,7 +280,8 @@ public class QpidMessageRouter implements TerminalMessageRouter {
 				byte[] payload = new byte[(int) len];
 				bytes.readBytes( payload );
 
-				onMessageReceived( type, from, to, payload );
+				if ( messageReceivedHandler != null )
+					messageReceivedHandler.onMessage( type, from, to, payload );
 
 				// 给MQ服务器发送确认消息
 				message.acknowledge();
@@ -314,5 +290,9 @@ public class QpidMessageRouter implements TerminalMessageRouter {
 				logger.info( "Exception occurred when processing the message! Caused by: {}", ex.getMessage() );
 			}
 		}
+	}
+
+	public void setMessageReceivedHandler( MessageReceivedHandler messageReceivedHandler ) {
+		this.messageReceivedHandler = messageReceivedHandler;
 	}
 }
