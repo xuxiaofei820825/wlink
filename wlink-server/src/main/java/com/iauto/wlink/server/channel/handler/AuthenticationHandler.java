@@ -5,6 +5,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
@@ -70,6 +71,9 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 
 	private TerminalMessageRouter messageRouter;
 
+	/** 执行线程池 */
+	private ExecutorService executors;
+
 	public void afterPropertiesSet() throws Exception {
 		Assert.notNull( authMessageCodec, "Authentication codec is required." );
 		Assert.notNull( sessionMessageCodec, "Session message codec is required." );
@@ -85,9 +89,11 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 	 * @param provider
 	 * @param idGenerator
 	 */
-	public AuthenticationHandler( final AuthenticationProvider provider, SessionIdGenerator idGenerator ) {
+	public AuthenticationHandler( final AuthenticationProvider provider, SessionIdGenerator idGenerator, int nthread ) {
 		this.provider = provider;
 		this.idGenerator = idGenerator;
+
+		executors = Executors.newFixedThreadPool( nthread );
 	}
 
 	@Override
@@ -98,8 +104,8 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 
 		// 如果已经建立，直接流转获取到的消息
 		if ( session != null ) {
-			// info log
-			logger.info( "Session has been created. ID: {}, UUID: {}", session.getId(), session.getUuId() );
+			// debug log
+			logger.debug( "Session has been created. ID: {}, UUID: {}", session.getId(), session.getUuId() );
 
 			ctx.fireChannelRead( msg );
 			return;
@@ -167,7 +173,7 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 
 		// 执行异步任务
 		ListenableFuture<Authentication> future = null;
-		future = MoreExecutors.listeningDecorator( Executors.newFixedThreadPool( 10 ) )
+		future = MoreExecutors.listeningDecorator( executors )
 			.submit( new AuthenticationTask( authentication ) );
 
 		Futures.addCallback( future, new FutureCallback<Authentication>() {
@@ -190,20 +196,19 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 				// info log
 				logger.info( "Starting to subscribe message of terminal(UID:{})", session.getUuId() );
 
-				if ( !ChannelTableManager.channels.contains( userId ) ) {
-					ListenableFuture<?> future = messageRouter.subscribe( String.valueOf( userId ) );
-					Futures.addCallback( future, new FutureCallback<Object>() {
-						public void onSuccess( Object result ) {
-							// info log
-							logger.info( "Succeed to subscribe message." );
-						}
+				// 订阅终端消息
+				ListenableFuture<?> future = messageRouter.subscribe( String.valueOf( userId ) );
+				Futures.addCallback( future, new FutureCallback<Object>() {
+					public void onSuccess( Object result ) {
+						// info log
+						logger.info( "Succeed to subscribe message." );
+					}
 
-						public void onFailure( Throwable t ) {
-							// info log
-							logger.info( "Failed to subscribe message.", t );
-						}
-					} );
-				}
+					public void onFailure( Throwable t ) {
+						// info log
+						logger.info( "Failed to subscribe message.", t );
+					}
+				} );
 
 				ChannelTableManager.add( String.valueOf( userId ), sessionId, ctx.channel() );
 

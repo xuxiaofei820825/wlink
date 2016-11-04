@@ -1,5 +1,7 @@
 package com.iauto.wlink.client;
 
+import java.util.Random;
+
 import com.iauto.wlink.core.tools.ReserveAccountTool;
 
 public class MutipleClients {
@@ -14,7 +16,7 @@ public class MutipleClients {
 		for ( int idx = 1; idx <= MAX_USER_ID; idx++ ) {
 			Thread thread = new Thread( new ClientRunnable( idx ) );
 			thread.start();
-			
+
 			Thread.sleep( 100 );
 		}
 	}
@@ -34,16 +36,15 @@ public class MutipleClients {
 				client.connect();
 				client.auth( ReserveAccountTool.generate( userId ) );
 
-				/*
 				while ( true ) {
 					Random random = new Random();
 					long receiver = random.nextInt( (int) MAX_USER_ID ) % ( MAX_USER_ID - MIN_USER_ID + 1 ) + MIN_USER_ID;
 
-					client.sendMessage( receiver, "text", TEXT_MESSAGE.getBytes() );
+					client.sendMessage( String.valueOf( receiver ), "text", TEXT_MESSAGE.getBytes() );
 					Thread.sleep( 5000 );
-				}*/
+				}
 			} catch ( Exception ex ) {
-				throw new RuntimeException(ex);
+				throw new RuntimeException( ex );
 			} finally {
 				try {
 					// client.disconnect();

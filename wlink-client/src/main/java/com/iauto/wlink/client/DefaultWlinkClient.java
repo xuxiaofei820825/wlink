@@ -20,9 +20,11 @@ import com.iauto.wlink.client.exception.AuthenticationException;
 import com.iauto.wlink.core.Constant;
 import com.iauto.wlink.core.Constant.MessageType;
 import com.iauto.wlink.core.comm.CommunicationPayload;
+import com.iauto.wlink.core.message.DefaultTerminalMessage;
 import com.iauto.wlink.core.message.SessionMessage;
 import com.iauto.wlink.core.message.TicketAuthMessage;
 import com.iauto.wlink.core.message.codec.ProtoSessionMessageCodec;
+import com.iauto.wlink.core.message.codec.ProtoTerminalMessageCodec;
 import com.iauto.wlink.core.message.codec.ProtoTicketAuthMessageCodec;
 
 public class DefaultWlinkClient implements WlinkClient {
@@ -148,7 +150,7 @@ public class DefaultWlinkClient implements WlinkClient {
 
 						Session session = new Session();
 						session.setId( sessionMsg.getId() );
-						session.setUserId( Long.valueOf( sessionMsg.getUuid() ) );
+						session.setUserId( sessionMsg.getUuid() );
 						session.setTimestamp( sessionMsg.getTimestamp() );
 						session.setSignature( sessionMsg.getSignature() );
 
@@ -178,7 +180,7 @@ public class DefaultWlinkClient implements WlinkClient {
 			// info
 			logger.info( "Waiting for authentication response......" );
 
-			// 等待认证响应
+			// 锁定当前线程，等待认证响应
 			synchronized ( lock ) {
 				lock.wait();
 			}
@@ -240,37 +242,23 @@ public class DefaultWlinkClient implements WlinkClient {
 		}
 	}
 
-	public void sendMessage( long receiver, String type, byte[] body ) {
+	public void sendMessage( String receiver, String type, byte[] body ) {
+		Session sctx = channel.attr( SessionKey ).get();
+		String userId = sctx.getUserId();
+		DefaultTerminalMessage terminalMsg = new DefaultTerminalMessage( type, userId, receiver, body );
 
+		ProtoTerminalMessageCodec codec = new ProtoTerminalMessageCodec();
+
+		CommunicationPayload comm = new CommunicationPayload();
+		comm.setPayload( codec.encode( terminalMsg ) );
+		comm.setType( Constant.MessageType.Terminal );
+
+		// 发送消息
+		channel.writeAndFlush( comm );
 	}
 
 	public void disconnect() {
 		channel.disconnect();
 		group.shutdownGracefully();
 	}
-
-// // ==================================================================================================
-// // private class
-//
-// private class AuthenticationResponseWorker implements MessageWorker {
-//
-// public void process( ChannelHandlerContext ctx, byte[] header, byte[] body ) throws Exception {
-//
-// // 解码
-// SessionMessage sessionMsg = SessionMessage.parseFrom( body );
-//
-// Session sctx = new Session();
-// sctx.setId( sessionMsg.getId() );
-// sctx.setUserId( Long.valueOf( sessionMsg.getUserId() ) );
-// sctx.setTimestamp( sessionMsg.getTimestamp() );
-// sctx.setSignature( sessionMsg.getSignature() );
-//
-// ctx.channel().attr( SessionKey ).set( sctx );
-//
-// // 通知已收到认证响应
-// synchronized ( lock ) {
-// lock.notifyAll();
-// }
-// }
-// }
 }

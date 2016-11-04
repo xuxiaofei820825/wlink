@@ -15,6 +15,7 @@ import javax.jms.Session;
 import org.apache.qpid.client.AMQAnyDestination;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.client.AMQTopic;
 import org.apache.qpid.client.Closeable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,8 +102,8 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 					logger.info( "Starting to subscribe message of terminal(ID:{})", publisher );
 
 					// 设置监听器
-					AMQAnyDestination dest = new AMQAnyDestination(
-						String.format( "ADDR:%s/%s;{create:always,node:{type:topic}}", P2P_EXCHANGE_NAME, publisher ) );
+					AMQTopic dest = new AMQTopic( String.format( "ADDR:%s/%s;{create:always,node:{type:topic}}",
+						P2P_EXCHANGE_NAME, publisher ) );
 
 					if ( !( (AMQSession<?, ?>) session ).hasConsumer( dest ) ) {
 						session.createConsumer( dest )
@@ -137,12 +138,21 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 		// 执行异步任务
 		future = MoreExecutors.listeningDecorator( executors ).submit( new Runnable() {
 			public void run() {
+
+				Session session = null;
+
 				try {
-					Session session = getSession();
+
+					// check
+					if ( conn.isClosed() || !conn.isConnected() || conn.isFailingOver() ) {
+						throw new RuntimeException( "Connection is invalid." );
+					}
+
+					session = conn.createSession( false, Session.CLIENT_ACKNOWLEDGE );
 
 					// 设置连接的节点名，如果不存在该topic节点，则新建一个
-					Destination dest = new AMQAnyDestination(
-						String.format( "ADDR:%s/%s;{create:always,node:{type:topic}}",
+					AMQTopic dest = new AMQTopic(
+						String.format( "ADDR:%s/%s;{node:{type:topic}}",
 							P2P_EXCHANGE_NAME, to ) );
 
 					// 为指定的节点创建消息发送者
@@ -159,6 +169,14 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 					producer.send( msg );
 				} catch ( Exception ex ) {
 					throw new MessageRouteException( ex );
+				} finally {
+					if ( session != null ) {
+						try {
+							session.close();
+						} catch ( JMSException e ) {
+							// ignore
+						}
+					}
 				}
 			}
 		} );
@@ -274,6 +292,8 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 				String from = message.getStringProperty( "from" );
 				String to = message.getStringProperty( "to" );
 				String type = message.getStringProperty( "type" );
+
+				System.err.println( "RRRRRRRRR" + to );
 
 				BytesMessage bytes = (BytesMessage) message;
 				long len = bytes.getBodyLength();

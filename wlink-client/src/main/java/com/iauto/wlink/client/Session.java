@@ -6,7 +6,7 @@ public class Session {
 	private String id;
 
 	/** 用户编号 */
-	private long userId;
+	private String userId;
 
 	/** 时间戳 */
 	private long timestamp;
@@ -22,11 +22,11 @@ public class Session {
 		this.id = id;
 	}
 
-	public long getUserId() {
+	public String getUserId() {
 		return userId;
 	}
 
-	public void setUserId( long userId ) {
+	public void setUserId( String userId ) {
 		this.userId = userId;
 	}
 

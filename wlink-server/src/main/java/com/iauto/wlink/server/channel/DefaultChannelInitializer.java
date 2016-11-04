@@ -23,6 +23,7 @@ import com.iauto.wlink.server.channel.handler.AuthenticationHandler;
 import com.iauto.wlink.server.channel.handler.ChannelTableManagementHandler;
 import com.iauto.wlink.server.channel.handler.HeartbeatHandler;
 import com.iauto.wlink.server.channel.handler.StateStatisticsHandler;
+import com.iauto.wlink.server.channel.handler.TerminalMessageHandler;
 import com.iauto.wlink.server.codec.CommunicationPayloadCodec;
 
 public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel> implements InitializingBean {
@@ -40,6 +41,8 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	private AuthenticationHandler authHandler;
 
 	private ChannelTableManagementHandler channelTableManagementHandler;
+	
+	private TerminalMessageHandler terminalMessageHandler;
 
 	/** SSL相关配置 */
 	private boolean isSSLEnabled = false;
@@ -52,6 +55,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 	public void afterPropertiesSet() throws Exception {
 		Assert.notNull( this.authHandler, "Terminal Authentication handler is required." );
+		Assert.notNull( this.terminalMessageHandler, "Terminal message handler is required." );
 
 		if ( isSSLEnabled ) {
 			// 加载证书和密匙文件
@@ -117,6 +121,9 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 		// 会话处理(建立会话，保存会话上下文等等)
 		// pipeline.addLast( "session_handler", new SessionContextHandler( messageRouter ) );
+		
+		// 终端消息处理
+		pipeline.addLast( "terminal_message_handler", terminalMessageHandler );
 
 		// ===========================================================
 		// 4.设置服务器监控处理器
@@ -140,5 +147,9 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 	public void setSSLEnabled( boolean isSSLEnabled ) {
 		this.isSSLEnabled = isSSLEnabled;
+	}
+
+	public void setTerminalMessageHandler( TerminalMessageHandler terminalMessageHandler ) {
+		this.terminalMessageHandler = terminalMessageHandler;
 	}
 }

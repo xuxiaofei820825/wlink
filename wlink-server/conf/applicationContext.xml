@@ -27,6 +27,7 @@
 	<bean id="channelInitializer"
 		class="com.iauto.wlink.server.channel.DefaultChannelInitializer">
 		<property name="authHandler" ref="authHandler" />
+		<property name="terminalMessageHandler" ref="terminalMessageHandler" />
 	</bean>
 
 	<!-- 集成QPID实现消息的路由 -->
@@ -47,10 +48,16 @@
 		class="com.iauto.wlink.server.channel.handler.AuthenticationHandler">
 		<constructor-arg ref="authenticationProvider" />
 		<constructor-arg ref="sessionIdGenerator" />
+		<constructor-arg value="5" />
 		
 		<property name="signHandler" ref="sessionSignatureHandler" />
 		<property name="sessionMessageCodec" ref="sessionMessageCodec" />
 		<property name="authMessageCodec" ref="authMessageCodec" />
+		<property name="messageRouter" ref="messageRouter" />
+	</bean>
+	
+	<bean id="terminalMessageHandler" class="com.iauto.wlink.server.channel.handler.TerminalMessageHandler">
+		<property name="codec" ref="messageCodec" />
 		<property name="messageRouter" ref="messageRouter" />
 	</bean>
 
