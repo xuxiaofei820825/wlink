@@ -4,7 +4,7 @@ import io.netty.channel.Channel;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class ChannelTableManager {
+public final class SessionManager {
 
 	/**
 	 * 系统唯一号与通道的对应表<br/>
@@ -13,7 +13,7 @@ public final class ChannelTableManager {
 	public static ConcurrentHashMap<String, ConcurrentHashMap<String, Channel>> channels =
 			new ConcurrentHashMap<String, ConcurrentHashMap<String, Channel>>();
 
-	private ChannelTableManager() {
+	private SessionManager() {
 	}
 
 	public static void add( String uuid, String sessionId, Channel channel ) {

@@ -22,12 +22,17 @@
 		<property name="channelInitializer" ref="channelInitializer" />
 		<property name="messageRouter" ref="messageRouter" />
 	</bean>
+	
+	<bean id="sessionManagementHandler" class="com.iauto.wlink.server.channel.handler.SessionManagementHandler">
+		<property name="router" ref="messageRouter" />
+	</bean>
 
 	<!-- 通道初始化器 -->
 	<bean id="channelInitializer"
 		class="com.iauto.wlink.server.channel.DefaultChannelInitializer">
 		<property name="authHandler" ref="authHandler" />
 		<property name="terminalMessageHandler" ref="terminalMessageHandler" />
+		<property name="sessionManagementHandler" ref="sessionManagementHandler" />
 	</bean>
 
 	<!-- 集成QPID实现消息的路由 -->

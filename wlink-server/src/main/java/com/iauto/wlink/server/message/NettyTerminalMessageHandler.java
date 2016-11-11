@@ -15,7 +15,7 @@ import com.iauto.wlink.core.message.DefaultTerminalMessage;
 import com.iauto.wlink.core.message.MessageCodec;
 import com.iauto.wlink.core.message.MessageReceivedHandler;
 import com.iauto.wlink.core.message.TerminalMessage;
-import com.iauto.wlink.server.channel.ChannelTableManager;
+import com.iauto.wlink.server.channel.SessionManager;
 
 /**
  * <p>
@@ -43,11 +43,11 @@ public class NettyTerminalMessageHandler implements MessageReceivedHandler,
 	}
 
 	public void onMessage( String type, String from, String to, byte[] payload ) {
-		// info log
-		logger.info( "Receive a message. [type:{}, from:{}, to:{}]", type, from, to );
+		// debug log
+		logger.debug( "Receive a message. [type:{}, from:{}, to:{}, payload-length:{}]", type, from, to, payload.length );
 
 		// 获得所有唯一号对应的通道
-		ConcurrentHashMap<String, Channel> channels = ChannelTableManager.get( String.valueOf( to ) );
+		ConcurrentHashMap<String, Channel> channels = SessionManager.get( String.valueOf( to ) );
 		if ( channels == null || channels.size() == 0 ) {
 			// debug log
 			logger.debug( "Channel is not exist, do nothing." );
@@ -66,8 +66,8 @@ public class NettyTerminalMessageHandler implements MessageReceivedHandler,
 			channel.writeAndFlush( comm );
 		}
 
-		// info log
-		logger.info( "Succeed to send message to receiver." );
+		// debug log
+		logger.debug( "Send message to receiver(UUID:{}).", to );
 	}
 
 	public void setMessageCodec( MessageCodec<TerminalMessage> messageCodec ) {

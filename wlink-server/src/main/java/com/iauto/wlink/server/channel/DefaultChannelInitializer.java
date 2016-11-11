@@ -20,7 +20,7 @@ import org.springframework.util.Assert;
 
 import com.iauto.wlink.server.ServerStateStatistics;
 import com.iauto.wlink.server.channel.handler.AuthenticationHandler;
-import com.iauto.wlink.server.channel.handler.ChannelTableManagementHandler;
+import com.iauto.wlink.server.channel.handler.SessionManagementHandler;
 import com.iauto.wlink.server.channel.handler.HeartbeatHandler;
 import com.iauto.wlink.server.channel.handler.StateStatisticsHandler;
 import com.iauto.wlink.server.channel.handler.TerminalMessageHandler;
@@ -40,8 +40,8 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	/** 认证处理器 */
 	private AuthenticationHandler authHandler;
 
-	private ChannelTableManagementHandler channelTableManagementHandler;
-	
+	private SessionManagementHandler sessionManagementHandler;
+
 	private TerminalMessageHandler terminalMessageHandler;
 
 	/** SSL相关配置 */
@@ -56,6 +56,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	public void afterPropertiesSet() throws Exception {
 		Assert.notNull( this.authHandler, "Terminal Authentication handler is required." );
 		Assert.notNull( this.terminalMessageHandler, "Terminal message handler is required." );
+		Assert.notNull( this.sessionManagementHandler, "Session management handler is required." );
 
 		if ( isSSLEnabled ) {
 			// 加载证书和密匙文件
@@ -76,7 +77,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	}
 
 	public DefaultChannelInitializer() {
-		channelTableManagementHandler = new ChannelTableManagementHandler();
+		sessionManagementHandler = new SessionManagementHandler();
 	}
 
 	@Override
@@ -114,14 +115,14 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		pipeline.addLast( "auth", authHandler );
 
 		// 通道对应表处理器
-		pipeline.addLast( "channel_table_management", channelTableManagementHandler );
+		pipeline.addLast( "channel_table_management", sessionManagementHandler );
 
 		// 设置消息编解码器(进、出)
 		// pipeline.addLast( "message_codec", new CommMessageCodec( new SendCommMessageWorker( messageRouter ) ) );
 
 		// 会话处理(建立会话，保存会话上下文等等)
 		// pipeline.addLast( "session_handler", new SessionContextHandler( messageRouter ) );
-		
+
 		// 终端消息处理
 		pipeline.addLast( "terminal_message_handler", terminalMessageHandler );
 
@@ -137,8 +138,8 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		this.authHandler = authHandler;
 	}
 
-	public void setChannelTableManagementHandler( ChannelTableManagementHandler channelTableManagementHandler ) {
-		this.channelTableManagementHandler = channelTableManagementHandler;
+	public void setSessionManagementHandler( SessionManagementHandler sessionManagementHandler ) {
+		this.sessionManagementHandler = sessionManagementHandler;
 	}
 
 	public void setHeartbeatInterval( int heartbeatInterval ) {

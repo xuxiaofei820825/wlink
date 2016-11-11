@@ -10,6 +10,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.iauto.wlink.core.Constant;
 import com.iauto.wlink.core.comm.CommunicationPayload;
 import com.iauto.wlink.core.message.MessageCodec;
@@ -42,11 +45,23 @@ public class TerminalMessageHandler extends SimpleChannelInboundHandler<Communic
 			return;
 		}
 
-		// info log
-		logger.info( "Type of communication package: {}", msg.getType() );
+		// debug log
+		logger.debug( "Type of communication package: {}", msg.getType() );
 
 		TerminalMessage message = codec.decode( msg.getPayload() );
-		messageRouter.send( message.type(), message.from(), message.to(), message.payload() );
+		ListenableFuture<?> future = messageRouter.send( message.type(), message.from(), message.to(), message.payload() );
+
+		// 注册回调
+		Futures.addCallback( future, new FutureCallback<Object>() {
+			public void onSuccess( Object result ) {
+				// info log
+				logger.info( "Succeed to send message." );
+			}
+			public void onFailure( Throwable t ) {
+				// info log
+				logger.info( "Failed to send message." );
+			}
+		} );
 	}
 
 	// ===========================================================================

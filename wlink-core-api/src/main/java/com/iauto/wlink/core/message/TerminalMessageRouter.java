@@ -15,13 +15,21 @@ public interface TerminalMessageRouter {
 	/**
 	 * 订阅指定用户的消息。
 	 * 
-	 * @param publisher
+	 * @param uuid
 	 *          发布者唯一编号
 	 * @return {@link ListenableFuture}
 	 * @throws MessageRouteException
 	 */
-	ListenableFuture<?> subscribe( String publisher )
+	ListenableFuture<?> subscribe( String uuid )
 			throws MessageRouteException;
+
+	/**
+	 * 取消消息的订阅
+	 * 
+	 * @param uuid
+	 *          唯一编号
+	 */
+	void unsubscribe( String uuid );
 
 	/**
 	 * 发送一个点对点消息

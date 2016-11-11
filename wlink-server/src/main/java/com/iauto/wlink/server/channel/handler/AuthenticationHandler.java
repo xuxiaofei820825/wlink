@@ -32,7 +32,7 @@ import com.iauto.wlink.core.session.Session;
 import com.iauto.wlink.core.session.SessionIdGenerator;
 import com.iauto.wlink.core.session.SessionSignatureHandler;
 import com.iauto.wlink.server.Constant;
-import com.iauto.wlink.server.channel.ChannelTableManager;
+import com.iauto.wlink.server.channel.SessionManager;
 
 /**
  * <p>
@@ -157,7 +157,7 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 		ctx.channel()
 			.attr( Constant.SessionKey ).set( session );
 
-		ChannelTableManager.add( sessionMsg.getUuid(), sessionId, ctx.channel() );
+		SessionManager.add( sessionMsg.getUuid(), sessionId, ctx.channel() );
 	}
 
 	/*
@@ -186,7 +186,7 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 
 				// 创建会话
 				String sessionId = idGenerator.generate();
-				Session session = new Session( idGenerator.generate(),
+				Session session = new Session( sessionId,
 					String.valueOf( userId ), System.currentTimeMillis() );
 
 				// 保存到Channel的附件中
@@ -210,7 +210,7 @@ public class AuthenticationHandler extends SimpleChannelInboundHandler<Communica
 					}
 				} );
 
-				ChannelTableManager.add( String.valueOf( userId ), sessionId, ctx.channel() );
+				SessionManager.add( String.valueOf( userId ), sessionId, ctx.channel() );
 
 				// 创建会话上下文对象，并返回给终端
 				// 终端可使用会话上下文重新建立与服务器的会话
