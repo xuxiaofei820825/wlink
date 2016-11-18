@@ -3,12 +3,18 @@ package com.iauto.wlink.server.message;
 import io.netty.channel.Channel;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.iauto.wlink.core.Constant.MessageType;
 import com.iauto.wlink.core.comm.CommunicationPayload;
 import com.iauto.wlink.core.message.DefaultTerminalMessage;
@@ -38,36 +44,61 @@ public class NettyTerminalMessageHandler implements MessageReceivedHandler,
 	/** 终端消息编/解码器 */
 	private MessageCodec<TerminalMessage> messageCodec;
 
+	/** 执行线程池 */
+	private ExecutorService executors;
+
 	public void afterPropertiesSet() throws Exception {
 		Assert.notNull( messageCodec, "Terminal message codec is required." );
+
+		executors = Executors.newFixedThreadPool( 5 );
 	}
 
-	public void onMessage( String type, String from, String to, byte[] payload ) {
+	public void onMessage( final String type, final String from, final String to, final byte[] payload ) {
 		// debug log
 		logger.debug( "Receive a message. [type:{}, from:{}, to:{}, payload-length:{}]", type, from, to, payload.length );
 
-		// 获得所有唯一号对应的通道
-		ConcurrentHashMap<String, Channel> channels = SessionManager.get( String.valueOf( to ) );
-		if ( channels == null || channels.size() == 0 ) {
-			// debug log
-			logger.debug( "Channel is not exist, do nothing." );
-			return;
-		}
+		// 初始化为NULL
+		ListenableFuture<?> future = null;
 
-		DefaultTerminalMessage message =
-				new DefaultTerminalMessage( type, from, to, payload );
+		future = MoreExecutors.listeningDecorator( executors ).submit( new Runnable() {
+			public void run() {
+				// 获得所有唯一号对应的通道
+				ConcurrentHashMap<String, Channel> channels = SessionManager.get( String.valueOf( to ) );
+				if ( channels == null || channels.size() == 0 ) {
+					// debug log
+					logger.debug( "Channel is not exist, do nothing." );
+					return;
+				}
 
-		// 封装成通讯包
-		CommunicationPayload comm = new CommunicationPayload();
-		comm.setType( MessageType.P2PMessage );
-		comm.setPayload( messageCodec.encode( message ) );
+				DefaultTerminalMessage message =
+						new DefaultTerminalMessage( type, from, to, payload );
 
-		for ( Channel channel : channels.values() ) {
-			channel.writeAndFlush( comm );
-		}
+				// 封装成通讯包
+				CommunicationPayload comm = new CommunicationPayload();
+				comm.setType( MessageType.P2PMessage );
+				comm.setPayload( messageCodec.encode( message ) );
 
-		// debug log
-		logger.debug( "Send message to receiver(UUID:{}).", to );
+				for ( Channel channel : channels.values() ) {
+					channel.writeAndFlush( comm );
+				}
+
+				// debug log
+				logger.debug( "Send message to receiver(UUID:{}).", to );
+			}
+		} );
+
+		// 注册回调
+		Futures.addCallback( future, new FutureCallback<Object>() {
+			public void onSuccess( Object result ) {
+				// info log
+				logger.info( "Succeed to process received message." );
+			}
+
+			public void onFailure( Throwable t ) {
+				// info log
+				logger.info( "Failed to process received message." );
+			}
+		} );
 	}
 
 	public void setMessageCodec( MessageCodec<TerminalMessage> messageCodec ) {

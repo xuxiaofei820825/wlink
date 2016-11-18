@@ -36,8 +36,14 @@
 		<!-- wlink-core -->
 		<dependency>
 			<groupId>com.iauto</groupId>
-			<artifactId>wlink-core</artifactId>
+			<artifactId>wlink-core-api</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jms</artifactId>
+			<version>4.0.2.RELEASE</version>
 		</dependency>
   </dependencies>
 </project>

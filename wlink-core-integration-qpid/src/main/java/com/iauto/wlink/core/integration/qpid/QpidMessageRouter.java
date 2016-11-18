@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.jms.BytesMessage;
+import javax.jms.Connection;
 import javax.jms.Destination;
 import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
@@ -16,13 +17,13 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 
 import org.apache.qpid.client.AMQAnyDestination;
-import org.apache.qpid.client.AMQConnection;
+import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.client.AMQTopic;
-import org.apache.qpid.client.Closeable;
 import org.apache.qpid.jms.ConnectionListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.jms.connection.CachingConnectionFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -46,6 +47,7 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 
 	/** 执行线程池 */
 	private ExecutorService executors;
+	private ExecutorService sendExecutors;
 	/** 线程数 */
 	private int nthread;
 
@@ -59,7 +61,7 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 	private final String url;
 
 	/** QPID服务器连接 */
-	private AMQConnection conn;
+	private Connection conn;
 
 	/** 终端消息处理器 */
 	private MessageReceivedHandler messageReceivedHandler;
@@ -67,8 +69,8 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 	/** 消息监听器对应表 */
 	private Map<String, MessageConsumer> consumers = new ConcurrentHashMap<String, MessageConsumer>();
 
-	/** 与Broker的会话集合(对应每个线程) */
-	private final static ThreadLocal<Session> sessions = new ThreadLocal<Session>();
+	/** 消息监听器 */
+	private QpidMessageListener msgListener = new QpidMessageListener();
 
 	public void afterPropertiesSet() throws Exception {
 		Assert.notNull( this.url, "Url of broker is required." );
@@ -93,6 +95,8 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 	 */
 	public void init() {
 		executors = Executors.newFixedThreadPool( nthread );
+		sendExecutors = Executors.newFixedThreadPool( 1 );
+
 		createConnection();
 	}
 
@@ -118,8 +122,13 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 					return;
 				}
 
+				// 初始化
+				Session session = null;
+
 				try {
-					Session session = getSession();
+
+					// 创建会话
+					session = conn.createSession( false, Session.AUTO_ACKNOWLEDGE );
 
 					// info log
 					logger.info( "Starting to subscribe message of terminal(ID:{})", uuid );
@@ -132,13 +141,21 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 					if ( !consumers.containsKey( uuid ) ) {
 						// create message consumer
 						MessageConsumer consumer = session.createConsumer( dest );
-						consumer.setMessageListener( new QpidMessageListener() );
+						consumer.setMessageListener( msgListener );
 
 						// remember message consumer
 						consumers.put( uuid, consumer );
 					}
 				} catch ( Exception ex ) {
 					throw new MessageRouteException( ex );
+				} finally {
+					if ( session != null ) {
+						try {
+							session.close();
+						} catch ( JMSException e ) {
+							// ignore
+						}
+					}
 				}
 			}
 		} );
@@ -170,7 +187,7 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 	 * @param to
 	 *          接收者
 	 * @param message
-	 *          消息有效荷载
+	 *          消息的有效荷载
 	 */
 	public ListenableFuture<?> send( final String type, final String from, final String to, final byte[] message )
 			throws MessageRouteException {
@@ -178,19 +195,21 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 		ListenableFuture<?> future = null;
 
 		// 执行异步任务
-		future = MoreExecutors.listeningDecorator( executors ).submit( new Runnable() {
+		future = MoreExecutors.listeningDecorator( sendExecutors ).submit( new Runnable() {
 			public void run() {
 
 				// 如果是重新连接中，则不做处理
 				if ( isFailingover ) {
-					throw new RuntimeException();
+					throw new RuntimeException( "Connection is failing over." );
 				}
 
+				// 初始化
 				Session session = null;
+				MessageProducer producer = null;
 
 				try {
 
-					session = conn.createSession( false, Session.CLIENT_ACKNOWLEDGE );
+					session = conn.createSession( false, Session.AUTO_ACKNOWLEDGE );
 
 					// 设置连接的节点名，如果不存在该topic节点，则新建一个
 					AMQTopic dest = new AMQTopic(
@@ -198,7 +217,7 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 							P2P_EXCHANGE_NAME, to ) );
 
 					// 为指定的节点创建消息发送者
-					MessageProducer producer = session.createProducer( dest );
+					producer = session.createProducer( dest );
 
 					// 创建字节消息
 					BytesMessage msg = session.createBytesMessage();
@@ -212,6 +231,13 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 				} catch ( Exception ex ) {
 					throw new MessageRouteException( ex );
 				} finally {
+					if ( producer != null ) {
+						try {
+							producer.close();
+						} catch ( JMSException e ) {
+							// ignore
+						}
+					}
 					if ( session != null ) {
 						try {
 							session.close();
@@ -235,9 +261,12 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 		// 执行异步任务
 		future = MoreExecutors.listeningDecorator( executors ).submit( new Runnable() {
 			public void run() {
+
+				Session session = null;
+
 				try {
 
-					Session session = getSession();
+					session = conn.createSession( false, Session.AUTO_ACKNOWLEDGE );
 
 					// 在当前的会话上创建消费者，监听发送给用户的消息
 					String dest_url = String.format( "ADDR:%s/%s", BROADCAST_EXCHANGE_NAME, from );
@@ -256,7 +285,13 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 				} catch ( Exception ex ) {
 					throw new MessageRouteException( ex );
 				} finally {
-
+					if ( session != null ) {
+						try {
+							session.close();
+						} catch ( JMSException e ) {
+							// ignore
+						}
+					}
 				}
 			}
 		} );
@@ -273,32 +308,25 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 	private void createConnection() {
 
 		try {
-			// 与broker创建一个连接
-			conn = new AMQConnection( url );
+
+			AMQConnectionFactory connectionFactory = new AMQConnectionFactory( url );
+			CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory( connectionFactory );
+
+			// 缓存Session数
+			cachingConnectionFactory.setSessionCacheSize( 10 );
+
+			// 创建与broker的连接
+			conn = cachingConnectionFactory.createConnection();
 
 			// 设置异常处理器
 			conn.setExceptionListener( new QpidConnectionExceptionListener() );
-			conn.setConnectionListener( new QpidConnectionListener() );
+			// conn.setConnectionListener( new QpidConnectionListener() );
 
 			// 创建连接
 			conn.start();
 		} catch ( Exception ex ) {
 			throw new RuntimeException( ex );
 		}
-	}
-
-	/*
-	 * 获取当前线程的Session,如果还未建立,则新建一个
-	 */
-	private Session getSession() throws JMSException {
-		Session session = sessions.get();
-
-		if ( ( session == null || ( (Closeable) session ).isClosed() )
-				&& conn != null && !conn.isClosed() ) {
-			session = conn.createSession( false, Session.CLIENT_ACKNOWLEDGE );
-			sessions.set( session );
-		}
-		return session;
 	}
 
 	// =======================================================================
@@ -318,7 +346,6 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 	 * 
 	 */
 	private class QpidConnectionExceptionListener implements ExceptionListener {
-
 		public void onException( JMSException exception ) {
 			// error
 			logger.error( "Error occoured. Caused by:{}",
@@ -327,8 +354,7 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 	}
 
 	private class QpidMessageListener implements MessageListener {
-
-		public void onMessage( Message message ) {
+		public void onMessage( final Message message ) {
 			try {
 
 				// 获取属性
@@ -342,14 +368,11 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 				bytes.readBytes( payload );
 
 				// info log
-				logger.info( "Received a message. type:{}, from:{}, to:{}, bytes:{}", new Object[] { type, from,
-						to, len } );
+				logger.info( "Received a message. type:{}, from:{}, to:{}, bytes:{}",
+					new Object[] { type, from, to, len } );
 
 				if ( messageReceivedHandler != null )
 					messageReceivedHandler.onMessage( type, from, to, payload );
-
-				// 给MQ服务器发送确认消息
-				message.acknowledge();
 			} catch ( Exception ex ) {
 				// error
 				logger.info( "Exception occurred when processing the message! Caused by: {}", ex.getMessage() );
@@ -358,7 +381,6 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 	}
 
 	private class QpidConnectionListener implements ConnectionListener {
-
 		public void bytesSent( long count ) {
 		}
 
@@ -368,7 +390,6 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 		public boolean preFailover( boolean redirect ) {
 			// info log
 			logger.info( "prepare to failovering......" );
-
 			isFailingover = true;
 			return true;
 		}
@@ -380,10 +401,12 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 		public void failoverComplete() {
 			// info log
 			logger.info( "failover completed!" );
-
 			isFailingover = false;
 		}
 	}
+
+	// ======================================================================
+	// setter/getter
 
 	public void setMessageReceivedHandler( MessageReceivedHandler messageReceivedHandler ) {
 		this.messageReceivedHandler = messageReceivedHandler;

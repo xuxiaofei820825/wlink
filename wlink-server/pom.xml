@@ -11,6 +11,11 @@
 	<artifactId>wlink-server</artifactId>
 	<name>wlink-server</name>
 	<url>http://maven.apache.org</url>
+	
+	<properties>
+		<netty.version>4.0.36.Final</netty.version>
+		<spring.version>4.1.0.RELEASE</spring.version>
+	</properties>
 
 	<dependencyManagement>
 		<dependencies>
@@ -30,6 +35,37 @@
 			<artifactId>wlink-core-integration-qpid</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		
+		<!-- netty -->
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-all</artifactId>
+			<version>${netty.version}</version>
+		</dependency>
+		
+		<!-- spring begin -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-aop</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+
+		<!-- spring end -->
 	</dependencies>
 
 	<!-- 编译设置 -->

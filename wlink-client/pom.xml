@@ -11,12 +11,23 @@
   <name>wlink-client</name>
   <url>http://maven.apache.org</url>
   
+  <properties>
+  	<netty.version>4.0.36.Final</netty.version>
+  </properties>
+  
   <dependencies>
 		<!-- wlink-core -->
 		<dependency>
 			<groupId>com.iauto</groupId>
 			<artifactId>wlink-core</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+		
+		<!-- netty -->
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-all</artifactId>
+			<version>${netty.version}</version>
 		</dependency>
 	</dependencies>
 </project>
