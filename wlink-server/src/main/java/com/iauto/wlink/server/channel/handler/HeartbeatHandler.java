@@ -9,6 +9,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.Constant.MessageType;
 import com.iauto.wlink.core.message.CommunicationMessage;
 
 public class HeartbeatHandler extends SimpleChannelInboundHandler<CommunicationMessage> {
@@ -43,7 +44,7 @@ public class HeartbeatHandler extends SimpleChannelInboundHandler<CommunicationM
 
 	@Override
 	protected void channelRead0( ChannelHandlerContext ctx, CommunicationMessage msg ) throws Exception {
-		if ( StringUtils.equals( "heartbeat", msg.type() ) ) {
+		if ( StringUtils.equals( MessageType.Heartbeat, msg.type() ) ) {
 			// log
 			logger.info( "Receive a heartbeat message! Channel:{}", ctx.channel() );
 		} else {

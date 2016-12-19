@@ -1,5 +1,6 @@
 package com.iauto.wlink.server.channel.handler;
 
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
@@ -20,6 +21,7 @@ import com.iauto.wlink.server.NettySession;
  * @author xiaofei.xu
  * 
  */
+@Sharable
 public class CommunicationMessageHandler extends SimpleChannelInboundHandler<CommunicationMessage>
 		implements InitializingBean {
 

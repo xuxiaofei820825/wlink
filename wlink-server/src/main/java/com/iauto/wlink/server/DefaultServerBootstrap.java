@@ -59,7 +59,7 @@ public class DefaultServerBootstrap implements InitializingBean {
 
 		try {
 
-			messageRouter.init();
+//			messageRouter.init();
 
 			ServerBootstrap b = new ServerBootstrap();
 			b.group( bossGroup, workerGroup )

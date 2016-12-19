@@ -75,7 +75,7 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 
 	public void afterPropertiesSet() throws Exception {
 		Assert.notNull( this.url, "Url of broker is required." );
-		Assert.notNull( this.messageReceivedHandler, "Message received handler is required." );
+//		Assert.notNull( this.messageReceivedHandler, "Message received handler is required." );
 	}
 
 	/**

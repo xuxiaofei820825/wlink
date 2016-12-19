@@ -11,75 +11,40 @@
 
 	<!-- 配置文件 -->
 	<context:property-placeholder location="classpath:application.properties" />
-	
-	<import resource="applicationContext_auth.xml"/>
 
-	<bean id="bootstrap" class="com.iauto.wlink.server.DefaultServerBootstrap">
-	
-		<constructor-arg value="${server.netty.boss.nthread}" />
-		<constructor-arg value="${server.netty.worker.nthread}" />
-	
-		<property name="channelInitializer" ref="channelInitializer" />
-		<property name="messageRouter" ref="messageRouter" />
-	</bean>
-	
-	<bean id="sessionManagementHandler" class="com.iauto.wlink.server.channel.handler.SessionManagementHandler">
-		<property name="router" ref="messageRouter" />
+	<!-- 导入配置 -->
+	<import resource="classpath:applicationContext_auth.xml" />
+	<import resource="classpath:applicationContext_message.xml" />
+
+	<!-- 通讯消息处理器 -->
+	<bean id="commMessageHandler"
+		class="com.iauto.wlink.server.channel.handler.CommunicationMessageHandler">
+		<property name="messageListener" ref="messageListener" />
 	</bean>
 
 	<!-- 通道初始化器 -->
 	<bean id="channelInitializer"
 		class="com.iauto.wlink.server.channel.DefaultChannelInitializer">
-		<property name="authHandler" ref="authHandler" />
-		<property name="terminalMessageHandler" ref="terminalMessageHandler" />
-		<property name="sessionManagementHandler" ref="sessionManagementHandler" />
+		<property name="commMessageHandler" ref="commMessageHandler" />
+		<property name="sessionHandler" ref="sessionHandler" />
 	</bean>
 
 	<!-- 集成QPID实现消息的路由 -->
 	<bean id="messageRouter" class="com.iauto.wlink.core.integration.qpid.QpidMessageRouter">
 		<constructor-arg value="${server.qpid.url}" />
 		<constructor-arg value="${server.message.router.nthread}" />
-		<property name="messageReceivedHandler" ref="messageHandler" />
 	</bean>
-	
-	<bean id="messageHandler" class="com.iauto.wlink.server.message.TerminalMessageReceiveHandler">
-		<property name="messageCodec" ref="messageCodec" />
-	</bean>
-	
-	<bean id="messageCodec" class="com.iauto.wlink.core.message.codec.ProtoTerminalMessageCodec" />
 
-	<!-- 终端认证处理器 -->
-	<bean id="authHandler"
-		class="com.iauto.wlink.server.channel.handler.AuthenticationHandler">
-		<constructor-arg ref="authenticationProvider" />
-		<constructor-arg ref="sessionIdGenerator" />
-		<constructor-arg value="5" />
-		
-		<property name="signHandler" ref="sessionSignatureHandler" />
-		<property name="sessionMessageCodec" ref="sessionMessageCodec" />
-		<property name="authMessageCodec" ref="authMessageCodec" />
-		<property name="messageRouter" ref="messageRouter" />
-	</bean>
-	
-	<bean id="terminalMessageHandler" class="com.iauto.wlink.server.channel.handler.TerminalMessageSendHandler">
-		<property name="codec" ref="messageCodec" />
+	<bean id="bootstrap" class="com.iauto.wlink.server.DefaultServerBootstrap">
+		<constructor-arg value="${server.netty.boss.nthread}" />
+		<constructor-arg value="${server.netty.worker.nthread}" />
+		<property name="channelInitializer" ref="channelInitializer" />
 		<property name="messageRouter" ref="messageRouter" />
 	</bean>
 
-	<!-- 提供对保留账号的终端认证 -->
-	<bean id="authenticationProvider"
-		class="com.iauto.wlink.core.auth.provider.ReserveAccountTicketAuthenticationProvider">
-		<constructor-arg value="UhZr6vyeBu0KmlX9" />
-		<constructor-arg value="UTbKkKQ335whZicI" />
-	</bean>
-	
-	<bean id="sessionIdGenerator" class="com.iauto.wlink.core.session.UUIDSessionIdGenerator" />
-	<bean id="sessionMessageCodec" class="com.iauto.wlink.core.message.codec.ProtoSessionMessageCodec" />
-	<bean id="authMessageCodec" class="com.iauto.wlink.core.message.codec.ProtoTicketAuthMessageCodec" />
-
-	<!-- 会话签名处理器 -->
-	<bean id="sessionSignatureHandler"
-		class="com.iauto.wlink.core.session.HMacSessionSignatureHandler">
-		<constructor-arg value="${server.hmac.sha256.key}" />
+	<!-- ========== 会话处理 ========== -->
+	<bean id="sessionListener" class="com.iauto.wlink.core.session.DefaultSessionManagement" />
+	<bean id="sessionHandler" class="com.iauto.wlink.server.channel.handler.SessionHandler">
+		<property name="sessionListener" ref="sessionListener" />
 	</bean>
 </beans>

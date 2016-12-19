@@ -1,6 +1,8 @@
 package com.iauto.wlink.core.message.handler;
 
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.Constant.MessageType;
 import com.iauto.wlink.core.auth.Authentication;
@@ -14,6 +16,7 @@ import com.iauto.wlink.core.message.SessionMessage;
 import com.iauto.wlink.core.message.TicketAuthMessage;
 import com.iauto.wlink.core.message.codec.ProtoErrorMessageCodec;
 import com.iauto.wlink.core.message.codec.ProtoSessionMessageCodec;
+import com.iauto.wlink.core.message.codec.ProtoTicketAuthMessageCodec;
 import com.iauto.wlink.core.session.Session;
 import com.iauto.wlink.core.session.SessionSignHandler;
 
@@ -25,11 +28,14 @@ import com.iauto.wlink.core.session.SessionSignHandler;
  */
 public class AuthMessageHandler extends AbstractMessageHandler {
 
+	/** logger */
+	private final Logger logger = LoggerFactory.getLogger( getClass() );
+
 	/** 认证处理器 */
 	private AuthenticationProvider authProvider;
 
 	/** 认证消息编解码器 */
-	private MessageCodec<? extends TicketAuthMessage> authMessageCodec;
+	private MessageCodec<? extends TicketAuthMessage> authMessageCodec = new ProtoTicketAuthMessageCodec();
 
 	/** 错误消息编解码器 */
 	private MessageCodec<ErrorMessage> errorMessageCodec = new ProtoErrorMessageCodec();
@@ -37,26 +43,32 @@ public class AuthMessageHandler extends AbstractMessageHandler {
 	/** 会话消息编解码器 */
 	private MessageCodec<SessionMessage> sessionMessageCodec = new ProtoSessionMessageCodec();
 
+	/** 会话签名处理器 */
 	private SessionSignHandler sessionSignHandler;
 
 	@Override
 	protected boolean handleMessage( Session session, CommunicationMessage message ) {
+		// 判定是否为认证消息
 		if ( StringUtils.equals( message.type(), MessageType.Auth ) ) {
-			// 判定是否为认证消息
+			// log
+			logger.info( "Starting to process a authentication message." );
 
 			// check
-			if ( authMessageCodec == null || authProvider == null ) {
-				throw new IllegalArgumentException( "AuthMessage codec and authentication provider is required." );
+			if ( this.authMessageCodec == null ) {
+				throw new IllegalArgumentException( "AuthMessage codec is required." );
+			}
+			if ( this.authProvider == null ) {
+				throw new IllegalArgumentException( "Authentication provider is required." );
 			}
 
 			// 解码通信包的有效荷载
-			TicketAuthMessage ticketMsg = authMessageCodec.decode( message.payload() );
+			TicketAuthMessage ticketMsg = this.authMessageCodec.decode( message.payload() );
 			TicketAuthentication authentication = new TicketAuthentication( ticketMsg.getTicket() );
 
 			try {
 
 				// 进行认证
-				Authentication result = authProvider.authenticate( authentication );
+				Authentication result = this.authProvider.authenticate( authentication );
 
 				// 设置终端唯一识别号
 				session.setTUId( String.valueOf( result.principal() ) );

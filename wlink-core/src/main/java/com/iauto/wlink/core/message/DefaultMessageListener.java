@@ -17,12 +17,15 @@ public class DefaultMessageListener implements MessageListener {
 	private final RingBuffer<MessageEvent> ringBuffer;
 
 	@SuppressWarnings("unchecked")
-	public DefaultMessageListener() {
+	public DefaultMessageListener( EventHandler<MessageEvent> eventHandler ) {
 		Disruptor<MessageEvent> disruptor = new Disruptor<MessageEvent>( new MessageEventFactory(), size,
 			Executors.defaultThreadFactory() );
 
-		EventHandler<MessageEvent> handler = new MessageEventHandler();
-		disruptor.handleEventsWith( handler );
+		if ( eventHandler == null ) {
+			throw new IllegalArgumentException( "MessageEvent handler is required." );
+		}
+
+		disruptor.handleEventsWith( eventHandler );
 		ringBuffer = disruptor.start();
 	}
 

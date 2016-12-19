@@ -1,8 +1,8 @@
 package com.iauto.wlink.core.message;
 
+import java.util.List;
+
 import com.iauto.wlink.core.message.handler.AbstractMessageHandler;
-import com.iauto.wlink.core.message.handler.AuthMessageHandler;
-import com.iauto.wlink.core.message.handler.TerminalMessageHandler;
 import com.lmax.disruptor.EventHandler;
 
 /**
@@ -17,11 +17,19 @@ public class MessageEventHandler implements EventHandler<MessageEvent> {
 	/** 处理责任链 */
 	private AbstractMessageHandler chain = null;
 
-	public MessageEventHandler() {
+	public MessageEventHandler( List<AbstractMessageHandler> handlers ) {
+
+		if ( handlers == null || handlers.size() == 0 )
+			throw new IllegalArgumentException( "Message handler list is required." );
+
 		// 构建责任链
-		this.chain = new AuthMessageHandler();
-		AbstractMessageHandler terminalMessageHandler = new TerminalMessageHandler();
-		this.chain.setNextHandler( terminalMessageHandler );
+		for ( int cnt = 0; cnt < handlers.size(); cnt++ ) {
+			if ( cnt == 0 ) {
+				this.chain = handlers.get( 0 );
+			} else {
+				handlers.get( cnt - 1 ).setNextHandler( handlers.get( cnt ) );
+			}
+		}
 	}
 
 	/**

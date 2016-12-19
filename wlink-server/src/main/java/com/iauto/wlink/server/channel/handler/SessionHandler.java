@@ -1,5 +1,6 @@
 package com.iauto.wlink.server.channel.handler;
 
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
@@ -9,6 +10,7 @@ import com.iauto.wlink.core.session.SessionListener;
 import com.iauto.wlink.core.session.UUIDSessionIdGenerator;
 import com.iauto.wlink.server.NettySession;
 
+@Sharable
 public class SessionHandler extends ChannelInboundHandlerAdapter {
 
 	/** 会话监听器 */
