@@ -6,10 +6,10 @@ public class Session {
 	private String id;
 
 	/** 用户编号 */
-	private String userId;
+	private String tUId;
 
 	/** 时间戳 */
-	private long timestamp;
+	private long expireTime;
 
 	/** 签名 */
 	private String signature;
@@ -22,20 +22,20 @@ public class Session {
 		this.id = id;
 	}
 
-	public String getUserId() {
-		return userId;
+	public String gettUId() {
+		return tUId;
 	}
 
-	public void setUserId( String userId ) {
-		this.userId = userId;
+	public void settUId( String tUId ) {
+		this.tUId = tUId;
 	}
 
-	public long getTimestamp() {
-		return timestamp;
+	public long getExpireTime() {
+		return expireTime;
 	}
 
-	public void setTimestamp( long timestamp ) {
-		this.timestamp = timestamp;
+	public void setExpireTime( long expireTime ) {
+		this.expireTime = expireTime;
 	}
 
 	public String getSignature() {
@@ -45,4 +45,6 @@ public class Session {
 	public void setSignature( String signature ) {
 		this.signature = signature;
 	}
+
+	
 }

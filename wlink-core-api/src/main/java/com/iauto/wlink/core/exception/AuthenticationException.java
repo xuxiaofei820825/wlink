@@ -1,6 +1,6 @@
 package com.iauto.wlink.core.exception;
 
-public class AuthenticationException extends RuntimeException {
+public class AuthenticationException extends Exception {
 
 	/**
 	 * serialVersionUID

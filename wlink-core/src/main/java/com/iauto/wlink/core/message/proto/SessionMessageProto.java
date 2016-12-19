@@ -27,27 +27,27 @@ public final class SessionMessageProto {
         getIdBytes();
 
     /**
-     * <code>required string uuid = 2 [default = ""];</code>
+     * <code>required string tuid = 2 [default = ""];</code>
      */
-    boolean hasUuid();
+    boolean hasTuid();
     /**
-     * <code>required string uuid = 2 [default = ""];</code>
+     * <code>required string tuid = 2 [default = ""];</code>
      */
-    java.lang.String getUuid();
+    java.lang.String getTuid();
     /**
-     * <code>required string uuid = 2 [default = ""];</code>
+     * <code>required string tuid = 2 [default = ""];</code>
      */
     com.google.protobuf.ByteString
-        getUuidBytes();
+        getTuidBytes();
 
     /**
-     * <code>required int64 timestamp = 3 [default = 0];</code>
+     * <code>required int64 expireTime = 3 [default = 0];</code>
      */
-    boolean hasTimestamp();
+    boolean hasExpireTime();
     /**
-     * <code>required int64 timestamp = 3 [default = 0];</code>
+     * <code>required int64 expireTime = 3 [default = 0];</code>
      */
-    long getTimestamp();
+    long getExpireTime();
 
     /**
      * <code>required string signature = 4 [default = ""];</code>
@@ -123,12 +123,12 @@ public final class SessionMessageProto {
             case 18: {
               com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000002;
-              uuid_ = bs;
+              tuid_ = bs;
               break;
             }
             case 24: {
               bitField0_ |= 0x00000004;
-              timestamp_ = input.readInt64();
+              expireTime_ = input.readInt64();
               break;
             }
             case 34: {
@@ -219,19 +219,19 @@ public final class SessionMessageProto {
       }
     }
 
-    public static final int UUID_FIELD_NUMBER = 2;
-    private java.lang.Object uuid_;
+    public static final int TUID_FIELD_NUMBER = 2;
+    private java.lang.Object tuid_;
     /**
-     * <code>required string uuid = 2 [default = ""];</code>
+     * <code>required string tuid = 2 [default = ""];</code>
      */
-    public boolean hasUuid() {
+    public boolean hasTuid() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>required string uuid = 2 [default = ""];</code>
+     * <code>required string tuid = 2 [default = ""];</code>
      */
-    public java.lang.String getUuid() {
-      java.lang.Object ref = uuid_;
+    public java.lang.String getTuid() {
+      java.lang.Object ref = tuid_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
@@ -239,41 +239,41 @@ public final class SessionMessageProto {
             (com.google.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
-          uuid_ = s;
+          tuid_ = s;
         }
         return s;
       }
     }
     /**
-     * <code>required string uuid = 2 [default = ""];</code>
+     * <code>required string tuid = 2 [default = ""];</code>
      */
     public com.google.protobuf.ByteString
-        getUuidBytes() {
-      java.lang.Object ref = uuid_;
+        getTuidBytes() {
+      java.lang.Object ref = tuid_;
       if (ref instanceof java.lang.String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
-        uuid_ = b;
+        tuid_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
     }
 
-    public static final int TIMESTAMP_FIELD_NUMBER = 3;
-    private long timestamp_;
+    public static final int EXPIRETIME_FIELD_NUMBER = 3;
+    private long expireTime_;
     /**
-     * <code>required int64 timestamp = 3 [default = 0];</code>
+     * <code>required int64 expireTime = 3 [default = 0];</code>
      */
-    public boolean hasTimestamp() {
+    public boolean hasExpireTime() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     /**
-     * <code>required int64 timestamp = 3 [default = 0];</code>
+     * <code>required int64 expireTime = 3 [default = 0];</code>
      */
-    public long getTimestamp() {
-      return timestamp_;
+    public long getExpireTime() {
+      return expireTime_;
     }
 
     public static final int SIGNATURE_FIELD_NUMBER = 4;
@@ -320,8 +320,8 @@ public final class SessionMessageProto {
 
     private void initFields() {
       id_ = "";
-      uuid_ = "";
-      timestamp_ = 0L;
+      tuid_ = "";
+      expireTime_ = 0L;
       signature_ = "";
     }
     private byte memoizedIsInitialized = -1;
@@ -334,11 +334,11 @@ public final class SessionMessageProto {
         memoizedIsInitialized = 0;
         return false;
       }
-      if (!hasUuid()) {
+      if (!hasTuid()) {
         memoizedIsInitialized = 0;
         return false;
       }
-      if (!hasTimestamp()) {
+      if (!hasExpireTime()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -357,10 +357,10 @@ public final class SessionMessageProto {
         output.writeBytes(1, getIdBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeBytes(2, getUuidBytes());
+        output.writeBytes(2, getTuidBytes());
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeInt64(3, timestamp_);
+        output.writeInt64(3, expireTime_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeBytes(4, getSignatureBytes());
@@ -380,11 +380,11 @@ public final class SessionMessageProto {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(2, getUuidBytes());
+          .computeBytesSize(2, getTuidBytes());
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(3, timestamp_);
+          .computeInt64Size(3, expireTime_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
@@ -509,9 +509,9 @@ public final class SessionMessageProto {
         super.clear();
         id_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
-        uuid_ = "";
+        tuid_ = "";
         bitField0_ = (bitField0_ & ~0x00000002);
-        timestamp_ = 0L;
+        expireTime_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000004);
         signature_ = "";
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -550,11 +550,11 @@ public final class SessionMessageProto {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
-        result.uuid_ = uuid_;
+        result.tuid_ = tuid_;
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
-        result.timestamp_ = timestamp_;
+        result.expireTime_ = expireTime_;
         if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
           to_bitField0_ |= 0x00000008;
         }
@@ -580,13 +580,13 @@ public final class SessionMessageProto {
           id_ = other.id_;
           onChanged();
         }
-        if (other.hasUuid()) {
+        if (other.hasTuid()) {
           bitField0_ |= 0x00000002;
-          uuid_ = other.uuid_;
+          tuid_ = other.tuid_;
           onChanged();
         }
-        if (other.hasTimestamp()) {
-          setTimestamp(other.getTimestamp());
+        if (other.hasExpireTime()) {
+          setExpireTime(other.getExpireTime());
         }
         if (other.hasSignature()) {
           bitField0_ |= 0x00000008;
@@ -602,11 +602,11 @@ public final class SessionMessageProto {
           
           return false;
         }
-        if (!hasUuid()) {
+        if (!hasTuid()) {
           
           return false;
         }
-        if (!hasTimestamp()) {
+        if (!hasExpireTime()) {
           
           return false;
         }
@@ -712,24 +712,24 @@ public final class SessionMessageProto {
         return this;
       }
 
-      private java.lang.Object uuid_ = "";
+      private java.lang.Object tuid_ = "";
       /**
-       * <code>required string uuid = 2 [default = ""];</code>
+       * <code>required string tuid = 2 [default = ""];</code>
        */
-      public boolean hasUuid() {
+      public boolean hasTuid() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>required string uuid = 2 [default = ""];</code>
+       * <code>required string tuid = 2 [default = ""];</code>
        */
-      public java.lang.String getUuid() {
-        java.lang.Object ref = uuid_;
+      public java.lang.String getTuid() {
+        java.lang.Object ref = tuid_;
         if (!(ref instanceof java.lang.String)) {
           com.google.protobuf.ByteString bs =
               (com.google.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
-            uuid_ = s;
+            tuid_ = s;
           }
           return s;
         } else {
@@ -737,85 +737,85 @@ public final class SessionMessageProto {
         }
       }
       /**
-       * <code>required string uuid = 2 [default = ""];</code>
+       * <code>required string tuid = 2 [default = ""];</code>
        */
       public com.google.protobuf.ByteString
-          getUuidBytes() {
-        java.lang.Object ref = uuid_;
+          getTuidBytes() {
+        java.lang.Object ref = tuid_;
         if (ref instanceof String) {
           com.google.protobuf.ByteString b = 
               com.google.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
-          uuid_ = b;
+          tuid_ = b;
           return b;
         } else {
           return (com.google.protobuf.ByteString) ref;
         }
       }
       /**
-       * <code>required string uuid = 2 [default = ""];</code>
+       * <code>required string tuid = 2 [default = ""];</code>
        */
-      public Builder setUuid(
+      public Builder setTuid(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000002;
-        uuid_ = value;
+        tuid_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required string uuid = 2 [default = ""];</code>
+       * <code>required string tuid = 2 [default = ""];</code>
        */
-      public Builder clearUuid() {
+      public Builder clearTuid() {
         bitField0_ = (bitField0_ & ~0x00000002);
-        uuid_ = getDefaultInstance().getUuid();
+        tuid_ = getDefaultInstance().getTuid();
         onChanged();
         return this;
       }
       /**
-       * <code>required string uuid = 2 [default = ""];</code>
+       * <code>required string tuid = 2 [default = ""];</code>
        */
-      public Builder setUuidBytes(
+      public Builder setTuidBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000002;
-        uuid_ = value;
+        tuid_ = value;
         onChanged();
         return this;
       }
 
-      private long timestamp_ ;
+      private long expireTime_ ;
       /**
-       * <code>required int64 timestamp = 3 [default = 0];</code>
+       * <code>required int64 expireTime = 3 [default = 0];</code>
        */
-      public boolean hasTimestamp() {
+      public boolean hasExpireTime() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       /**
-       * <code>required int64 timestamp = 3 [default = 0];</code>
+       * <code>required int64 expireTime = 3 [default = 0];</code>
        */
-      public long getTimestamp() {
-        return timestamp_;
+      public long getExpireTime() {
+        return expireTime_;
       }
       /**
-       * <code>required int64 timestamp = 3 [default = 0];</code>
+       * <code>required int64 expireTime = 3 [default = 0];</code>
        */
-      public Builder setTimestamp(long value) {
+      public Builder setExpireTime(long value) {
         bitField0_ |= 0x00000004;
-        timestamp_ = value;
+        expireTime_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required int64 timestamp = 3 [default = 0];</code>
+       * <code>required int64 expireTime = 3 [default = 0];</code>
        */
-      public Builder clearTimestamp() {
+      public Builder clearExpireTime() {
         bitField0_ = (bitField0_ & ~0x00000004);
-        timestamp_ = 0L;
+        expireTime_ = 0L;
         onChanged();
         return this;
       }
@@ -922,9 +922,9 @@ public final class SessionMessageProto {
   static {
     java.lang.String[] descriptorData = {
       "\n\031SessionMessageProto.proto\022\"com.iauto.w" +
-      "link.core.message.proto\"Y\n\016SessionMessag" +
-      "e\022\014\n\002id\030\001 \002(\t:\000\022\016\n\004uuid\030\002 \002(\t:\000\022\024\n\ttimes" +
-      "tamp\030\003 \002(\003:\0010\022\023\n\tsignature\030\004 \002(\t:\000"
+      "link.core.message.proto\"Z\n\016SessionMessag" +
+      "e\022\014\n\002id\030\001 \002(\t:\000\022\016\n\004tuid\030\002 \002(\t:\000\022\025\n\nexpir" +
+      "eTime\030\003 \002(\003:\0010\022\023\n\tsignature\030\004 \002(\t:\000"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -943,7 +943,7 @@ public final class SessionMessageProto {
     internal_static_com_iauto_wlink_core_message_proto_SessionMessage_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_com_iauto_wlink_core_message_proto_SessionMessage_descriptor,
-        new java.lang.String[] { "Id", "Uuid", "Timestamp", "Signature", });
+        new java.lang.String[] { "Id", "Tuid", "ExpireTime", "Signature", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

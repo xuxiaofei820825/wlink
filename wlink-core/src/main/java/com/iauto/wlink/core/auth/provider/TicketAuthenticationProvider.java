@@ -17,7 +17,7 @@ public abstract class TicketAuthenticationProvider implements AuthenticationProv
 		return authenticate( (String) ticketAuth.credential() );
 	}
 
-	abstract TicketAuthentication authenticate( String ticket );
+	abstract TicketAuthentication authenticate( String ticket ) throws AuthenticationException;
 
 	public boolean supports( Class<?> authentication ) {
 		return ( TicketAuthentication.class.isAssignableFrom( authentication ) );

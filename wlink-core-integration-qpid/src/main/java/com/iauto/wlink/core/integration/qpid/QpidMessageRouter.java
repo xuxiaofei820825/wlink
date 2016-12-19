@@ -19,7 +19,6 @@ import javax.jms.Session;
 import org.apache.qpid.client.AMQAnyDestination;
 import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.client.AMQTopic;
-import org.apache.qpid.jms.ConnectionListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -72,6 +71,8 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 	/** 消息监听器 */
 	private QpidMessageListener msgListener = new QpidMessageListener();
 
+	private CachingConnectionFactory cachingConnectionFactory;
+
 	public void afterPropertiesSet() throws Exception {
 		Assert.notNull( this.url, "Url of broker is required." );
 		Assert.notNull( this.messageReceivedHandler, "Message received handler is required." );
@@ -122,6 +123,9 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 					return;
 				}
 
+				if ( consumers.containsKey( uuid ) )
+					return;
+
 				// 初始化
 				Session session = null;
 
@@ -138,14 +142,12 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 						String.format( "ADDR:%s/%s;{create:always,node:{type:topic}}",
 							P2P_EXCHANGE_NAME, uuid ) );
 
-					if ( !consumers.containsKey( uuid ) ) {
-						// create message consumer
-						MessageConsumer consumer = session.createConsumer( dest );
-						consumer.setMessageListener( msgListener );
+					// create message consumer
+					MessageConsumer consumer = session.createConsumer( dest );
+					consumer.setMessageListener( msgListener );
 
-						// remember message consumer
-						consumers.put( uuid, consumer );
-					}
+					// remember message consumer
+					consumers.put( uuid, consumer );
 				} catch ( Exception ex ) {
 					throw new MessageRouteException( ex );
 				} finally {
@@ -213,7 +215,7 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 
 					// 设置连接的节点名，如果不存在该topic节点，则新建一个
 					AMQTopic dest = new AMQTopic(
-						String.format( "ADDR:%s/%s;{node:{type:topic}}",
+						String.format( "ADDR:%s/%s;{create:always,node:{type:topic}}",
 							P2P_EXCHANGE_NAME, to ) );
 
 					// 为指定的节点创建消息发送者
@@ -309,18 +311,14 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 
 		try {
 
-			AMQConnectionFactory connectionFactory = new AMQConnectionFactory( url );
-			CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory( connectionFactory );
+			cachingConnectionFactory = new CachingConnectionFactory( new AMQConnectionFactory( url ) );
 
 			// 缓存Session数
 			cachingConnectionFactory.setSessionCacheSize( 10 );
+			cachingConnectionFactory.setExceptionListener( new QpidConnectionExceptionListener() );
 
 			// 创建与broker的连接
 			conn = cachingConnectionFactory.createConnection();
-
-			// 设置异常处理器
-			conn.setExceptionListener( new QpidConnectionExceptionListener() );
-			// conn.setConnectionListener( new QpidConnectionListener() );
 
 			// 创建连接
 			conn.start();
@@ -347,9 +345,81 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 	 */
 	private class QpidConnectionExceptionListener implements ExceptionListener {
 		public void onException( JMSException exception ) {
-			// error
-			logger.error( "Error occoured. Caused by:{}",
-				exception.getCause() != null ? exception.getCause().getMessage() : exception.getMessage() );
+			// info
+			logger.info( "Connection to broker is abort, 3 seconds later, trying to reconnect." );
+
+			// 等待3秒，重新连接
+			try {
+				Thread.sleep( 3000 );
+			} catch ( InterruptedException e ) {
+				// ignore
+			}
+
+			isFailingover = true;
+			// consumers.clear();
+
+			executors.execute( new Runnable() {
+				public void run() {
+
+					// 未连接
+					boolean isConnected = false;
+
+					// 不停的重试，知道成功连接
+					while ( !isConnected ) {
+						try {
+
+							// 创建与broker的连接
+							conn = cachingConnectionFactory.createConnection();
+
+							// 创建连接
+							conn.start();
+
+							// info log
+							logger.info( "Succeed to reconnect to broker." );
+
+							isConnected = true;
+						} catch ( Exception ex ) {
+							// info log
+							logger.info( "Failed to reconnect to broker, try again 3 seconds later." );
+
+							// 等待3秒，重新连接
+							try {
+								Thread.sleep( 3000 );
+							} catch ( InterruptedException e ) {
+								// ignore
+							}
+						}
+					}
+
+					// 初始化
+					Session session = null;
+
+					for ( String uuid : consumers.keySet() ) {
+						try {
+							session = conn.createSession( false, Session.AUTO_ACKNOWLEDGE );
+							AMQTopic dest = new AMQTopic(
+								String.format( "ADDR:%s/%s;{create:always,node:{type:topic}}",
+									P2P_EXCHANGE_NAME, uuid ) );
+
+							MessageConsumer consumer = session.createConsumer( dest );
+							consumer.setMessageListener( msgListener );
+							consumers.put( uuid, consumer );
+						} catch ( Exception ex ) {
+							throw new MessageRouteException( ex );
+						} finally {
+							if ( session != null ) {
+								try {
+									session.close();
+								} catch ( JMSException e ) {
+									// ignore
+								}
+							}
+						}
+					}
+
+					isFailingover = false;
+				}
+			} );
 		}
 	}
 
@@ -367,8 +437,8 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 				byte[] payload = new byte[(int) len];
 				bytes.readBytes( payload );
 
-				// info log
-				logger.info( "Received a message. type:{}, from:{}, to:{}, bytes:{}",
+				// debug log
+				logger.debug( "Received a message. type:{}, from:{}, to:{}, bytes:{}",
 					new Object[] { type, from, to, len } );
 
 				if ( messageReceivedHandler != null )
@@ -377,31 +447,6 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 				// error
 				logger.info( "Exception occurred when processing the message! Caused by: {}", ex.getMessage() );
 			}
-		}
-	}
-
-	private class QpidConnectionListener implements ConnectionListener {
-		public void bytesSent( long count ) {
-		}
-
-		public void bytesReceived( long count ) {
-		}
-
-		public boolean preFailover( boolean redirect ) {
-			// info log
-			logger.info( "prepare to failovering......" );
-			isFailingover = true;
-			return true;
-		}
-
-		public boolean preResubscribe() {
-			return false;
-		}
-
-		public void failoverComplete() {
-			// info log
-			logger.info( "failover completed!" );
-			isFailingover = false;
 		}
 	}
 

@@ -11,7 +11,7 @@
 	<artifactId>wlink-core</artifactId>
 	<name>wlink-core</name>
 	<url>http://maven.apache.org</url>
-	
+
 	<properties>
 		<google.protobuf.version>2.6.1</google.protobuf.version>
 		<commons.codec.version>1.9</commons.codec.version>
@@ -29,17 +29,24 @@
 			<artifactId>wlink-core-api</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>com.google.protobuf</groupId>
 			<artifactId>protobuf-java</artifactId>
 			<version>${google.protobuf.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
 			<version>${commons.codec.version}</version>
 		</dependency>
+
+		<dependency>
+			<groupId>com.lmax</groupId>
+			<artifactId>disruptor</artifactId>
+			<version>3.3.6</version>
+		</dependency>
+
 	</dependencies>
 </project>

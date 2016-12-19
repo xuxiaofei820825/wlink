@@ -10,7 +10,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iauto.wlink.core.comm.CommunicationPayload;
+import com.iauto.wlink.core.message.CommunicationMessage;
 
 /**
  * 该类实现通讯包的编解码操作。<br/>
@@ -22,7 +22,7 @@ import com.iauto.wlink.core.comm.CommunicationPayload;
  * @author xiaofei.xu
  * 
  */
-public class CommunicationPayloadCodec extends ByteToMessageCodec<CommunicationPayload> {
+public class CommunicationMessageCodec extends ByteToMessageCodec<CommunicationMessage> {
 
 	/** logger */
 	private final Logger logger = LoggerFactory.getLogger( getClass() );
@@ -37,7 +37,7 @@ public class CommunicationPayloadCodec extends ByteToMessageCodec<CommunicationP
 	private int payloadLen = 0;
 
 	/** 通讯包有效荷载 */
-	private CommunicationPayload commPayload;
+	private CommunicationMessage commPayload;
 
 	/**
 	 * 报文解析状态
@@ -50,19 +50,19 @@ public class CommunicationPayloadCodec extends ByteToMessageCodec<CommunicationP
 	}
 
 	@Override
-	protected void encode( ChannelHandlerContext ctx, CommunicationPayload msg, ByteBuf out ) throws Exception {
-		byte[] bytesType = msg.getType()
+	protected void encode( ChannelHandlerContext ctx, CommunicationMessage msg, ByteBuf out ) throws Exception {
+		byte[] bytesType = msg.type()
 			.getBytes( Charset.forName( "UTF-8" ) );
 
 		// 输出各部分的长度
 		out.writeShort( bytesType.length );
 		//out.writeShort( msg.getProperties().length );
-		out.writeShort( msg.getPayload().length );
+		out.writeShort( msg.payload().length );
 
 		// 输出各部分
 		out.writeBytes( bytesType );
 		//out.writeBytes( msg.getProperties() );
-		out.writeBytes( msg.getPayload() );
+		out.writeBytes( msg.payload() );
 	}
 
 	@Override
@@ -100,7 +100,7 @@ public class CommunicationPayloadCodec extends ByteToMessageCodec<CommunicationP
 			logger.debug( "Type of communication payload: {}", type );
 
 			// 创建对象
-			this.commPayload = new CommunicationPayload();
+			this.commPayload = new CommunicationMessage();
 			this.commPayload.setType( type );
 
 			// 状态迁移到PAYLOAD_BODY

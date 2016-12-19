@@ -3,8 +3,8 @@ package com.iauto.wlink.core.message;
 public class SessionMessage extends AbstractSystemMessage {
 
 	private String id;
-	private String uuid;
-	private long timestamp;
+	private String tuid;
+	private long expireTime;
 	private String signature;
 
 	// ========================================================
@@ -18,20 +18,20 @@ public class SessionMessage extends AbstractSystemMessage {
 		this.id = id;
 	}
 
-	public String getUuid() {
-		return uuid;
+	public String getTuid() {
+		return tuid;
 	}
 
-	public void setUuid( String uuid ) {
-		this.uuid = uuid;
+	public void setTuid( String tuid ) {
+		this.tuid = tuid;
 	}
 
-	public long getTimestamp() {
-		return timestamp;
+	public long getExpireTime() {
+		return expireTime;
 	}
 
-	public void setTimestamp( long timestamp ) {
-		this.timestamp = timestamp;
+	public void setExpireTime( long expireTime ) {
+		this.expireTime = expireTime;
 	}
 
 	public String getSignature() {

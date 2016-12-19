@@ -19,7 +19,7 @@ import com.iauto.wlink.client.channel.DefaultChannelInitializer;
 import com.iauto.wlink.client.exception.AuthenticationException;
 import com.iauto.wlink.core.Constant;
 import com.iauto.wlink.core.Constant.MessageType;
-import com.iauto.wlink.core.comm.CommunicationPayload;
+import com.iauto.wlink.core.message.CommunicationMessage;
 import com.iauto.wlink.core.message.DefaultTerminalMessage;
 import com.iauto.wlink.core.message.SessionMessage;
 import com.iauto.wlink.core.message.TicketAuthMessage;
@@ -137,21 +137,21 @@ public class DefaultWlinkClient implements WlinkClient {
 
 		try {
 
-			channel.pipeline().addLast( new SimpleChannelInboundHandler<CommunicationPayload>() {
+			channel.pipeline().addLast( new SimpleChannelInboundHandler<CommunicationMessage>() {
 				@Override
-				protected void channelRead0( ChannelHandlerContext ctx, CommunicationPayload msg ) throws Exception {
+				protected void channelRead0( ChannelHandlerContext ctx, CommunicationMessage msg ) throws Exception {
 
 					// 解码
-					boolean isSession = StringUtils.equals( msg.getType(), MessageType.Session );
+					boolean isSession = StringUtils.equals( msg.type(), MessageType.Session );
 
 					if ( isSession ) {
 						ProtoSessionMessageCodec codec = new ProtoSessionMessageCodec();
-						SessionMessage sessionMsg = codec.decode( msg.getPayload() );
+						SessionMessage sessionMsg = codec.decode( msg.payload() );
 
 						Session session = new Session();
 						session.setId( sessionMsg.getId() );
-						session.setUserId( sessionMsg.getUuid() );
-						session.setTimestamp( sessionMsg.getTimestamp() );
+						session.settUId( sessionMsg.getTuid() );
+						session.setExpireTime( sessionMsg.getExpireTime() );
 						session.setSignature( sessionMsg.getSignature() );
 
 						ctx.channel().attr( SessionKey ).set( session );
@@ -170,7 +170,7 @@ public class DefaultWlinkClient implements WlinkClient {
 			ProtoTicketAuthMessageCodec authCodec = new ProtoTicketAuthMessageCodec();
 
 			// 封装通讯包
-			CommunicationPayload comm = new CommunicationPayload();
+			CommunicationMessage comm = new CommunicationMessage();
 			comm.setPayload( authCodec.encode( ticketAuthMessage ) );
 			comm.setType( Constant.MessageType.Auth );
 
@@ -192,7 +192,7 @@ public class DefaultWlinkClient implements WlinkClient {
 
 			// info
 			logger.info( "Succeed to process authentication. [session:{}, userId:{}, signature:{}]",
-				sctx.getId(), sctx.getUserId(), sctx.getSignature() );
+				sctx.getId(), sctx.gettUId(), sctx.getSignature() );
 
 		} catch ( Exception ex ) {
 			throw new AuthenticationException( ex );
@@ -211,19 +211,19 @@ public class DefaultWlinkClient implements WlinkClient {
 	 * @param signature
 	 *          服务端返回的签名
 	 */
-	public void auth( String id, String userId, long timestamp, String signature ) throws AuthenticationException {
+	public void auth( String id, String userId, long expireTime, String signature ) throws AuthenticationException {
 
 		try {
 
 			SessionMessage session = new SessionMessage();
 			session.setId( id );
-			session.setUuid( userId );
+			session.setTuid( userId );
 			session.setSignature( signature );
-			session.setTimestamp( timestamp );
+			session.setExpireTime( expireTime );
 
 			ProtoSessionMessageCodec codec = new ProtoSessionMessageCodec();
 
-			CommunicationPayload comm = new CommunicationPayload();
+			CommunicationMessage comm = new CommunicationMessage();
 			comm.setPayload( codec.encode( session ) );
 			comm.setType( Constant.MessageType.Session );
 
@@ -244,12 +244,12 @@ public class DefaultWlinkClient implements WlinkClient {
 
 	public void sendMessage( String receiver, String type, byte[] body ) {
 		Session sctx = channel.attr( SessionKey ).get();
-		String userId = sctx.getUserId();
+		String userId = sctx.gettUId();
 		DefaultTerminalMessage terminalMsg = new DefaultTerminalMessage( type, userId, receiver, body );
 
 		ProtoTerminalMessageCodec codec = new ProtoTerminalMessageCodec();
 
-		CommunicationPayload comm = new CommunicationPayload();
+		CommunicationMessage comm = new CommunicationMessage();
 		comm.setPayload( codec.encode( terminalMsg ) );
 		comm.setType( Constant.MessageType.Terminal );
 

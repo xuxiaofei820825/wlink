@@ -14,6 +14,7 @@ public class Constant {
 		public static final String Session = "system.session";
 		public static final String Auth = "system.auth";
 		public static final String Heartbeat = "system.heartbeat";
+		public static final String Error = "system.error";
 
 		public static final String P2PMessage = "terminal.p2p";
 		public static final String BroadcastMessage = "terminal.broadcast";

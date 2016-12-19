@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.Constant.MessageType;
-import com.iauto.wlink.core.comm.CommunicationPayload;
+import com.iauto.wlink.core.message.CommunicationMessage;
 
 public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
 
@@ -30,7 +30,7 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
 				// debug
 				logger.info( "Channel is idle, send a hearbeat message." );
 
-				CommunicationPayload comm = new CommunicationPayload();
+				CommunicationMessage comm = new CommunicationMessage();
 				comm.setType( MessageType.Heartbeat );
 				comm.setPayload( new byte[] {} );
 

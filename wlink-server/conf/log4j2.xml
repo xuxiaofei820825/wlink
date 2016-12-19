@@ -28,10 +28,6 @@
 			</Policies>
 		</RollingRandomAccessFile>
 		
-		<!-- SYSLOG -->
-    <Syslog name="SysLog" host="localhost" port="514" protocol="UDP" facility="LOCAL1" newLine="true">
-    	<PatternLayout pattern="${SYSLOG_PATTERN}" />
-    </Syslog>
 	</appenders>
 
 	<loggers>

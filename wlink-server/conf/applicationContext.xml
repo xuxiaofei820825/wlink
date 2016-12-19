@@ -42,7 +42,7 @@
 		<property name="messageReceivedHandler" ref="messageHandler" />
 	</bean>
 	
-	<bean id="messageHandler" class="com.iauto.wlink.server.message.NettyTerminalMessageHandler">
+	<bean id="messageHandler" class="com.iauto.wlink.server.message.TerminalMessageReceiveHandler">
 		<property name="messageCodec" ref="messageCodec" />
 	</bean>
 	
@@ -61,7 +61,7 @@
 		<property name="messageRouter" ref="messageRouter" />
 	</bean>
 	
-	<bean id="terminalMessageHandler" class="com.iauto.wlink.server.channel.handler.TerminalMessageHandler">
+	<bean id="terminalMessageHandler" class="com.iauto.wlink.server.channel.handler.TerminalMessageSendHandler">
 		<property name="codec" ref="messageCodec" />
 		<property name="messageRouter" ref="messageRouter" />
 	</bean>

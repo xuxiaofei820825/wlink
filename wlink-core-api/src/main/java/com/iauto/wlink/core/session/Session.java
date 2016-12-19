@@ -1,40 +1,65 @@
 package com.iauto.wlink.core.session;
 
-/**
- * 用户会话
- * 
- * @author xiaofei.xu
- * 
- */
-public class Session {
+import com.iauto.wlink.core.message.CommunicationMessage;
 
-	/** 用户编号 */
-	private final String uuid;
+public interface Session {
 
-	/** 会话编号 */
-	private final String id;
+	/**
+	 * 终端会话是否已被认证
+	 * 
+	 * @return true:已认证,false:未认证
+	 */
+	boolean isAuthenticated();
 
-	/** 创建时间戳 */
-	private final long timestamp;
+	/**
+	 * 向终端发送消息
+	 * 
+	 * @param message
+	 *          被发送的消息
+	 */
+	void send( CommunicationMessage message );
 
-	public Session( String id, String userId, long timestamp ) {
-		this.id = id;
-		this.uuid = userId;
-		this.timestamp = timestamp;
-	}
+	/**
+	 * 设置会话编号
+	 * 
+	 * @param id
+	 *          会话编号
+	 */
+	void setId( String id );
 
-	// ============================================================
-	// setter/getter
+	/**
+	 * 获取会话编号
+	 * 
+	 * @return 会话编号
+	 */
+	String getId();
 
-	public String getUuId() {
-		return uuid;
-	}
+	/**
+	 * 设置终端唯一识别码
+	 * 
+	 * @param id
+	 *          终端唯一识别码
+	 */
+	void setTUId( String id );
 
-	public String getId() {
-		return id;
-	}
+	/**
+	 * 获取终端唯一识别码
+	 * 
+	 * @return 终端唯一识别码
+	 */
+	String getTUId();
+	
+	/**
+	 * 设置会话超时时间
+	 * 
+	 * @return 会话超时时间
+	 */
+	void setExpireTime(long expireTime);
 
-	public long getTimestamp() {
-		return timestamp;
-	}
+	/**
+	 * 获取会话超时时间
+	 * 
+	 * @return 会话超时时间
+	 */
+	long getExpireTime();
 }

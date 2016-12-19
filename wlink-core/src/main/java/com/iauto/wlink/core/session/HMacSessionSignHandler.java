@@ -17,7 +17,7 @@ import com.iauto.wlink.core.exception.AuthenticationException;
  * @author xiaofei.xu
  * 
  */
-public class HMacSessionSignatureHandler implements SessionSignatureHandler {
+public class HMacSessionSignHandler implements SessionSignHandler {
 
 	/** 签名算法 */
 	private final static String HMAC_SHA256 = "HmacSHA256";
@@ -28,7 +28,7 @@ public class HMacSessionSignatureHandler implements SessionSignatureHandler {
 	/** 签名密匙 */
 	private final String key;
 
-	public HMacSessionSignatureHandler( String key ) {
+	public HMacSessionSignHandler( String key ) {
 		this.key = key;
 	}
 
@@ -44,7 +44,7 @@ public class HMacSessionSignatureHandler implements SessionSignatureHandler {
 
 		// 生成用来进行签名的字符串
 		Joiner joiner = Joiner.on( ";" ).skipNulls();
-		joiner.join( session.getId(), session.getUuId(), session.getTimestamp() );
+		joiner.join( session.getId(), session.getTUId(), session.getExpireTime() );
 		String content = joiner.toString();
 
 		try {
