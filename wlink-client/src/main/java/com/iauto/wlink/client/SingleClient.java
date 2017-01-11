@@ -4,7 +4,7 @@ import com.iauto.wlink.core.tools.ReserveAccountTool;
 
 public class SingleClient {
 
-	private static final String TEXT_MESSAGE = "";
+	//private static final String TEXT_MESSAGE = "";
 
 	public static void main( String[] args ) throws Exception {
 

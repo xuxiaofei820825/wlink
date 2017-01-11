@@ -15,7 +15,7 @@ public class MutipleClients {
 			Thread thread = new Thread( new ClientRunnable( idx ) );
 			thread.start();
 
-			Thread.sleep( 500 );
+			//Thread.sleep( 500 );
 		}
 	}
 

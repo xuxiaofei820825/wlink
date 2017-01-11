@@ -1,10 +1,12 @@
 package com.iauto.wlink.core.exception;
 
-public class AuthenticationException extends Exception {
+@SuppressWarnings("serial")
+public class AuthenticationException extends MessageProcessException {
 
-	/**
-	 * serialVersionUID
-	 */
-	private static final long serialVersionUID = -4488046101959437190L;
+	private static final String ERROR_CODE = "AUTHENTICATE_FAILURE";
+
+	public AuthenticationException() {
+		super( ERROR_CODE );
+	}
 
 }

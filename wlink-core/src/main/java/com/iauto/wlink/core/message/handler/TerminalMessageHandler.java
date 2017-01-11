@@ -6,10 +6,6 @@ import com.iauto.wlink.core.session.Session;
 public class TerminalMessageHandler extends AbstractMessageHandler {
 
 	@Override
-	protected boolean handleMessage( Session session, CommunicationMessage message ) {
-
-		
-		// 传递给下一个处理器处理
-		return false;
+	public void handleMessage( Session session, CommunicationMessage message ) {
 	}
 }

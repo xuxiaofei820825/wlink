@@ -1,33 +1,37 @@
 package com.iauto.wlink.core.message.handler;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.iauto.wlink.core.exception.MessageProcessException;
 import com.iauto.wlink.core.message.CommunicationMessage;
 import com.iauto.wlink.core.session.Session;
 
-public abstract class AbstractMessageHandler {
-
-	/** logger */
-	private final Logger logger = LoggerFactory.getLogger( getClass() );
+public abstract class AbstractMessageHandler implements MessageHandler {
 
 	/** 下一个处理者 */
 	private AbstractMessageHandler nextHandler = null;
 
-	public final void handle( Session session, CommunicationMessage message ) {
-		if ( !this.handleMessage( session, message ) ) {
-			if ( this.nextHandler != null ) {
-				this.nextHandler.handle( session, message );
-			} else {
-				// info
-				logger.info( "Message handler is not exist. type of message:{}", message.type() );
-			}
-		}
-	}
-
+	/**
+	 * 设置下一个处理器
+	 * 
+	 * @param handler
+	 *          处理器
+	 */
 	public void setNextHandler( AbstractMessageHandler handler ) {
 		this.nextHandler = handler;
 	}
 
-	protected abstract boolean handleMessage( Session session, CommunicationMessage message );
+	public AbstractMessageHandler getNextHandler() {
+		return this.nextHandler;
+	}
+
+	/**
+	 * 实现处理逻辑
+	 * 
+	 * @param session
+	 *          会话对象
+	 * @param message
+	 *          通讯消息
+	 * @return true:已处理结束，false:未处理，传递到链的下一个处理器
+	 */
+	public abstract void handleMessage( Session session, CommunicationMessage message )
+			throws MessageProcessException;
 }

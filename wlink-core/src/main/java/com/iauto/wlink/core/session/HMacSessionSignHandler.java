@@ -5,11 +5,10 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
-import com.iauto.wlink.core.exception.AuthenticationException;
+import com.iauto.wlink.core.exception.InvalidSignatureSessionException;
+import com.iauto.wlink.core.exception.UnexpectedSystemException;
 
 /**
  * 该类使用HMACSHA256算法对会话进行签名
@@ -21,9 +20,6 @@ public class HMacSessionSignHandler implements SessionSignHandler {
 
 	/** 签名算法 */
 	private final static String HMAC_SHA256 = "HmacSHA256";
-
-	/** logger */
-	private final Logger logger = LoggerFactory.getLogger( getClass() );
 
 	/** 签名密匙 */
 	private final String key;
@@ -38,14 +34,13 @@ public class HMacSessionSignHandler implements SessionSignHandler {
 	 * @param session
 	 *          会话
 	 */
-	public String sign( Session session ) throws AuthenticationException {
+	public String sign( String id, String tuid, long expireTime ) {
 		// 初始化
 		String result = StringUtils.EMPTY;
 
 		// 生成用来进行签名的字符串
 		Joiner joiner = Joiner.on( ";" ).skipNulls();
-		joiner.join( session.getId(), session.getTUId(), session.getExpireTime() );
-		String content = joiner.toString();
+		String content = joiner.join( id, tuid, expireTime );
 
 		try {
 
@@ -60,7 +55,7 @@ public class HMacSessionSignHandler implements SessionSignHandler {
 
 			return result;
 		} catch ( Exception ex ) {
-			throw new AuthenticationException();
+			throw new UnexpectedSystemException();
 		}
 	}
 
@@ -72,16 +67,9 @@ public class HMacSessionSignHandler implements SessionSignHandler {
 	 * @param signature
 	 *          签名
 	 */
-	public boolean validate( final Session session, final String signature ) throws AuthenticationException {
-		if ( session == null || StringUtils.isBlank( signature ) )
-			throw new IllegalArgumentException();
-
-		try {
-			String tmp = sign( session );
-			return StringUtils.equals( tmp, signature );
-		} catch ( Exception ex ) {
-			logger.error( "Exception occoured!", ex );
-		}
-		return false;
+	public void validate( String id, String tuid, long expireTime, final String signature )
+			throws InvalidSignatureSessionException {
+		if ( !StringUtils.equals( sign( id, tuid, expireTime ), signature ) )
+			throw new InvalidSignatureSessionException();
 	}
 }

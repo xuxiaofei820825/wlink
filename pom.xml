@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.iauto</groupId>
 	<artifactId>wlink</artifactId>
@@ -21,17 +22,34 @@
 		<module>wlink-server</module>
 		<module>wlink-client</module>
 		<module>wlink-core-api</module>
-    <module>wlink-core-integration-qpid</module>
-    <module>wlink-core-integration-rabbitmq</module>
-    <module>wlink-core-integration-activemq</module>
-  </modules>
+		<module>wlink-core-integration-qpid</module>
+		<module>wlink-core-integration-rabbitmq</module>
+		<module>wlink-core-integration-activemq</module>
+	</modules>
 
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>3.8.1</version>
+			<version>4.11</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<version>1.10.19</version>
+			<scope>test</scope>
+		</dependency>
+<!-- 		<dependency> -->
+<!--     	<groupId>org.powermock</groupId> -->
+<!--     	<artifactId>powermock-module-junit4</artifactId> -->
+<!--     	<version>1.6.6</version> -->
+<!-- 		</dependency> -->
+		
+		<dependency>
+		  <groupId>org.powermock</groupId>
+		  <artifactId>powermock-api-mockito</artifactId>
+		  <version>1.6.6</version>
 		</dependency>
 
 		<!-- ====== logger ====== -->
@@ -50,11 +68,6 @@
 			<artifactId>log4j-core</artifactId>
 			<version>${log4j.version}</version>
 		</dependency>
-<!-- 		<dependency> -->
-<!-- 			<groupId>com.lmax</groupId> -->
-<!-- 			<artifactId>disruptor</artifactId> -->
-<!-- 			<version>3.3.0</version> -->
-<!-- 		</dependency> -->
 
 		<!-- commons -->
 		<dependency>
@@ -62,12 +75,12 @@
 			<artifactId>commons-lang</artifactId>
 			<version>${commons.lang.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>19.0</version>
 		</dependency>
-		
+
 	</dependencies>
 </project>
