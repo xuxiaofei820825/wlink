@@ -92,12 +92,13 @@ public class AuthMessageHandler extends AbstractMessageHandler {
 		sessionMsg.setSignature( signature ); // 重建会话时要验证签名
 		sessionMsg.setExpireTime( session.getExpireTime() );
 		sessionMsg.setTuid( String.valueOf( result.principal() ) );
+		
+		CommunicationMessage comm = new CommunicationMessage();
+		comm.setType( MessageType.Session );
+		comm.setPayload( sessionMessageCodec.encode( sessionMsg ) );
 
 		// 把会话返回给终端，用于重新建立会话
-		session.send( new CommunicationMessage(
-			MessageType.Session,
-			sessionMessageCodec.encode( sessionMsg ) ) );
-
+		session.send( comm );
 	}
 
 	// ==========================================================================

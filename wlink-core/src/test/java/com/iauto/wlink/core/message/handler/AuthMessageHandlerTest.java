@@ -1,8 +1,9 @@
 package com.iauto.wlink.core.message.handler;
 
-import static org.mockito.Mockito.mock;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.powermock.api.mockito.PowerMockito.mock;
 import static org.powermock.api.mockito.PowerMockito.whenNew;
 
 import org.junit.After;
@@ -11,11 +12,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.rule.PowerMockRule;
 
 import com.iauto.wlink.core.Constant.MessageType;
 import com.iauto.wlink.core.auth.AuthenticationProvider;
@@ -29,25 +28,18 @@ import com.iauto.wlink.core.message.TicketAuthMessage;
 import com.iauto.wlink.core.session.Session;
 import com.iauto.wlink.core.session.SessionSignHandler;
 
+@PrepareForTest(AuthMessageHandler.class)
 public class AuthMessageHandlerTest {
 
 	@Rule
-	public MockitoRule mockitoRule = MockitoJUnit.rule();
+	public PowerMockRule rule = new PowerMockRule();
 
-	@Mock
 	private AuthenticationProvider authProvider;
-	@Mock
 	private Session session;
-	@Mock
 	private CommunicationMessage message;
-	@Mock
 	private MessageCodec<TicketAuthMessage> authMessageCodec;
-	@Mock
 	private MessageCodec<SessionMessage> sessionMessageCodec;
-	@Mock
 	private SessionSignHandler sessionSignHandler;
-
-	@InjectMocks
 	private AuthMessageHandler authMessageHandler;
 
 	@BeforeClass
@@ -58,8 +50,27 @@ public class AuthMessageHandlerTest {
 	public static void tearDownAfterClass() throws Exception {
 	}
 
+	@SuppressWarnings("unchecked")
 	@Before
 	public void setUp() throws Exception {
+
+		// 创建需要测试的实例
+		authMessageHandler = new AuthMessageHandler();
+
+		// 模拟对象
+		session = mock( Session.class );
+		message = mock( CommunicationMessage.class );
+
+		authMessageCodec = mock( MessageCodec.class );
+		authProvider = mock( AuthenticationProvider.class );
+		sessionMessageCodec = mock( MessageCodec.class );
+		sessionSignHandler = mock( SessionSignHandler.class );
+
+		// 使用模拟对象设置测试对象的依赖
+		authMessageHandler.setAuthProvider( authProvider );
+		authMessageHandler.setAuthMessageCodec( authMessageCodec );
+		authMessageHandler.setSessionSignHandler( sessionSignHandler );
+		authMessageHandler.setSessionMessageCodec( sessionMessageCodec );
 
 		// 认证消息
 		when( message.type() ).thenReturn( MessageType.Auth );
@@ -133,19 +144,57 @@ public class AuthMessageHandlerTest {
 	public void testHandleMessage() throws Exception {
 		// 正常CASE测试
 
-		// 测试
+		// ============ 1.模拟 ============
+
+		// 当使用无参数构造函数创建SessionMessage时，返回模拟对象
+		SessionMessage sessionMessage = mock( SessionMessage.class );
+		whenNew( SessionMessage.class ).withNoArguments().thenReturn( sessionMessage );
+
+		CommunicationMessage commMessage = mock( CommunicationMessage.class );
+		whenNew( CommunicationMessage.class ).withNoArguments().thenReturn( commMessage );
+
+		// 模拟签名处理器
+		String signature = "Signature";
+		when( sessionSignHandler.sign( Mockito.anyString(), Mockito.anyString(), Mockito.anyLong() ) )
+			.thenReturn( signature );
+
+		// 模拟会话的返回值
+		String sessionId = "SESSION_ID";
+		long expireTime = System.currentTimeMillis() + 1000;
+		when( session.getId() ).thenReturn( sessionId );
+		when( session.getExpireTime() ).thenReturn( expireTime );
+
+		byte[] sessionBytes = new byte[] {};
+		when( sessionMessageCodec.encode( sessionMessage ) ).thenReturn( sessionBytes );
+
+		// ============ 2.测试 ============
+
 		authMessageHandler.handleMessage( session, message );
+
+		// ============ 3.验证 ============
 
 		// 验证调用了解码
 		verify( authMessageCodec ).decode( message.payload() );
 		// 验证调用了认证
-		verify( authProvider ).authenticate( Mockito.any( TicketAuthentication.class ) );
+		verify( authProvider ).authenticate( any( TicketAuthentication.class ) );
 
 		// 验证会话被设置了值
 		verify( session ).setTUId( String.valueOf( 10000 ) );
-		// 验证响应被发回客户端
-		verify( session ).send( Mockito.any( CommunicationMessage.class ) );
 
-		whenNew( CommunicationMessage.class ).withArguments( "", new byte[] {} ).thenReturn( null );
+		// 验证会话消息被设置了正确的值
+		verify( sessionMessage ).setTuid( String.valueOf( 10000 ) );
+		verify( sessionMessage ).setSignature( signature );
+		verify( sessionMessage ).setId( sessionId );
+		verify( sessionMessage ).setExpireTime( expireTime );
+
+		// 验证SessionMessage的编码函数被调用了
+		verify( sessionMessageCodec ).encode( sessionMessage );
+
+		// 验证commMessage被设置了正确的值
+		verify( commMessage ).setType( MessageType.Session );
+		verify( commMessage ).setPayload( sessionBytes );
+
+		// 验证会话响应被发回客户端
+		verify( session ).send( commMessage );
 	}
 }
