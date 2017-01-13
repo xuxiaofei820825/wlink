@@ -51,9 +51,18 @@ public class MessageEventHandler implements EventHandler<MessageEvent> {
 			this.chain.handleMessage( session, event.getMessage() );
 		} catch ( MessageProcessException ex ) {
 
-			session.send( new CommunicationMessage(
-				MessageType.Error,
-				errorMessageCodec.encode( new ErrorMessage( ex.getErrorCode() ) ) ) );
+			ErrorMessage errorMsg = new ErrorMessage( ex.getErrorCode() );
+			CommunicationMessage commMessage = new CommunicationMessage(
+				MessageType.Error, errorMessageCodec.encode( errorMsg ) );
+
+			session.send( commMessage );
 		}
+	}
+
+	// ===================================================================
+	// setter/getter
+
+	public void setErrorMessageCodec( MessageCodec<ErrorMessage> errorMessageCodec ) {
+		this.errorMessageCodec = errorMessageCodec;
 	}
 }

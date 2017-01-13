@@ -17,12 +17,6 @@
 		<spring.version>4.1.0.RELEASE</spring.version>
 	</properties>
 
-	<dependencyManagement>
-		<dependencies>
-			
-		</dependencies>
-	</dependencyManagement>
-
 	<dependencies>
 		<!-- wlink-core -->
 		<dependency>
