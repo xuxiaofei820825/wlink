@@ -17,22 +17,32 @@
 		<console name="Console" target="SYSTEM_OUT" follow="true">
 			<PatternLayout pattern="${LOG_PATTERN}" />
 		</console>
-
-		<!-- 文件日志 -->
-		<RollingRandomAccessFile name="FileLog"
-			fileName="${LOG_HOME}/${SERVICE_NAME}.log" filePattern="${LOG_HOME}/${SERVICE_NAME}.%d{yyyy-MM-dd-HH}.log">
+		
+		<!-- 只记录INFO级别的日志 -->
+		<RollingFile name="DailyRollingFileInfo" 
+			fileName="${LOG_HOME}/wlink-server_info.log"
+			filePattern="${LOG_HOME}/wlink-server_info_%d{yyyy-MM-dd}_%i.log" 
+			immediateFlush="false" append="true">
+			
+			<Filters>
+				<ThresholdFilter level="WARN" onMatch="DENY" onMismatch="NEUTRAL" />
+				<ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY" />
+			</Filters>
+			
 			<PatternLayout pattern="${LOG_PATTERN}" />
 			<Policies>
-				<TimeBasedTriggeringPolicy interval="1"
-					modulate="true" />
+				<!-- 每24小时更新一次 -->
+				<TimeBasedTriggeringPolicy modulate="true" interval="24" />
+				<!-- 限制文件大小 -->
+				<SizeBasedTriggeringPolicy size="100MB" />
 			</Policies>
-		</RollingRandomAccessFile>
-		
+		</RollingFile>
 	</appenders>
 
 	<loggers>
-		<asyncRoot level="INFO">
+		<AsyncRoot level="INFO">
 			<appender-ref ref="Console" />
-		</asyncRoot>
+			<appender-ref ref="DailyRollingFileInfo" />
+		</AsyncRoot>
 	</loggers>
 </configuration>

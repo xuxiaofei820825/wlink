@@ -16,6 +16,6 @@ public interface SessionListener {
 	 * @param session
 	 *          会话
 	 */
-	void onClosed( Session session );
+	void onRemoved( Session session );
 
 }

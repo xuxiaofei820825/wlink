@@ -1,5 +1,6 @@
 package com.iauto.wlink.server.channel.handler;
 
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
@@ -11,11 +12,15 @@ import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.Constant.MessageType;
 import com.iauto.wlink.core.message.CommunicationMessage;
+import com.iauto.wlink.core.session.SessionManager;
 
 public class HeartbeatHandler extends SimpleChannelInboundHandler<CommunicationMessage> {
 
-	// logger
+	/** logger */
 	private final static Logger logger = LoggerFactory.getLogger( HeartbeatHandler.class );
+
+	/** 会话管理器 */
+	private SessionManager sessionManager;
 
 	public HeartbeatHandler() {
 	}
@@ -34,8 +39,13 @@ public class HeartbeatHandler extends SimpleChannelInboundHandler<CommunicationM
 				// log
 				logger.info( "The channel{} is idle, closing the channel......", ctx.channel() );
 
-				// 关闭通道
-				ctx.channel().close();
+				// 关闭通道(同步执行)
+				ChannelFuture future = ctx.channel().close().sync();
+
+				// TODO 删除会话
+				if ( future.isSuccess() ) {
+					sessionManager.remove( "", "" );
+				}
 			}
 		}
 

@@ -11,7 +11,7 @@ import com.lmax.disruptor.dsl.Disruptor;
 public class DefaultMessageListener implements MessageListener {
 
 	/** size of ring buffer */
-	private static final int size = 16384;
+	private static final int size = 2048;
 
 	/** ring buffer */
 	private final RingBuffer<MessageEvent> ringBuffer;

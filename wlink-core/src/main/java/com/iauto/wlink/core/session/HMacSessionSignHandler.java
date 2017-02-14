@@ -1,11 +1,10 @@
 package com.iauto.wlink.core.session;
 
-import java.nio.charset.Charset;
-
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.HmacUtils;
 import org.apache.commons.lang.StringUtils;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.iauto.wlink.core.exception.InvalidSignatureSessionException;
 
@@ -39,7 +38,7 @@ public class HMacSessionSignHandler implements SessionSignHandler {
 		String content = joiner.join( id, tuid, expireTime );
 
 		byte[] rawHmac = HmacUtils.hmacSha256(
-			Base64.decodeBase64( key ), content.getBytes( Charset.forName( "UTF-8" ) ) );
+			Base64.decodeBase64( key ), content.getBytes( Charsets.UTF_8 ) );
 
 		// 进行Base64编码
 		result = Base64.encodeBase64URLSafeString( rawHmac );

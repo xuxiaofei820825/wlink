@@ -28,7 +28,7 @@ public class SessionHandler extends ChannelInboundHandlerAdapter {
 
 		if ( session != null && sessionListener != null )
 			// 触发会话关闭的事件
-			sessionListener.onClosed( session );
+			sessionListener.onRemoved( session );
 
 		ctx.fireChannelInactive();
 	}
