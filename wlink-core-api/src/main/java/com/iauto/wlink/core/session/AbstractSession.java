@@ -24,7 +24,7 @@ public abstract class AbstractSession implements Session {
 		return this.tuid;
 	}
 
-	public void setExpireTime( long expireTime ) {
+	public void setExpiredTime( long expireTime ) {
 		this.expireTime = expireTime;
 	}
 

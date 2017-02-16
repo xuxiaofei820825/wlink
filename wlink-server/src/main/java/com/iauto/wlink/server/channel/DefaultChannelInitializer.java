@@ -21,9 +21,8 @@ import org.springframework.beans.factory.InitializingBean;
 
 import com.iauto.wlink.core.message.CommunicationMessage;
 import com.iauto.wlink.server.ServerStateStatistics;
-import com.iauto.wlink.server.channel.handler.HeartbeatHandler;
-import com.iauto.wlink.server.channel.handler.StateStatisticsHandler;
-import com.iauto.wlink.server.codec.CommunicationMessageCodec;
+import com.iauto.wlink.server.handler.StateStatisticsHandler;
+import com.iauto.wlink.server.handler.codec.CommunicationMessageCodec;
 
 public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel> implements InitializingBean {
 
@@ -94,8 +93,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		// 1.心跳检测处理器
 		IdleStateHandler idleStateHandler = new IdleStateHandler(
 			heartbeatInterval, 0, 0, TimeUnit.SECONDS );
-		pipeline.addLast( "idle", idleStateHandler )
-			.addLast( "heartbeat", new HeartbeatHandler() );
+		pipeline.addLast( "idle", idleStateHandler );
 
 		// 2.会话处理
 		pipeline.addLast( "session", sessionHandler );

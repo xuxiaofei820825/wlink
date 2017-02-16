@@ -1,4 +1,4 @@
-package com.iauto.wlink.server.channel.handler;
+package com.iauto.wlink.server.handler;
 
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;

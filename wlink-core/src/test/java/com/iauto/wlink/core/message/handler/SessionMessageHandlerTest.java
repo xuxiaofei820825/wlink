@@ -163,6 +163,6 @@ public class SessionMessageHandlerTest {
 		// 验证session的值被重新设置
 		verify( session ).setId( this.id );
 		verify( session ).setTUId( this.tuid );
-		verify( session ).setExpireTime( this.expireTime );
+		verify( session ).setExpiredTime( this.expireTime );
 	}
 }

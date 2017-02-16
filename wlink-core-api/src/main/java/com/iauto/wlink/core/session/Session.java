@@ -54,7 +54,7 @@ public interface Session {
 	 * 
 	 * @return 会话超时时间
 	 */
-	void setExpireTime(long expireTime);
+	void setExpiredTime(long expireTime);
 
 	/**
 	 * 获取会话超时时间

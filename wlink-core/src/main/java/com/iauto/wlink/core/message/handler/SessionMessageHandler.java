@@ -62,7 +62,7 @@ public class SessionMessageHandler extends AbstractMessageHandler {
 		// 恢复会话内容
 		session.setId( sessionMsg.getId() );
 		session.setTUId( sessionMsg.getTuid() );
-		session.setExpireTime( sessionMsg.getExpireTime() );
+		session.setExpiredTime( sessionMsg.getExpireTime() );
 
 	}
 

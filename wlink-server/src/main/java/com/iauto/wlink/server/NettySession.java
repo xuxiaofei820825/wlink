@@ -9,11 +9,17 @@ import com.iauto.wlink.core.message.CommunicationMessage;
 import com.iauto.wlink.core.session.AbstractSession;
 import com.iauto.wlink.core.session.Session;
 
-public class NettySession extends AbstractSession {
+/**
+ * 使用NETTY实现会话
+ * 
+ * @author xiaofei.xu
+ * 
+ */
+public final class NettySession extends AbstractSession {
 
 	/** 会话键值 */
 	public static final AttributeKey<Session> SessionKey =
-			AttributeKey.newInstance( "session" );
+			AttributeKey.newInstance( "Terminal_Session" );
 
 	/** 终端对应的Channel */
 	private Channel channel;
