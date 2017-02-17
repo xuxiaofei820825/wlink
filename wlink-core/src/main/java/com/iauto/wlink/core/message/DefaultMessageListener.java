@@ -1,10 +1,9 @@
 package com.iauto.wlink.core.message;
 
-import java.util.concurrent.Executors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iauto.wlink.core.DefaultThreadFactory;
 import com.iauto.wlink.core.session.Session;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;
@@ -25,13 +24,15 @@ public class DefaultMessageListener implements MessageListener {
 	@SuppressWarnings("unchecked")
 	public DefaultMessageListener( EventHandler<MessageEvent> eventHandler ) {
 		Disruptor<MessageEvent> disruptor = new Disruptor<MessageEvent>( new MessageEventFactory(), size,
-			Executors.defaultThreadFactory() );
+			new DefaultThreadFactory( "disruptor-consumer" ) );
 
 		if ( eventHandler == null ) {
 			throw new IllegalArgumentException( "MessageEvent handler is required." );
 		}
 
 		disruptor.handleEventsWith( eventHandler );
+
+		// start
 		ringBuffer = disruptor.start();
 	}
 

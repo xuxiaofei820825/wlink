@@ -97,7 +97,7 @@ public class MessageEventHandlerTest {
 
 		// 测试
 		messageEventHandler.onEvent( event, 1, false );
-
+		
 		verify( handler1 ).handleMessage( session, commMessage );
 	}
 

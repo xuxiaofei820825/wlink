@@ -14,7 +14,7 @@ public class SingleClient {
 		client.auth( ReserveAccountTool.generate( 2391L ) );
 
 		for ( int idx = 1; idx <= 10000; idx++ ) {
-			Thread.sleep( 500 );
+			Thread.sleep( 5000 );
 			client.sendMessage( "2390", "text", TEXT_MESSAGE.getBytes() );
 		}
 

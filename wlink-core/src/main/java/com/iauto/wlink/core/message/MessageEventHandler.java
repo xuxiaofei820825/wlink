@@ -3,13 +3,12 @@ package com.iauto.wlink.core.message;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.Constant.MessageType;
+import com.iauto.wlink.core.DefaultThreadFactory;
 import com.iauto.wlink.core.exception.MessageProcessException;
 import com.iauto.wlink.core.message.codec.ProtoErrorMessageCodec;
 import com.iauto.wlink.core.message.handler.AbstractMessageHandler;
@@ -26,10 +25,11 @@ import com.lmax.disruptor.EventHandler;
  */
 public class MessageEventHandler implements EventHandler<MessageEvent> {
 
-	private ExecutorService exectors = Executors.newFixedThreadPool( 10, new CommMessageThreadFactory() );
-
 	/** logger */
-	private final Logger logger = LoggerFactory.getLogger( MessageEventHandler.class );
+	private final static Logger logger = LoggerFactory.getLogger( MessageEventHandler.class );
+
+	private final ExecutorService exectors = Executors.newFixedThreadPool( 10,
+		new DefaultThreadFactory( "comm-message-handler" ) );
 
 	/** 处理责任链 */
 	private MessageHandler chain = null;
@@ -60,6 +60,9 @@ public class MessageEventHandler implements EventHandler<MessageEvent> {
 		final Session session = event.getSession();
 		final CommunicationMessage message = event.getMessage();
 
+		// info log
+		logger.info( "Processing a communication message. type: {}, endOfBatch: {}", message.type(), endOfBatch );
+
 		// 提交给线程池处理。
 		// 否则消息处理器的处理时间会阻塞消费者线程
 
@@ -80,7 +83,6 @@ public class MessageEventHandler implements EventHandler<MessageEvent> {
 				}
 			}
 		} );
-
 	}
 
 	// ===================================================================
@@ -90,28 +92,4 @@ public class MessageEventHandler implements EventHandler<MessageEvent> {
 		this.errorMessageCodec = errorMessageCodec;
 	}
 
-	static class CommMessageThreadFactory implements ThreadFactory {
-		private final ThreadGroup group;
-		private final AtomicInteger threadNumber = new AtomicInteger( 1 );
-		private final String namePrefix;
-
-		CommMessageThreadFactory() {
-			SecurityManager s = System.getSecurityManager();
-			group = ( s != null ) ? s.getThreadGroup() :
-					Thread.currentThread().getThreadGroup();
-			namePrefix = "commMessage" +
-					"-thread-";
-		}
-
-		public Thread newThread( Runnable r ) {
-			Thread t = new Thread( group, r,
-				namePrefix + threadNumber.getAndIncrement(),
-				0 );
-			if ( t.isDaemon() )
-				t.setDaemon( false );
-			if ( t.getPriority() != Thread.NORM_PRIORITY )
-				t.setPriority( Thread.NORM_PRIORITY );
-			return t;
-		}
-	}
 }

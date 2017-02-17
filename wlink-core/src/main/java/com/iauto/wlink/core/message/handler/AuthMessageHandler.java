@@ -29,7 +29,7 @@ import com.iauto.wlink.core.session.SessionSignHandler;
 public class AuthMessageHandler extends AbstractMessageHandler {
 
 	/** logger */
-	private final Logger logger = LoggerFactory.getLogger( getClass() );
+	private final Logger logger = LoggerFactory.getLogger( AuthMessageHandler.class );
 
 	/** 认证处理器 */
 	private AuthenticationProvider authProvider;

@@ -8,7 +8,7 @@ public class MutipleClients {
 
 	public static final String TEXT_MESSAGE = "It is a static message!!";
 	public static final long MIN_USER_ID = 1;
-	public static final long MAX_USER_ID = 10;
+	public static final long MAX_USER_ID = 5;
 
 	public static void main( String[] args ) throws Exception {
 
@@ -42,7 +42,7 @@ public class MutipleClients {
 					long receiver = random.nextInt( (int) MAX_USER_ID ) % ( MAX_USER_ID - MIN_USER_ID + 1 ) + MIN_USER_ID;
 
 					client.sendMessage( String.valueOf( receiver ), "text", TEXT_MESSAGE.getBytes() );
-					Thread.sleep( 500 );
+					Thread.sleep( 1000 );
 				}
 				//*/
 			} catch ( Exception ex ) {

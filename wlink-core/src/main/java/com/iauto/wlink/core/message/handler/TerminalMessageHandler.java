@@ -28,17 +28,5 @@ public class TerminalMessageHandler extends AbstractMessageHandler {
 		// log
 		logger.info( "Starting to process a terminal message." );
 
-// try {
-// Thread.sleep( 3000 );
-// } catch ( InterruptedException e ) {
-// e.printStackTrace();
-// }
-		long cnt = 0;
-		for ( int idx = 0; idx < 100000000; idx++ ) {
-			cnt = cnt + 1;
-		}
-
-		logger.info( "Count: {}", cnt );
-
 	}
 }
