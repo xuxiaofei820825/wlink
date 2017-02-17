@@ -23,7 +23,7 @@ import com.iauto.wlink.core.session.SessionSignHandler;
 public class SessionMessageHandler extends AbstractMessageHandler {
 
 	/** logger */
-	private final Logger logger = LoggerFactory.getLogger( getClass() );
+	private final Logger logger = LoggerFactory.getLogger( SessionMessageHandler.class );
 
 	/** 错误消息编解码器 */
 	private MessageCodec<SessionMessage> sessionMessageCodec = new ProtoSessionMessageCodec();

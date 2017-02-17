@@ -1,12 +1,9 @@
 package com.iauto.wlink.server.channel;
 
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -18,16 +15,19 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.iauto.wlink.core.message.CommunicationMessage;
 import com.iauto.wlink.server.ServerStateStatistics;
 import com.iauto.wlink.server.handler.StateStatisticsHandler;
 import com.iauto.wlink.server.handler.codec.CommunicationMessageCodec;
 
+@Component
 public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel> implements InitializingBean {
 
 	/** logger */
-	private final Logger logger = LoggerFactory.getLogger( getClass() );
+	private final Logger logger = LoggerFactory.getLogger( DefaultChannelInitializer.class );
 
 	/** SSL Context */
 	private SslContext sslCtx;
@@ -44,8 +44,8 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	/** 心跳保活间隔(默认30秒) */
 	private int heartbeatInterval = 30000;
 
+	@Autowired
 	private SimpleChannelInboundHandler<CommunicationMessage> commMessageHandler;
-	private ChannelInboundHandlerAdapter sessionHandler;
 
 	public void afterPropertiesSet() throws Exception {
 		if ( isSSLEnabled ) {
@@ -84,9 +84,6 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 			pipeline.addLast( sslCtx.newHandler( channel.alloc() ) );
 		}
 
-		// 设置日志级别
-		pipeline.addLast( "logger", new LoggingHandler( LogLevel.DEBUG ) );
-
 		// 3.设置通讯包编/解码器(进、出)
 		pipeline.addLast( "comm_codec", new CommunicationMessageCodec() );
 
@@ -95,13 +92,10 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 			heartbeatInterval, 0, 0, TimeUnit.SECONDS );
 		pipeline.addLast( "idle", idleStateHandler );
 
-		// 2.会话处理
-		pipeline.addLast( "session", sessionHandler );
-
-		// 4.设置消息处理器
+		// 2.设置消息处理器
 		pipeline.addLast( "comm_message", commMessageHandler );
 
-		// 5.设置服务器监控处理器
+		// 3.设置服务器监控处理器
 		pipeline.addLast( "statistics", new StateStatisticsHandler( statistics ) );
 	}
 
@@ -120,7 +114,4 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		this.commMessageHandler = commMessageHandler;
 	}
 
-	public void setSessionHandler( ChannelInboundHandlerAdapter sessionHandler ) {
-		this.sessionHandler = sessionHandler;
-	}
 }

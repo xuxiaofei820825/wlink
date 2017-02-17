@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:context="http://www.springframework.org/schema/context"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans
              http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
-             http://www.springframework.org/schema/aop
-             http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
              http://www.springframework.org/schema/context 
              http://www.springframework.org/schema/context/spring-context-4.3.xsd">
 
@@ -15,18 +13,16 @@
 	<!-- 导入配置 -->
 	<import resource="classpath:applicationContext_auth.xml" />
 	<import resource="classpath:applicationContext_message.xml" />
-
-	<!-- 通讯消息处理器 -->
-	<bean id="commMessageHandler"
-		class="com.iauto.wlink.server.channel.handler.CommunicationMessageHandler">
+	
+	<bean id="nioHandler" class="com.iauto.wlink.server.handler.NettyNioHandler">
+		<property name="sessionManager" ref="sessionManager" />
 		<property name="messageListener" ref="messageListener" />
 	</bean>
 
 	<!-- 通道初始化器 -->
 	<bean id="channelInitializer"
 		class="com.iauto.wlink.server.channel.DefaultChannelInitializer">
-		<property name="commMessageHandler" ref="commMessageHandler" />
-		<property name="sessionHandler" ref="sessionHandler" />
+		<property name="commMessageHandler" ref="nioHandler" />
 	</bean>
 
 	<!-- 集成QPID实现消息的路由 -->
@@ -35,16 +31,11 @@
 		<constructor-arg value="${server.message.router.nthread}" />
 	</bean>
 
+	<!-- 启动入口 -->
 	<bean id="bootstrap" class="com.iauto.wlink.server.DefaultServerBootstrap">
 		<constructor-arg value="${server.netty.boss.nthread}" />
 		<constructor-arg value="${server.netty.worker.nthread}" />
 		<property name="channelInitializer" ref="channelInitializer" />
-		<property name="messageRouter" ref="messageRouter" />
 	</bean>
 
-	<!-- ========== 会话处理 ========== -->
-	<bean id="sessionListener" class="com.iauto.wlink.core.session.DefaultSessionManagement" />
-	<bean id="sessionHandler" class="com.iauto.wlink.server.channel.handler.SessionHandler">
-		<property name="sessionListener" ref="sessionListener" />
-	</bean>
 </beans>

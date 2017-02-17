@@ -1,11 +1,6 @@
 package com.iauto.wlink.core;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-public class Constant {
-
-	public static final ExecutorService executors = Executors.newFixedThreadPool( 10 );
+public abstract class Constant {
 
 	/** 消息类型 */
 	public class MessageType {

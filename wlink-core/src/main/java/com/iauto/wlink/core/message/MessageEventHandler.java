@@ -1,6 +1,13 @@
 package com.iauto.wlink.core.message;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.Constant.MessageType;
 import com.iauto.wlink.core.exception.MessageProcessException;
@@ -18,6 +25,11 @@ import com.lmax.disruptor.EventHandler;
  * 
  */
 public class MessageEventHandler implements EventHandler<MessageEvent> {
+
+	private ExecutorService exectors = Executors.newFixedThreadPool( 10, new CommMessageThreadFactory() );
+
+	/** logger */
+	private final Logger logger = LoggerFactory.getLogger( MessageEventHandler.class );
 
 	/** 处理责任链 */
 	private MessageHandler chain = null;
@@ -43,20 +55,32 @@ public class MessageEventHandler implements EventHandler<MessageEvent> {
 	/**
 	 * 处理接收到终端消息的事件
 	 */
-	public void onEvent( MessageEvent event, long sequence, boolean endOfBatch ) throws Exception {
+	public void onEvent( final MessageEvent event, long sequence, boolean endOfBatch ) throws Exception {
 
-		Session session = event.getSession();
+		final Session session = event.getSession();
+		final CommunicationMessage message = event.getMessage();
 
-		try {
-			this.chain.handleMessage( session, event.getMessage() );
-		} catch ( MessageProcessException ex ) {
+		// 提交给线程池处理。
+		// 否则消息处理器的处理时间会阻塞消费者线程
 
-			ErrorMessage errorMsg = new ErrorMessage( ex.getErrorCode() );
-			CommunicationMessage commMessage = new CommunicationMessage(
-				MessageType.Error, errorMessageCodec.encode( errorMsg ) );
+		exectors.execute( new Runnable() {
+			@Override
+			public void run() {
+				try {
+					chain.handleMessage( session, message );
+				} catch ( MessageProcessException ex ) {
+					// info log
+					logger.info( "A message process error occured. Code: {}", ex.getErrorCode() );
 
-			session.send( commMessage );
-		}
+					ErrorMessage errorMsg = new ErrorMessage( ex.getErrorCode() );
+					CommunicationMessage commMessage = new CommunicationMessage(
+						MessageType.Error, errorMessageCodec.encode( errorMsg ) );
+
+					session.send( commMessage );
+				}
+			}
+		} );
+
 	}
 
 	// ===================================================================
@@ -64,5 +88,30 @@ public class MessageEventHandler implements EventHandler<MessageEvent> {
 
 	public void setErrorMessageCodec( MessageCodec<ErrorMessage> errorMessageCodec ) {
 		this.errorMessageCodec = errorMessageCodec;
+	}
+
+	static class CommMessageThreadFactory implements ThreadFactory {
+		private final ThreadGroup group;
+		private final AtomicInteger threadNumber = new AtomicInteger( 1 );
+		private final String namePrefix;
+
+		CommMessageThreadFactory() {
+			SecurityManager s = System.getSecurityManager();
+			group = ( s != null ) ? s.getThreadGroup() :
+					Thread.currentThread().getThreadGroup();
+			namePrefix = "commMessage" +
+					"-thread-";
+		}
+
+		public Thread newThread( Runnable r ) {
+			Thread t = new Thread( group, r,
+				namePrefix + threadNumber.getAndIncrement(),
+				0 );
+			if ( t.isDaemon() )
+				t.setDaemon( false );
+			if ( t.getPriority() != Thread.NORM_PRIORITY )
+				t.setPriority( Thread.NORM_PRIORITY );
+			return t;
+		}
 	}
 }

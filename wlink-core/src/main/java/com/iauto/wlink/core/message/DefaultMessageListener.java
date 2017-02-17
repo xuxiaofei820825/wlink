@@ -2,6 +2,9 @@ package com.iauto.wlink.core.message;
 
 import java.util.concurrent.Executors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.iauto.wlink.core.session.Session;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;
@@ -9,6 +12,9 @@ import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 
 public class DefaultMessageListener implements MessageListener {
+
+	/** logger */
+	private final Logger logger = LoggerFactory.getLogger( DefaultMessageListener.class );
 
 	/** size of ring buffer */
 	private static final int size = 2048;
@@ -30,6 +36,10 @@ public class DefaultMessageListener implements MessageListener {
 	}
 
 	public void onMessage( Session session, CommunicationMessage message ) {
+
+		// info log
+		logger.info( "Push communication message to ring buffer. type:{}", message.type() );
+
 		// 获取下一个序列号
 		long sequence = ringBuffer.next();
 		try {

@@ -1,19 +1,19 @@
 package com.iauto.wlink.server.handler;
 
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.util.concurrent.GenericFutureListener;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.NioHandler;
+import com.iauto.wlink.core.Constant.MessageType;
 import com.iauto.wlink.core.message.CommunicationMessage;
 import com.iauto.wlink.core.message.MessageListener;
 import com.iauto.wlink.core.session.Session;
@@ -33,6 +33,7 @@ import com.iauto.wlink.server.NettySession;
  * @author xiaofei.xu
  * 
  */
+@Sharable
 public class NettyNioHandler extends SimpleChannelInboundHandler<CommunicationMessage> implements NioHandler {
 
 	/** logger */
@@ -48,7 +49,7 @@ public class NettyNioHandler extends SimpleChannelInboundHandler<CommunicationMe
 	private SessionManager sessionManager;
 
 	/** 消息监听器 */
-	private List<MessageListener> messageListeners;
+	private MessageListener messageListener;
 
 	@Override
 	public void channelActive( ChannelHandlerContext ctx ) throws Exception {
@@ -65,8 +66,6 @@ public class NettyNioHandler extends SimpleChannelInboundHandler<CommunicationMe
 		// 保存在Channel的属性中
 		ctx.channel().attr( NettySession.SessionKey ).set( session );
 
-		// 保存会话到管理器
-		sessionManager.add( session );
 	}
 
 	public void channelInactive( ChannelHandlerContext ctx ) throws Exception {
@@ -106,14 +105,14 @@ public class NettyNioHandler extends SimpleChannelInboundHandler<CommunicationMe
 					sessionManager.remove( tuid, id );
 				}
 
-				// log
+				// info log
 				logger.info( "The channel{} is idle, closing the channel......", ctx.channel() );
 
 				// 关闭通道(异步)
 				ChannelFuture future = ctx.channel().close();
 
 				// 设置回调函数
-				future.addListener( new GenericFutureListener<ChannelFuture>() {
+				future.addListener( new ChannelFutureListener() {
 					@Override
 					public void operationComplete( ChannelFuture future ) throws Exception {
 						if ( future.isSuccess() ) {
@@ -136,31 +135,19 @@ public class NettyNioHandler extends SimpleChannelInboundHandler<CommunicationMe
 		// log
 		logger.info( "Receive a communication message. type:{}", message.type() );
 
-		// 获取Channel上存储的会话
-		Session session = ctx.channel().attr( NettySession.SessionKey ).get();
+		// 如果是心跳消息，就不要再提交到后端去处理了
+		if ( StringUtils.equals( MessageType.Heartbeat, message.type() ) ) {
+			return;
+		}
 
 		// 通知消息监听器
-		if ( messageListeners != null && messageListeners.size() > 0 ) {
-			for ( MessageListener messageListener : messageListeners ) {
-				messageListener.onMessage( session, message );
-			}
+		if ( messageListener != null ) {
+
+			// 获取Channel上存储的会话
+			Session session = ctx.channel().attr( NettySession.SessionKey ).get();
+
+			messageListener.onMessage( session, message );
 		}
-	}
-
-	// ============================================================================
-	// 注册核心的监听器
-
-	@Override
-	public void registerSessionManager( SessionManager sessionManager ) {
-		this.sessionManager = sessionManager;
-	}
-
-	@Override
-	public void registerMessageListener( MessageListener messageListener ) {
-		if ( this.messageListeners == null ) {
-			this.messageListeners = new ArrayList<MessageListener>();
-		}
-		this.messageListeners.add( messageListener );
 	}
 
 	// ============================================================================
@@ -168,5 +155,15 @@ public class NettyNioHandler extends SimpleChannelInboundHandler<CommunicationMe
 
 	public void setSessionIdGenerator( SessionIdGenerator sessionIdGenerator ) {
 		this.sessionIdGenerator = sessionIdGenerator;
+	}
+
+	@Override
+	public void setSessionManager( SessionManager sessionManager ) {
+		this.sessionManager = sessionManager;
+	}
+
+	@Override
+	public void setMessageListener( MessageListener messageListener ) {
+		this.messageListener = messageListener;
 	}
 }

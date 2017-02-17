@@ -4,19 +4,19 @@ import com.iauto.wlink.core.tools.ReserveAccountTool;
 
 public class SingleClient {
 
-	//private static final String TEXT_MESSAGE = "";
+	private static final String TEXT_MESSAGE = "xxxxx";
 
 	public static void main( String[] args ) throws Exception {
 
 		WlinkClient client = DefaultWlinkClient.newInstance( "localhost", 2391 );
 
 		client.connect();
-		client.auth( ReserveAccountTool.generate( 2396L ) );
+		client.auth( ReserveAccountTool.generate( 2391L ) );
 
-//		for ( int idx = 1; idx <= 10; idx++ ) {
-//			Thread.sleep( 1000 );
-//			client.sendMessage( 2390L, "text", TEXT_MESSAGE.getBytes() );
-//		}
+		for ( int idx = 1; idx <= 10000; idx++ ) {
+			Thread.sleep( 500 );
+			client.sendMessage( "2390", "text", TEXT_MESSAGE.getBytes() );
+		}
 
 // String sessionId = "c9d2eb76d7834e8f8f553b9e491c4aac";
 // String userId = "U000002";

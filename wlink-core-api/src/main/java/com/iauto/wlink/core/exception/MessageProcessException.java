@@ -1,7 +1,7 @@
 package com.iauto.wlink.core.exception;
 
 @SuppressWarnings("serial")
-public abstract class MessageProcessException extends Exception {
+public abstract class MessageProcessException extends RuntimeException {
 
 	protected String errorCode;
 	

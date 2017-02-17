@@ -1,22 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:context="http://www.springframework.org/schema/context"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans
              http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
-             http://www.springframework.org/schema/aop
-             http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
              http://www.springframework.org/schema/context 
              http://www.springframework.org/schema/context/spring-context-4.3.xsd">
 
-	<!-- 认证消息处理器 -->
+	<!-- 会话管理器 -->
+	<bean id="sessionManager" class="com.iauto.wlink.core.session.DefaultSessionManager"></bean>
+
 	<!-- 会话签名处理器 -->
 	<bean id="sessionSignHandler" class="com.iauto.wlink.core.session.HMacSessionSignHandler">
 		<constructor-arg value="${server.hmac.sha256.key}" />
 	</bean>
+
+	<!-- 认证消息处理器 -->
 	<bean id="authMessageHandler" class="com.iauto.wlink.core.message.handler.AuthMessageHandler">
 		<property name="sessionSignHandler" ref="sessionSignHandler" />
 		<property name="authProvider" ref="authProvider" />
+		<property name="sessionManager" ref="sessionManager" />
 	</bean>
 
 	<!-- 终端路由消息处理器 -->

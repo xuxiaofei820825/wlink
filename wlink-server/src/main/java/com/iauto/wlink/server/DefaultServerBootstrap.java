@@ -2,6 +2,7 @@ package com.iauto.wlink.server;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -15,8 +16,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-
-import com.iauto.wlink.core.message.TerminalMessageRouter;
 
 @Service
 public class DefaultServerBootstrap implements InitializingBean {
@@ -33,14 +32,11 @@ public class DefaultServerBootstrap implements InitializingBean {
 	/** 服务监听端口 */
 	private int port = 2391;
 
-	private TerminalMessageRouter messageRouter;
-
 	/** 通道初始化器 */
 	private ChannelInitializer<SocketChannel> channelInitializer;
 
 	public void afterPropertiesSet() throws Exception {
 		Assert.notNull( channelInitializer );
-		Assert.notNull( messageRouter );
 	}
 
 	public DefaultServerBootstrap() {
@@ -59,8 +55,6 @@ public class DefaultServerBootstrap implements InitializingBean {
 
 		try {
 
-//			messageRouter.init();
-
 			ServerBootstrap b = new ServerBootstrap();
 			b.group( bossGroup, workerGroup )
 				.channel( NioServerSocketChannel.class )
@@ -69,10 +63,15 @@ public class DefaultServerBootstrap implements InitializingBean {
 
 			// 绑定监听端口
 			ChannelFuture future = b.bind( port ).sync();
-			if ( future.isSuccess() ) {
-				// log
-				logger.info( "Succeed to start wlink server. listening in port: {}", port );
-			}
+			future.addListener( new ChannelFutureListener() {
+				@Override
+				public void operationComplete( ChannelFuture future ) throws Exception {
+					if ( future.isSuccess() ) {
+						// log
+						logger.info( "Succeed to start wlink server. listening in port: {}", port );
+					}
+				}
+			} );
 
 			// 等待关闭
 			future.channel()
@@ -94,9 +93,5 @@ public class DefaultServerBootstrap implements InitializingBean {
 
 	public void setChannelInitializer( ChannelInitializer<SocketChannel> channelInitializer ) {
 		this.channelInitializer = channelInitializer;
-	}
-
-	public void setMessageRouter( TerminalMessageRouter messageRouter ) {
-		this.messageRouter = messageRouter;
 	}
 }

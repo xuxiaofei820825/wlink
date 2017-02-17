@@ -17,6 +17,7 @@ import com.iauto.wlink.core.message.TicketAuthMessage;
 import com.iauto.wlink.core.message.codec.ProtoSessionMessageCodec;
 import com.iauto.wlink.core.message.codec.ProtoTicketAuthMessageCodec;
 import com.iauto.wlink.core.session.Session;
+import com.iauto.wlink.core.session.SessionManager;
 import com.iauto.wlink.core.session.SessionSignHandler;
 
 /**
@@ -41,6 +42,9 @@ public class AuthMessageHandler extends AbstractMessageHandler {
 
 	/** 会话签名处理器 */
 	private SessionSignHandler sessionSignHandler;
+
+	/** 会话管理器 */
+	private SessionManager sessionManager;
 
 	@Override
 	public void handleMessage( Session session, CommunicationMessage message )
@@ -75,14 +79,26 @@ public class AuthMessageHandler extends AbstractMessageHandler {
 		TicketAuthentication authentication = new TicketAuthentication( ticketMsg.getTicket() );
 
 		// 进行认证
+		// TODO 
 		Authentication result = this.authProvider.authenticate( authentication );
 
+		final String tuid = String.valueOf( result.principal() );
+
+		// info log
+		logger.info( "Succeed to authenticate. tuid:{}", tuid );
+
 		// 设置终端唯一识别号
-		session.setTUId( String.valueOf( result.principal() ) );
+		session.setTUId( tuid );
+
+		// 添加到Session管理器
+		sessionManager.add( session );
 
 		// check
 		if ( sessionSignHandler == null )
 			throw new IllegalArgumentException( "Sign handler of session is required." );
+
+		// info log
+		logger.info( "signing session(id:{}, tuid:{})......", session.getId(), session.getTUId() );
 
 		// 对会话进行签名
 		String signature = sessionSignHandler.sign( session.getId(), session.getTUId(), session.getExpireTime() );
@@ -92,10 +108,13 @@ public class AuthMessageHandler extends AbstractMessageHandler {
 		sessionMsg.setSignature( signature ); // 重建会话时要验证签名
 		sessionMsg.setExpireTime( session.getExpireTime() );
 		sessionMsg.setTuid( String.valueOf( result.principal() ) );
-		
+
 		CommunicationMessage comm = new CommunicationMessage();
 		comm.setType( MessageType.Session );
 		comm.setPayload( sessionMessageCodec.encode( sessionMsg ) );
+
+		// info log
+		logger.info( "Return session content to terminal." );
 
 		// 把会话返回给终端，用于重新建立会话
 		session.send( comm );
@@ -118,5 +137,9 @@ public class AuthMessageHandler extends AbstractMessageHandler {
 
 	public void setSessionMessageCodec( MessageCodec<SessionMessage> sessionMessageCodec ) {
 		this.sessionMessageCodec = sessionMessageCodec;
+	}
+
+	public void setSessionManager( SessionManager sessionManager ) {
+		this.sessionManager = sessionManager;
 	}
 }

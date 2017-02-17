@@ -42,7 +42,7 @@ import com.iauto.wlink.core.message.TerminalMessageRouter;
 public class QpidMessageRouter implements TerminalMessageRouter, InitializingBean {
 
 	/** logger */
-	private final Logger logger = LoggerFactory.getLogger( getClass() );
+	private final Logger logger = LoggerFactory.getLogger( QpidMessageRouter.class );
 
 	/** 执行线程池 */
 	private ExecutorService executors;
@@ -75,7 +75,7 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 
 	public void afterPropertiesSet() throws Exception {
 		Assert.notNull( this.url, "Url of broker is required." );
-//		Assert.notNull( this.messageReceivedHandler, "Message received handler is required." );
+// Assert.notNull( this.messageReceivedHandler, "Message received handler is required." );
 	}
 
 	/**

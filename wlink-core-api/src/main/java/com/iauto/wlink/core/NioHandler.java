@@ -22,7 +22,7 @@ public interface NioHandler {
 	 * @param sessionManager
 	 *          会话管理器
 	 */
-	void registerSessionManager( SessionManager sessionManager );
+	void setSessionManager( SessionManager sessionManager );
 
 	/**
 	 * 注册通讯消息监听器
@@ -30,6 +30,6 @@ public interface NioHandler {
 	 * @param msgListener
 	 *          消息监听器
 	 */
-	void registerMessageListener( MessageListener messageListener );
+	void setMessageListener( MessageListener messageListener );
 
 }
