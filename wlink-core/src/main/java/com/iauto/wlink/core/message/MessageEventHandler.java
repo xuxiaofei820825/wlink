@@ -1,6 +1,5 @@
 package com.iauto.wlink.core.message;
 
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -11,7 +10,6 @@ import com.iauto.wlink.core.Constant.MessageType;
 import com.iauto.wlink.core.DefaultThreadFactory;
 import com.iauto.wlink.core.exception.MessageProcessException;
 import com.iauto.wlink.core.message.codec.ProtoErrorMessageCodec;
-import com.iauto.wlink.core.message.handler.AbstractMessageHandler;
 import com.iauto.wlink.core.message.handler.MessageHandler;
 import com.iauto.wlink.core.session.Session;
 import com.lmax.disruptor.EventHandler;
@@ -37,19 +35,8 @@ public class MessageEventHandler implements EventHandler<MessageEvent> {
 	/** 错误消息编解码器 */
 	private MessageCodec<ErrorMessage> errorMessageCodec = new ProtoErrorMessageCodec();
 
-	public MessageEventHandler( List<AbstractMessageHandler> handlers ) {
-
-		if ( handlers == null || handlers.size() == 0 )
-			throw new IllegalArgumentException( "Message handler list is required." );
-
-		// 根据List中的顺序构建责任链
-		for ( int cnt = 0; cnt < handlers.size(); cnt++ ) {
-			if ( cnt == 0 ) {
-				this.chain = handlers.get( 0 );
-			} else {
-				handlers.get( cnt - 1 ).setNextHandler( handlers.get( cnt ) );
-			}
-		}
+	public MessageEventHandler( final MessageHandler chain ) {
+		this.chain = chain;
 	}
 
 	/**

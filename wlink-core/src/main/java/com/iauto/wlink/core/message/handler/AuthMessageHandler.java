@@ -29,7 +29,7 @@ import com.iauto.wlink.core.session.SessionSignHandler;
 public class AuthMessageHandler extends AbstractMessageHandler {
 
 	/** logger */
-	private final Logger logger = LoggerFactory.getLogger( AuthMessageHandler.class );
+	private static final Logger logger = LoggerFactory.getLogger( AuthMessageHandler.class );
 
 	/** 认证处理器 */
 	private AuthenticationProvider authProvider;
@@ -79,7 +79,6 @@ public class AuthMessageHandler extends AbstractMessageHandler {
 		TicketAuthentication authentication = new TicketAuthentication( ticketMsg.getTicket() );
 
 		// 进行认证
-		// TODO 
 		Authentication result = this.authProvider.authenticate( authentication );
 
 		final String tuid = String.valueOf( result.principal() );

@@ -31,14 +31,19 @@
 	<bean id="messageListener" class="com.iauto.wlink.core.message.DefaultMessageListener">
 		<constructor-arg ref="messageEventHandler" />
 	</bean>
-
-	<bean id="messageEventHandler" class="com.iauto.wlink.core.message.MessageEventHandler">
+	
+	<!-- 消息处理器链 -->
+	<bean id="messageHandlerChain" class="com.iauto.wlink.core.message.MessageHandlerChain">
 		<constructor-arg>
 			<list>
 				<ref bean="authMessageHandler" />
 				<ref bean="terminalMessageHandler" />
 			</list>
 		</constructor-arg>
+	</bean>
+
+	<bean id="messageEventHandler" class="com.iauto.wlink.core.message.MessageEventHandler">
+		<constructor-arg ref="messageHandlerChain" />
 	</bean>
 
 </beans>

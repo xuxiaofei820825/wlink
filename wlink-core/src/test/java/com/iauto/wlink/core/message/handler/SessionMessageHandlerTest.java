@@ -11,13 +11,14 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.powermock.api.mockito.mockpolicies.Slf4jMockPolicy;
+import org.powermock.core.classloader.annotations.MockPolicy;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.iauto.wlink.core.Constant.MessageType;
 import com.iauto.wlink.core.exception.ExpiredSessionException;
@@ -29,10 +30,9 @@ import com.iauto.wlink.core.message.SessionMessage;
 import com.iauto.wlink.core.session.Session;
 import com.iauto.wlink.core.session.SessionSignHandler;
 
+@RunWith(PowerMockRunner.class)
+@MockPolicy(Slf4jMockPolicy.class)
 public class SessionMessageHandlerTest {
-
-	@Rule
-	public MockitoRule mockitoRule = MockitoJUnit.rule();
 
 	@Mock
 	protected MessageCodec<SessionMessage> sessionMessageCodec;

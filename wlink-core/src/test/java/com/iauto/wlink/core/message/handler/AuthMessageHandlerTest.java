@@ -1,20 +1,21 @@
 package com.iauto.wlink.core.message.handler;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.mock;
-import static org.powermock.api.mockito.PowerMockito.whenNew;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mockito;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.api.mockito.mockpolicies.Slf4jMockPolicy;
+import org.powermock.core.classloader.annotations.MockPolicy;
 import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.rule.PowerMockRule;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.iauto.wlink.core.Constant.MessageType;
 import com.iauto.wlink.core.auth.AuthenticationProvider;
@@ -26,13 +27,16 @@ import com.iauto.wlink.core.message.MessageCodec;
 import com.iauto.wlink.core.message.SessionMessage;
 import com.iauto.wlink.core.message.TicketAuthMessage;
 import com.iauto.wlink.core.session.Session;
+import com.iauto.wlink.core.session.SessionManager;
 import com.iauto.wlink.core.session.SessionSignHandler;
 
-@PrepareForTest(AuthMessageHandler.class)
+@PrepareForTest({ AuthMessageHandler.class })
+@RunWith(PowerMockRunner.class)
+@MockPolicy(Slf4jMockPolicy.class)
 public class AuthMessageHandlerTest {
 
-	@Rule
-	public PowerMockRule rule = new PowerMockRule();
+	// @Rule
+	// public PowerMockRule rule = new PowerMockRule();
 
 	private AuthenticationProvider authProvider;
 	private Session session;
@@ -41,6 +45,7 @@ public class AuthMessageHandlerTest {
 	private MessageCodec<SessionMessage> sessionMessageCodec;
 	private SessionSignHandler sessionSignHandler;
 	private AuthMessageHandler authMessageHandler;
+	private SessionManager sessionManager;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -54,12 +59,20 @@ public class AuthMessageHandlerTest {
 	@Before
 	public void setUp() throws Exception {
 
+		// PowerMockito.mockStatic( LoggerFactory.class );
+		// Logger logger = mock( Logger.class );
+		// when( LoggerFactory.getLogger( any( Class.class ) ) ).thenReturn( logger );
+
+		// Logger loggerMock = PowerMockito.mock( Logger.class );
+		// Whitebox.setInternalState( AuthMessageHandler.class, loggerMock );
+
 		// 创建需要测试的实例
 		authMessageHandler = new AuthMessageHandler();
 
 		// 模拟对象
 		session = mock( Session.class );
 		message = mock( CommunicationMessage.class );
+		sessionManager = mock( SessionManager.class );
 
 		authMessageCodec = mock( MessageCodec.class );
 		authProvider = mock( AuthenticationProvider.class );
@@ -71,6 +84,7 @@ public class AuthMessageHandlerTest {
 		authMessageHandler.setAuthMessageCodec( authMessageCodec );
 		authMessageHandler.setSessionSignHandler( sessionSignHandler );
 		authMessageHandler.setSessionMessageCodec( sessionMessageCodec );
+		authMessageHandler.setSessionManager( sessionManager );
 
 		// 认证消息
 		when( message.type() ).thenReturn( MessageType.Auth );
@@ -148,10 +162,10 @@ public class AuthMessageHandlerTest {
 
 		// 当使用无参数构造函数创建SessionMessage时，返回模拟对象
 		SessionMessage sessionMessage = mock( SessionMessage.class );
-		whenNew( SessionMessage.class ).withNoArguments().thenReturn( sessionMessage );
+		PowerMockito.whenNew( SessionMessage.class ).withNoArguments().thenReturn( sessionMessage );
 
 		CommunicationMessage commMessage = mock( CommunicationMessage.class );
-		whenNew( CommunicationMessage.class ).withNoArguments().thenReturn( commMessage );
+		PowerMockito.whenNew( CommunicationMessage.class ).withNoArguments().thenReturn( commMessage );
 
 		// 模拟签名处理器
 		String signature = "Signature";
@@ -176,7 +190,7 @@ public class AuthMessageHandlerTest {
 		// 验证调用了解码
 		verify( authMessageCodec ).decode( message.payload() );
 		// 验证调用了认证
-		verify( authProvider ).authenticate( any( TicketAuthentication.class ) );
+		verify( authProvider ).authenticate( Mockito.any( TicketAuthentication.class ) );
 
 		// 验证会话被设置了值
 		verify( session ).setTUId( String.valueOf( 10000 ) );
