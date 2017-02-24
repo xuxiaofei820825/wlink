@@ -42,7 +42,7 @@ import com.iauto.wlink.core.message.TerminalMessageRouter;
 public class QpidMessageRouter implements TerminalMessageRouter, InitializingBean {
 
 	/** logger */
-	private final Logger logger = LoggerFactory.getLogger( QpidMessageRouter.class );
+	private final static Logger logger = LoggerFactory.getLogger( QpidMessageRouter.class );
 
 	/** 执行线程池 */
 	private ExecutorService executors;
@@ -75,7 +75,8 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 
 	public void afterPropertiesSet() throws Exception {
 		Assert.notNull( this.url, "Url of broker is required." );
-// Assert.notNull( this.messageReceivedHandler, "Message received handler is required." );
+		// Assert.notNull( this.messageReceivedHandler,
+		// "Message received handler is required." );
 	}
 
 	/**
@@ -95,6 +96,9 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 	 * 初始化
 	 */
 	public void init() {
+		// info log
+		logger.info( "Initializing qpid message router......" );
+
 		executors = Executors.newFixedThreadPool( nthread );
 		sendExecutors = Executors.newFixedThreadPool( 1 );
 
@@ -109,7 +113,7 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 	 * @param listener
 	 *          消息监听器
 	 */
-	public ListenableFuture<?> subscribe( final String uuid )
+	public ListenableFuture<?> subscribe( final String uuid, final long sequence )
 			throws MessageRouteException {
 
 		// 初始化为NULL
@@ -139,8 +143,7 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 
 					// 设置监听器
 					AMQTopic dest = new AMQTopic(
-						String.format( "ADDR:%s/%s;{create:always,node:{type:topic}}",
-							P2P_EXCHANGE_NAME, uuid ) );
+							String.format( "ADDR:%s/%s;{create:always,node:{type:topic}}", P2P_EXCHANGE_NAME, uuid ) );
 
 					// create message consumer
 					MessageConsumer consumer = session.createConsumer( dest );
@@ -148,13 +151,16 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 
 					// remember message consumer
 					consumers.put( uuid, consumer );
-				} catch ( Exception ex ) {
+				}
+				catch ( Exception ex ) {
 					throw new MessageRouteException( ex );
-				} finally {
+				}
+				finally {
 					if ( session != null ) {
 						try {
 							session.close();
-						} catch ( JMSException e ) {
+						}
+						catch ( JMSException e ) {
 							// ignore
 						}
 					}
@@ -170,7 +176,8 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 		if ( consumer != null ) {
 			try {
 				consumer.close();
-			} catch ( JMSException e ) {
+			}
+			catch ( JMSException e ) {
 				throw new RuntimeException( e );
 			}
 
@@ -191,8 +198,8 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 	 * @param message
 	 *          消息的有效荷载
 	 */
-	public ListenableFuture<?> send( final String type, final String from, final String to, final byte[] message )
-			throws MessageRouteException {
+	public ListenableFuture<?> send( final String type, final String from,
+			final String to, final byte[] message ) throws MessageRouteException {
 
 		ListenableFuture<?> future = null;
 
@@ -215,8 +222,7 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 
 					// 设置连接的节点名，如果不存在该topic节点，则新建一个
 					AMQTopic dest = new AMQTopic(
-						String.format( "ADDR:%s/%s;{create:always,node:{type:topic}}",
-							P2P_EXCHANGE_NAME, to ) );
+							String.format( "ADDR:%s/%s;{create:always,node:{type:topic}}", P2P_EXCHANGE_NAME, to ) );
 
 					// 为指定的节点创建消息发送者
 					producer = session.createProducer( dest );
@@ -230,20 +236,24 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 
 					// 发送消息
 					producer.send( msg );
-				} catch ( Exception ex ) {
+				}
+				catch ( Exception ex ) {
 					throw new MessageRouteException( ex );
-				} finally {
+				}
+				finally {
 					if ( producer != null ) {
 						try {
 							producer.close();
-						} catch ( JMSException e ) {
+						}
+						catch ( JMSException e ) {
 							// ignore
 						}
 					}
 					if ( session != null ) {
 						try {
 							session.close();
-						} catch ( JMSException e ) {
+						}
+						catch ( JMSException e ) {
 							// ignore
 						}
 					}
@@ -254,8 +264,8 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 		return future;
 	}
 
-	public ListenableFuture<?> broadcast( final String type, final String from, final byte[] message )
-			throws MessageRouteException {
+	public ListenableFuture<?> broadcast( final String type, final String from,
+			final byte[] message ) throws MessageRouteException {
 
 		// 初始化为NULL
 		ListenableFuture<?> future = null;
@@ -268,7 +278,8 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 
 				try {
 
-					session = conn.createSession( false, Session.AUTO_ACKNOWLEDGE );
+					session = conn.createSession( false,
+							Session.AUTO_ACKNOWLEDGE );
 
 					// 在当前的会话上创建消费者，监听发送给用户的消息
 					String dest_url = String.format( "ADDR:%s/%s", BROADCAST_EXCHANGE_NAME, from );
@@ -284,13 +295,16 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 
 					// 发送
 					producer.send( msg );
-				} catch ( Exception ex ) {
+				}
+				catch ( Exception ex ) {
 					throw new MessageRouteException( ex );
-				} finally {
+				}
+				finally {
 					if ( session != null ) {
 						try {
 							session.close();
-						} catch ( JMSException e ) {
+						}
+						catch ( JMSException e ) {
 							// ignore
 						}
 					}
@@ -311,18 +325,21 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 
 		try {
 
-			cachingConnectionFactory = new CachingConnectionFactory( new AMQConnectionFactory( url ) );
+			cachingConnectionFactory = new CachingConnectionFactory(
+					new AMQConnectionFactory( url ) );
 
 			// 缓存Session数
 			cachingConnectionFactory.setSessionCacheSize( 10 );
-			cachingConnectionFactory.setExceptionListener( new QpidConnectionExceptionListener() );
+			cachingConnectionFactory
+					.setExceptionListener( new QpidConnectionExceptionListener() );
 
 			// 创建与broker的连接
 			conn = cachingConnectionFactory.createConnection();
 
 			// 创建连接
 			conn.start();
-		} catch ( Exception ex ) {
+		}
+		catch ( Exception ex ) {
 			throw new RuntimeException( ex );
 		}
 	}
@@ -351,7 +368,8 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 			// 等待3秒，重新连接
 			try {
 				Thread.sleep( 3000 );
-			} catch ( InterruptedException e ) {
+			}
+			catch ( InterruptedException e ) {
 				// ignore
 			}
 
@@ -378,14 +396,16 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 							logger.info( "Succeed to reconnect to broker." );
 
 							isConnected = true;
-						} catch ( Exception ex ) {
+						}
+						catch ( Exception ex ) {
 							// info log
 							logger.info( "Failed to reconnect to broker, try again 3 seconds later." );
 
 							// 等待3秒，重新连接
 							try {
 								Thread.sleep( 3000 );
-							} catch ( InterruptedException e ) {
+							}
+							catch ( InterruptedException e ) {
 								// ignore
 							}
 						}
@@ -398,19 +418,21 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 						try {
 							session = conn.createSession( false, Session.AUTO_ACKNOWLEDGE );
 							AMQTopic dest = new AMQTopic(
-								String.format( "ADDR:%s/%s;{create:always,node:{type:topic}}",
-									P2P_EXCHANGE_NAME, uuid ) );
+									String.format( "ADDR:%s/%s;{create:always,node:{type:topic}}", P2P_EXCHANGE_NAME, uuid ) );
 
 							MessageConsumer consumer = session.createConsumer( dest );
 							consumer.setMessageListener( msgListener );
 							consumers.put( uuid, consumer );
-						} catch ( Exception ex ) {
+						}
+						catch ( Exception ex ) {
 							throw new MessageRouteException( ex );
-						} finally {
+						}
+						finally {
 							if ( session != null ) {
 								try {
 									session.close();
-								} catch ( JMSException e ) {
+								}
+								catch ( JMSException e ) {
 									// ignore
 								}
 							}
@@ -439,13 +461,15 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 
 				// debug log
 				logger.debug( "Received a message. type:{}, from:{}, to:{}, bytes:{}",
-					new Object[] { type, from, to, len } );
+						new Object[] { type, from, to, len } );
 
 				if ( messageReceivedHandler != null )
 					messageReceivedHandler.onMessage( type, from, to, payload );
-			} catch ( Exception ex ) {
+			}
+			catch ( Exception ex ) {
 				// error
-				logger.info( "Exception occurred when processing the message! Caused by: {}", ex.getMessage() );
+				logger.info( "Exception occurred when processing the message! Caused by: {}",
+						ex.getMessage() );
 			}
 		}
 	}
@@ -453,7 +477,8 @@ public class QpidMessageRouter implements TerminalMessageRouter, InitializingBea
 	// ======================================================================
 	// setter/getter
 
-	public void setMessageReceivedHandler( MessageReceivedHandler messageReceivedHandler ) {
+	public void setMessageReceivedHandler(
+			MessageReceivedHandler messageReceivedHandler ) {
 		this.messageReceivedHandler = messageReceivedHandler;
 	}
 }

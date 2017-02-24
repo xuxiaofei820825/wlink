@@ -61,8 +61,9 @@ public class AuthMessageHandler extends AbstractMessageHandler {
 			// 传递给下一个处理器处理
 			if ( getNextHandler() != null ) {
 				getNextHandler().handleMessage( session, message );
-				return;
 			}
+			
+			return;
 		}
 
 		// 判定是否为认证消息
@@ -87,7 +88,7 @@ public class AuthMessageHandler extends AbstractMessageHandler {
 		logger.info( "Succeed to authenticate. tuid:{}", tuid );
 
 		// 设置终端唯一识别号
-		session.setTUId( tuid );
+		session.setUid( tuid );
 
 		// 添加到Session管理器
 		sessionManager.add( session );
@@ -97,10 +98,10 @@ public class AuthMessageHandler extends AbstractMessageHandler {
 			throw new IllegalArgumentException( "Sign handler of session is required." );
 
 		// info log
-		logger.info( "signing session(id:{}, tuid:{})......", session.getId(), session.getTUId() );
+		logger.info( "signing session(id:{}, tuid:{})......", session.getId(), session.getUid() );
 
 		// 对会话进行签名
-		String signature = sessionSignHandler.sign( session.getId(), session.getTUId(), session.getExpireTime() );
+		String signature = sessionSignHandler.sign( session.getId(), session.getUid(), session.getExpireTime() );
 
 		SessionMessage sessionMsg = new SessionMessage();
 		sessionMsg.setId( session.getId() );

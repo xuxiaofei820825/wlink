@@ -18,7 +18,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 @MockPolicy(Slf4jMockPolicy.class)
 public class DefaultSessionManagerTest {
 
-	private final static String tuid = "session_tuid";
+	private final static String uid = "session_tuid";
 	private final static String id = "session_id";
 
 	private DefaultSessionManager sessionManager;
@@ -42,7 +42,7 @@ public class DefaultSessionManagerTest {
 
 		// 模拟一个Session实例
 		session = Mockito.mock( Session.class );
-		Mockito.when( session.getTUId() ).thenReturn( tuid );
+		Mockito.when( session.getUid() ).thenReturn( uid );
 		Mockito.when( session.getId() ).thenReturn( id );
 
 		// 模拟SessionListener实例
@@ -65,10 +65,10 @@ public class DefaultSessionManagerTest {
 		sessionManager.add( session );
 
 		// 验证是否可以取出已添加的Session
-		Assert.assertEquals( session, sessionManager.get( tuid, id ) );
+		Assert.assertEquals( session, sessionManager.get( uid, id ) );
 		// 验证已注册的SessionListener获得添加Session的通知
-		verify( sessionListener1, Mockito.times( 1 ) ).onCreated( session );
-		verify( sessionListener2, Mockito.times( 1 ) ).onCreated( session );
+		verify( sessionListener1, Mockito.times( 1 ) ).onCreated( session, 1, 1 );
+		verify( sessionListener2, Mockito.times( 1 ) ).onCreated( session, 1, 1 );
 	}
 
 	@Test
@@ -76,12 +76,12 @@ public class DefaultSessionManagerTest {
 		// 添加Session
 		sessionManager.add( session );
 		// 再删除掉
-		Session removedSession = sessionManager.remove( tuid, id );
+		Session removedSession = sessionManager.remove( uid, id );
 
 		// 验证删除的是否是已添加的
 		Assert.assertEquals( session, removedSession );
 		// 验证已注册的SessionListener获得删除Session的通知
-		verify( sessionListener1, Mockito.times( 1 ) ).onRemoved( session );
-		verify( sessionListener2, Mockito.times( 1 ) ).onRemoved( session );
+		verify( sessionListener1, Mockito.times( 1 ) ).onRemoved( session, 1, 0 );
+		verify( sessionListener2, Mockito.times( 1 ) ).onRemoved( session, 1, 0 );
 	}
 }

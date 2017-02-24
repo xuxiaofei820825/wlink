@@ -11,7 +11,7 @@
 	<artifactId>wlink-server</artifactId>
 	<name>wlink-server</name>
 	<url>http://maven.apache.org</url>
-	
+
 	<properties>
 		<netty.version>4.1.8.Final</netty.version>
 		<spring.version>4.3.6.RELEASE</spring.version>
@@ -24,19 +24,25 @@
 			<artifactId>wlink-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<!-- <dependency> -->
+		<!-- <groupId>com.iauto</groupId> -->
+		<!-- <artifactId>wlink-core-integration-qpid</artifactId> -->
+		<!-- <version>${project.version}</version> -->
+		<!-- </dependency> -->
+
 		<dependency>
 			<groupId>com.iauto</groupId>
-			<artifactId>wlink-core-integration-qpid</artifactId>
+			<artifactId>wlink-core-integration-rabbitmq</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
+
 		<!-- netty -->
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-all</artifactId>
 			<version>${netty.version}</version>
 		</dependency>
-		
+
 		<!-- spring begin -->
 		<dependency>
 			<groupId>org.springframework</groupId>
@@ -54,37 +60,6 @@
 
 	<!-- 编译设置 -->
 	<build>
-		<pluginManagement>
-			<plugins>
-				<!-- Ignore/Execute plugin execution -->
-				<plugin>
-					<groupId>org.eclipse.m2e</groupId>
-					<artifactId>lifecycle-mapping</artifactId>
-					<version>1.0.0</version>
-					<configuration>
-						<lifecycleMappingMetadata>
-							<pluginExecutions>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.apache.maven.plugins</groupId>
-										<artifactId>maven-dependency-plugin</artifactId>
-										<versionRange>[1.0.0,)</versionRange>
-										<goals>
-											<goal>copy-dependencies</goal>
-											<goal>unpack</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore />
-									</action>
-								</pluginExecution>
-							</pluginExecutions>
-						</lifecycleMappingMetadata>
-					</configuration>
-				</plugin>
-			</plugins>
-		</pluginManagement>
-
 		<resources>
 			<!-- 控制资源文件的拷贝 -->
 			<resource>
@@ -108,6 +83,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.0.2</version>
 				<configuration>
 					<archive>
 						<manifest>
@@ -128,7 +104,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
-				<version>2.4</version>
+				<version>2.8</version>
 				<executions>
 					<execution>
 						<id>copy-dependencies</id>

@@ -40,14 +40,14 @@ public interface Session {
 	 * @param id
 	 *          终端唯一识别码
 	 */
-	void setTUId( String id );
+	void setUid( String id );
 
 	/**
 	 * 获取终端唯一识别码
 	 * 
 	 * @return 终端唯一识别码
 	 */
-	String getTUId();
+	String getUid();
 	
 	/**
 	 * 设置会话超时时间

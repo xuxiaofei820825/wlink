@@ -1,14 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans
              http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
              http://www.springframework.org/schema/context 
              http://www.springframework.org/schema/context/spring-context-4.3.xsd">
 
 	<!-- 会话管理器 -->
-	<bean id="sessionManager" class="com.iauto.wlink.core.session.DefaultSessionManager"></bean>
+	<bean id="sessionManager" class="com.iauto.wlink.core.session.DefaultSessionManager">
+		<property name="sessionListeners">
+			<list>
+				<!-- 设置会话监听器 -->
+				<ref bean="messageRouter" />
+			</list>
+		</property>
+	</bean>
 
 	<!-- 会话签名处理器 -->
 	<bean id="sessionSignHandler" class="com.iauto.wlink.core.session.HMacSessionSignHandler">
@@ -25,13 +31,26 @@
 	<!-- 终端路由消息处理器 -->
 	<bean id="terminalMessageHandler"
 		class="com.iauto.wlink.core.message.handler.TerminalMessageHandler">
+		<property name="terminalMessageRouter" ref="messageRouter" />
+	</bean>
+
+	<!-- 集成QPID实现消息的路由 -->
+	<!-- <bean id="messageRouter" class="com.iauto.wlink.core.integration.qpid.QpidMessageRouter" -->
+	<!-- init-method="init"> -->
+	<!-- <constructor-arg value="${server.qpid.url}" /> -->
+	<!-- <constructor-arg value="${server.message.router.nthread}" /> -->
+	<!-- </bean> -->
+
+	<bean id="messageRouter"
+		class="com.iauto.wlink.core.integration.rabbitmq.RabbitMQMessageRouter"
+		init-method="init">
 	</bean>
 
 	<!-- 默认的终端消息处理器 -->
 	<bean id="messageListener" class="com.iauto.wlink.core.message.DefaultMessageListener">
 		<constructor-arg ref="messageEventHandler" />
 	</bean>
-	
+
 	<!-- 消息处理器链 -->
 	<bean id="messageHandlerChain" class="com.iauto.wlink.core.message.MessageHandlerChain">
 		<constructor-arg>

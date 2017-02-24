@@ -41,7 +41,7 @@ public final class NettySession extends AbstractSession {
 
 		// 判断终端会话是否已经建立
 		Session session = this.channel.attr( SessionKey ).get();
-		return session != null && StringUtils.isNotEmpty( session.getTUId() );
+		return session != null && StringUtils.isNotEmpty( session.getUid() );
 	}
 
 	/**

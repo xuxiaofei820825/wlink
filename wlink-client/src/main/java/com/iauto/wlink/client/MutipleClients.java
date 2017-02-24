@@ -8,7 +8,7 @@ public class MutipleClients {
 
 	public static final String TEXT_MESSAGE = "It is a static message!!";
 	public static final long MIN_USER_ID = 1;
-	public static final long MAX_USER_ID = 5;
+	public static final long MAX_USER_ID = 100;
 
 	public static void main( String[] args ) throws Exception {
 

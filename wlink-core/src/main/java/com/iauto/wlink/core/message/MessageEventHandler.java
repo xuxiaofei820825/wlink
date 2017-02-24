@@ -27,7 +27,7 @@ public class MessageEventHandler implements EventHandler<MessageEvent> {
 	private final static Logger logger = LoggerFactory.getLogger( MessageEventHandler.class );
 
 	private final ExecutorService exectors = Executors.newFixedThreadPool( 10,
-		new DefaultThreadFactory( "comm-message-handler" ) );
+			new DefaultThreadFactory( "comm-message-handler" ) );
 
 	/** 处理责任链 */
 	private MessageHandler chain = null;
@@ -48,7 +48,8 @@ public class MessageEventHandler implements EventHandler<MessageEvent> {
 		final CommunicationMessage message = event.getMessage();
 
 		// info log
-		logger.info( "Processing a communication message. type: {}, endOfBatch: {}", message.type(), endOfBatch );
+		logger.info( "processing a communication message. type:{}, sequence:{}, endOfBatch:{}",
+				message.type(), sequence, endOfBatch );
 
 		// 提交给线程池处理。
 		// 否则消息处理器的处理时间会阻塞消费者线程
@@ -58,13 +59,14 @@ public class MessageEventHandler implements EventHandler<MessageEvent> {
 			public void run() {
 				try {
 					chain.handleMessage( session, message );
-				} catch ( MessageProcessException ex ) {
+				}
+				catch ( MessageProcessException ex ) {
 					// info log
-					logger.info( "A message process error occured. Code: {}", ex.getErrorCode() );
+					logger.info( "A message process error occured. Code:{}", ex.getErrorCode() );
 
 					ErrorMessage errorMsg = new ErrorMessage( ex.getErrorCode() );
 					CommunicationMessage commMessage = new CommunicationMessage(
-						MessageType.Error, errorMessageCodec.encode( errorMsg ) );
+							MessageType.Error, errorMessageCodec.encode( errorMsg ) );
 
 					session.send( commMessage );
 				}

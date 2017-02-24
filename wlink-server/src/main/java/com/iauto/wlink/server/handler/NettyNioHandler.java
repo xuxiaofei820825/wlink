@@ -73,7 +73,7 @@ public class NettyNioHandler extends SimpleChannelInboundHandler<CommunicationMe
 		Session session = ctx.channel().attr( NettySession.SessionKey ).get();
 
 		if ( session != null ) {
-			final String tuid = session.getTUId();
+			final String tuid = session.getUid();
 			final String id = session.getId();
 
 			// 删除Session
@@ -97,7 +97,7 @@ public class NettyNioHandler extends SimpleChannelInboundHandler<CommunicationMe
 				Session session = ctx.channel().attr( NettySession.SessionKey ).get();
 				ctx.channel().attr( NettySession.SessionKey ).set( null );
 
-				final String tuid = session.getTUId();
+				final String tuid = session.getUid();
 				final String id = session.getId();
 
 				if ( this.sessionManager != null ) {

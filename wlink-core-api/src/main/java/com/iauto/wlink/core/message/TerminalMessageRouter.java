@@ -20,8 +20,8 @@ public interface TerminalMessageRouter {
 	 * @return {@link ListenableFuture}
 	 * @throws MessageRouteException
 	 */
-	ListenableFuture<?> subscribe( String uuid )
-			throws MessageRouteException;
+//	ListenableFuture<?> subscribe( String uuid, long sequence )
+//			throws MessageRouteException;
 
 	/**
 	 * 取消消息的订阅
@@ -29,7 +29,7 @@ public interface TerminalMessageRouter {
 	 * @param uuid
 	 *          唯一编号
 	 */
-	void unsubscribe( String uuid );
+//	void unsubscribe( String uuid );
 
 	/**
 	 * 发送一个点对点消息

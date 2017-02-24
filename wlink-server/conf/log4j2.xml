@@ -37,12 +37,32 @@
 				<SizeBasedTriggeringPolicy size="100MB" />
 			</Policies>
 		</RollingFile>
+		
+		<!-- 只记录WARN以上级别的日志 -->
+		<RollingFile name="DailyRollingFileError" 
+			fileName="${LOG_HOME}/wlink-server_error.log"
+			filePattern="${LOG_HOME}/wlink-server_error_%d{yyyy-MM-dd}_%i.log" 
+			immediateFlush="false" append="true">
+			
+			<Filters>
+				<ThresholdFilter level="WARN" onMatch="ACCEPT" onMismatch="DENY" />
+			</Filters>
+			
+			<PatternLayout pattern="${LOG_PATTERN}" />
+			<Policies>
+				<!-- 每24小时更新一次 -->
+				<TimeBasedTriggeringPolicy modulate="true" interval="24" />
+				<!-- 限制文件大小 -->
+				<SizeBasedTriggeringPolicy size="100MB" />
+			</Policies>
+		</RollingFile>
 	</appenders>
 
 	<loggers>
 		<AsyncRoot level="INFO">
 			<appender-ref ref="Console" />
 			<appender-ref ref="DailyRollingFileInfo" />
+			<appender-ref ref="DailyRollingFileError" />
 		</AsyncRoot>
 	</loggers>
 </configuration>

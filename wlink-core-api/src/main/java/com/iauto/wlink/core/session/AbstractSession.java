@@ -16,11 +16,11 @@ public abstract class AbstractSession implements Session {
 		return this.id;
 	}
 
-	public void setTUId( String tuid ) {
+	public void setUid( String tuid ) {
 		this.tuid = tuid;
 	}
 
-	public String getTUId() {
+	public String getUid() {
 		return this.tuid;
 	}
 

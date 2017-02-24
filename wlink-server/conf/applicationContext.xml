@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans
              http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
              http://www.springframework.org/schema/context 
@@ -13,7 +12,7 @@
 	<!-- 导入配置 -->
 	<import resource="classpath:applicationContext_auth.xml" />
 	<import resource="classpath:applicationContext_message.xml" />
-	
+
 	<bean id="nioHandler" class="com.iauto.wlink.server.handler.NettyNioHandler">
 		<property name="sessionManager" ref="sessionManager" />
 		<property name="messageListener" ref="messageListener" />
@@ -23,12 +22,6 @@
 	<bean id="channelInitializer"
 		class="com.iauto.wlink.server.channel.DefaultChannelInitializer">
 		<property name="commMessageHandler" ref="nioHandler" />
-	</bean>
-
-	<!-- 集成QPID实现消息的路由 -->
-	<bean id="messageRouter" class="com.iauto.wlink.core.integration.qpid.QpidMessageRouter">
-		<constructor-arg value="${server.qpid.url}" />
-		<constructor-arg value="${server.message.router.nthread}" />
 	</bean>
 
 	<!-- 启动入口 -->

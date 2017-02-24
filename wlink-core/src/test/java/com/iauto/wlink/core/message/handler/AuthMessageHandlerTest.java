@@ -145,6 +145,26 @@ public class AuthMessageHandlerTest {
 		authMessageHandler.handleMessage( session, message );
 	}
 
+	@Test
+	public void testNoAuthMessage() {
+		// ====================================================
+		// 测试不是认证消息时，不处理
+
+		byte[] payload = new byte[] {};
+
+		CommunicationMessage message = new CommunicationMessage();
+		message.setType( MessageType.Heartbeat );
+		message.setPayload( payload );
+
+		// 模拟已认证
+		when( session.isAuthenticated() ).thenReturn( true );
+
+		// 测试
+		authMessageHandler.handleMessage( session, message );
+
+		verify( authMessageCodec, Mockito.times( 0 ) ).decode( payload );
+	}
+
 	@Test(expected = IllegalArgumentException.class)
 	public void testNullSessionSignHandlerException() throws MessageProcessException {
 		// 设置认证处理器为空
@@ -193,7 +213,7 @@ public class AuthMessageHandlerTest {
 		verify( authProvider ).authenticate( Mockito.any( TicketAuthentication.class ) );
 
 		// 验证会话被设置了值
-		verify( session ).setTUId( String.valueOf( 10000 ) );
+		verify( session ).setUid( String.valueOf( 10000 ) );
 
 		// 验证会话消息被设置了正确的值
 		verify( sessionMessage ).setTuid( String.valueOf( 10000 ) );
