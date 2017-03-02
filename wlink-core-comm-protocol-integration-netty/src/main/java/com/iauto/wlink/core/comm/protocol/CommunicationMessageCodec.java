@@ -1,4 +1,4 @@
-package com.iauto.wlink.server.handler.codec;
+package com.iauto.wlink.core.comm.protocol;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;

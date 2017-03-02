@@ -20,8 +20,7 @@ import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.Consumer;
 
 public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionListener {
 
@@ -42,6 +41,9 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 
 	private AtomicLong messageTotal = new AtomicLong( 0 );
 
+	/** RabbitMQ消息监听器 */
+	private Consumer consumer;
+
 	@Override
 	public void init() {
 		// info log
@@ -55,13 +57,15 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 		factory.setPort( 5672 );
 
 		try {
+			// 创建一个新连接
 			conn = factory.newConnection();
 
+			// 创建固定数目的Channel
 			for ( int idx = 0; idx < CHANNELS_SIZE; idx++ ) {
 				channels[idx] = conn.createChannel();
 			}
 
-			// channel = conn.createChannel();
+			// 使用第一个Channel定义一个交换器(exchange)
 			channels[0].exchangeDeclare( EXCHANGE_NAME, "topic", true );
 
 			// info log
@@ -75,17 +79,18 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 
 	@Override
 	public ListenableFuture<?> send( String type, String from, String to, byte[] message ) throws MessageRouteException {
-		// info log
-		logger.info( "Starting to route a terminal message. type:{}, from:{}, to:{}, message-length:{}",
+		// debug log
+		logger.debug( "starting to route a terminal message. type:{}, from:{}, to:{}, payload:{}bytes",
 				type, from, to, message.length );
 
 		final long sequence = messageTotal.incrementAndGet();
-		final int idx = (int) ( ( sequence - 1 ) % CHANNELS_SIZE );
+		final int idx = calculateIndex( sequence );
 		final Channel channel = this.channels[idx];
 
 		Map<String, Object> headers = new HashMap<String, Object>();
 		headers.put( "from", from );
 		headers.put( "to", to );
+		headers.put( "type", type );
 
 		BasicProperties properties = new AMQP.BasicProperties.Builder()
 				.deliveryMode( 2 )
@@ -96,6 +101,10 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 		try {
 			channel.basicPublish( EXCHANGE_NAME, "user." + to + ".message",
 					properties, message );
+
+			// info log
+			logger.info( "succeed to route a terminal message. type:{}, from:{}, to:{}, payload:{}bytes",
+					type, from, to, message.length );
 		}
 		catch ( IOException e ) {
 			// error log
@@ -121,12 +130,11 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 	@Override
 	public void onCreated( final Session session, final long sequence, final int remain ) {
 
-		// sequence < 0 表示UID已被发放过，不需要重新监听
 		if ( remain > 1 )
 			return;
 
 		final String uid = session.getUid();
-		final int idx = (int) ( ( sequence - 1 ) % CHANNELS_SIZE );
+		final int idx = calculateIndex( sequence );
 		final Channel channel = this.channels[idx];
 
 		try {
@@ -139,24 +147,8 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 			channel.queueBind( uid, EXCHANGE_NAME, "user." + uid + ".*" );
 
 			// 设置消息监听
-			boolean autoAck = false;
-			channel.basicConsume( uid, autoAck, uid, new DefaultConsumer( channel ) {
-				@Override
-				public void handleDelivery( String consumerTag, Envelope envelope,
-						AMQP.BasicProperties properties, byte[] body ) throws IOException {
-
-					Map<String, Object> headers = properties.getHeaders();
-					String from = headers.get( "from" ).toString();
-					String to = headers.get( "to" ).toString();
-
-					logger.error( "from:{}, to:{}, message:{}", from, to, new String( body, "UTF-8" ) );
-
-					long deliveryTag = envelope.getDeliveryTag();
-
-					// (process the message components here ...)
-					channel.basicAck( deliveryTag, false );
-				}
-			} );
+			boolean autoAck = true;
+			channel.basicConsume( uid, autoAck, uid, consumer );
 		}
 		catch ( IOException e ) {
 			// warn
@@ -173,7 +165,7 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 			return;
 
 		final String uid = session.getUid();
-		final int idx = (int) ( ( sequence - 1 ) % CHANNELS_SIZE );
+		final int idx = calculateIndex( sequence );
 		final Channel channel = this.channels[idx];
 
 		try {
@@ -187,5 +179,13 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 			// info log
 			logger.info( "Failed to remove consumer for uid:{}.", uid );
 		}
+	}
+
+	private int calculateIndex( long sequence ) {
+		return (int) ( ( sequence - 1 ) % CHANNELS_SIZE );
+	}
+
+	public void setConsumer( Consumer consumer ) {
+		this.consumer = consumer;
 	}
 }

@@ -7,8 +7,8 @@ import io.netty.handler.timeout.IdleStateHandler;
 
 import java.util.concurrent.TimeUnit;
 
-import com.iauto.wlink.client.channel.handler.HeartbeatHandler;
-import com.iauto.wlink.client.codec.CommunicationPayloadCodec;
+import com.iauto.wlink.client.handler.HeartbeatHandler;
+import com.iauto.wlink.core.comm.protocol.CommunicationMessageCodec;
 
 /**
  * 实现一个默认的客户端通道初始化器
@@ -23,7 +23,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		ChannelPipeline pipeline = ch.pipeline();
 
 		// 设置通讯包编解码器
-		pipeline.addLast( "comm", new CommunicationPayloadCodec() );
+		pipeline.addLast( "comm", new CommunicationMessageCodec() );
 
 		// ===========================================================================
 		// 1.心跳保活

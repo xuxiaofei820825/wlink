@@ -35,6 +35,12 @@
 			<artifactId>wlink-core-integration-rabbitmq</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>com.iauto</groupId>
+			<artifactId>wlink-core-comm-protocol-integration-netty</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 
 		<!-- netty -->
 		<dependency>

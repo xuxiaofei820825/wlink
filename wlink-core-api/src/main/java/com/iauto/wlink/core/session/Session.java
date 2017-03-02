@@ -61,5 +61,5 @@ public interface Session {
 	 * 
 	 * @return 会话超时时间
 	 */
-	long getExpireTime();
+	long getExpiredTime();
 }

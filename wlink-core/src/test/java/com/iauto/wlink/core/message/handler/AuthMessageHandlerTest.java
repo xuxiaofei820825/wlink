@@ -196,7 +196,7 @@ public class AuthMessageHandlerTest {
 		String sessionId = "SESSION_ID";
 		long expireTime = System.currentTimeMillis() + 1000;
 		when( session.getId() ).thenReturn( sessionId );
-		when( session.getExpireTime() ).thenReturn( expireTime );
+		when( session.getExpiredTime() ).thenReturn( expireTime );
 
 		byte[] sessionBytes = new byte[] {};
 		when( sessionMessageCodec.encode( sessionMessage ) ).thenReturn( sessionBytes );
@@ -216,10 +216,10 @@ public class AuthMessageHandlerTest {
 		verify( session ).setUid( String.valueOf( 10000 ) );
 
 		// 验证会话消息被设置了正确的值
-		verify( sessionMessage ).setTuid( String.valueOf( 10000 ) );
+		verify( sessionMessage ).setUid( String.valueOf( 10000 ) );
 		verify( sessionMessage ).setSignature( signature );
 		verify( sessionMessage ).setId( sessionId );
-		verify( sessionMessage ).setExpireTime( expireTime );
+		verify( sessionMessage ).setExpiredTime( expireTime );
 
 		// 验证SessionMessage的编码函数被调用了
 		verify( sessionMessageCodec ).encode( sessionMessage );

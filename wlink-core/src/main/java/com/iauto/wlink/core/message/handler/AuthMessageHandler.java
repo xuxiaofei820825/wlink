@@ -62,13 +62,13 @@ public class AuthMessageHandler extends AbstractMessageHandler {
 			if ( getNextHandler() != null ) {
 				getNextHandler().handleMessage( session, message );
 			}
-			
+
 			return;
 		}
 
 		// 判定是否为认证消息
-		// log
-		logger.info( "Starting to process a authentication message." );
+		// debug log
+		logger.debug( "starting to process an authentication message." );
 
 		// check
 		if ( this.authProvider == null ) {
@@ -82,13 +82,13 @@ public class AuthMessageHandler extends AbstractMessageHandler {
 		// 进行认证
 		Authentication result = this.authProvider.authenticate( authentication );
 
-		final String tuid = String.valueOf( result.principal() );
+		final String uid = String.valueOf( result.principal() );
 
-		// info log
-		logger.info( "Succeed to authenticate. tuid:{}", tuid );
+		// debug log
+		logger.debug( "Succeed to authenticate. uid:{}", uid );
 
 		// 设置终端唯一识别号
-		session.setUid( tuid );
+		session.setUid( uid );
 
 		// 添加到Session管理器
 		sessionManager.add( session );
@@ -97,24 +97,29 @@ public class AuthMessageHandler extends AbstractMessageHandler {
 		if ( sessionSignHandler == null )
 			throw new IllegalArgumentException( "Sign handler of session is required." );
 
-		// info log
-		logger.info( "signing session(id:{}, tuid:{})......", session.getId(), session.getUid() );
+		// debug log
+		logger.debug( "signing session......" );
 
 		// 对会话进行签名
-		String signature = sessionSignHandler.sign( session.getId(), session.getUid(), session.getExpireTime() );
+		String signature = sessionSignHandler.sign( session.getId(), session.getUid(), session.getExpiredTime() );
+
+		// debug log
+		logger.debug( "id:{}, uid:{}, expiredTime:{}, signature: {}", session.getId(), session.getUid(),
+				session.getExpiredTime(), signature );
 
 		SessionMessage sessionMsg = new SessionMessage();
 		sessionMsg.setId( session.getId() );
 		sessionMsg.setSignature( signature ); // 重建会话时要验证签名
-		sessionMsg.setExpireTime( session.getExpireTime() );
-		sessionMsg.setTuid( String.valueOf( result.principal() ) );
+		sessionMsg.setExpiredTime( session.getExpiredTime() );
+		sessionMsg.setUid( String.valueOf( result.principal() ) );
 
 		CommunicationMessage comm = new CommunicationMessage();
 		comm.setType( MessageType.Session );
 		comm.setPayload( sessionMessageCodec.encode( sessionMsg ) );
 
-		// info log
-		logger.info( "Return session content to terminal." );
+		// debug log
+		logger.debug( "return session content to terminal. id:{}, uid:{}",
+				session.getId(), session.getUid() );
 
 		// 把会话返回给终端，用于重新建立会话
 		session.send( comm );

@@ -18,10 +18,10 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.iauto.wlink.core.comm.protocol.CommunicationMessageCodec;
 import com.iauto.wlink.core.message.CommunicationMessage;
 import com.iauto.wlink.server.ServerStateStatistics;
 import com.iauto.wlink.server.handler.StateStatisticsHandler;
-import com.iauto.wlink.server.handler.codec.CommunicationMessageCodec;
 
 @Component
 public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel> implements InitializingBean {

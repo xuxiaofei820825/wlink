@@ -150,8 +150,8 @@ public class DefaultWlinkClient implements WlinkClient {
 
 						Session session = new Session();
 						session.setId( sessionMsg.getId() );
-						session.settUId( sessionMsg.getTuid() );
-						session.setExpireTime( sessionMsg.getExpireTime() );
+						session.settUId( sessionMsg.getUid() );
+						session.setExpireTime( sessionMsg.getExpiredTime() );
 						session.setSignature( sessionMsg.getSignature() );
 
 						ctx.channel().attr( SessionKey ).set( session );
@@ -217,9 +217,9 @@ public class DefaultWlinkClient implements WlinkClient {
 
 			SessionMessage session = new SessionMessage();
 			session.setId( id );
-			session.setTuid( userId );
+			session.setUid( userId );
 			session.setSignature( signature );
-			session.setExpireTime( expireTime );
+			session.setExpiredTime( expireTime );
 
 			ProtoSessionMessageCodec codec = new ProtoSessionMessageCodec();
 

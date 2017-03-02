@@ -1,9 +1,12 @@
 package com.iauto.wlink.core.session;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -11,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * 该类实现默认的会话管理器。<br/>
- * 使用ConcurrentHashMap作为会话实例的容器，支持多线程操作。
  * 
  * @author xiaofei.xu
  * 
@@ -22,16 +24,48 @@ public class DefaultSessionManager implements SessionManager {
 	private final Logger logger = LoggerFactory.getLogger( DefaultSessionManager.class );
 
 	/** 会话容器 */
-	private final ConcurrentHashMap<String, UIDSessionList> sessions = new ConcurrentHashMap<String, UIDSessionList>();
+	private final Map<String, UIDSessionList> sessions = new HashMap<String, UIDSessionList>();
 
-	/** 会话监听器 */
+	/** 会话活动监听器 */
 	private List<SessionListener> sessionListeners = new ArrayList<SessionListener>();
 
+	/** 读写锁 */
+	private final ReentrantReadWriteLock readwritelock = new ReentrantReadWriteLock();
+	private final Lock readLock = readwritelock.readLock();
+	private final Lock writeLock = readwritelock.writeLock();
+
 	/** UID的序列号 */
-	private AtomicLong tuidSequence = new AtomicLong( 0 );
+	private AtomicLong uidSequence = new AtomicLong( 0 );
 
 	/** 会话个数（同一个UID可能有多个会话） */
 	private AtomicLong sessionTotal = new AtomicLong( 0 );
+
+	@Override
+	public List<Session> get( String uid ) {
+		// check
+		if ( StringUtils.isEmpty( uid ) ) {
+			return null;
+		}
+
+		// 获取读锁
+		readLock.lock();
+
+		try {
+
+			UIDSessionList sessionList = sessions.get( uid );
+
+			if ( sessionList != null && sessionList.getSessions() != null
+					&& sessionList.getSessions().size() > 0 ) {
+				return sessionList.getSessions();
+			}
+		}
+		finally {
+			// 释放读锁
+			readLock.unlock();
+		}
+
+		return null;
+	}
 
 	public Session get( final String uid, final String id ) {
 
@@ -40,20 +74,36 @@ public class DefaultSessionManager implements SessionManager {
 			return null;
 		}
 
-		Session ret = null;
-		UIDSessionList sessionList = sessions.get( uid );
+		// 获取读锁
+		readLock.lock();
 
-		if ( sessionList != null && sessionList.getSessions() != null
-				&& sessionList.getSessions().size() > 0 ) {
-			for ( Session session : sessionList.getSessions() ) {
-				if ( StringUtils.equals( id, session.getId() ) )
-					ret = session;
+		Session ret = null;
+
+		try {
+
+			UIDSessionList sessionList = sessions.get( uid );
+
+			if ( sessionList != null && sessionList.getSessions() != null
+					&& sessionList.getSessions().size() > 0 ) {
+				for ( Session session : sessionList.getSessions() ) {
+					if ( StringUtils.equals( id, session.getId() ) )
+						ret = session;
+				}
 			}
+
+			return ret;
 		}
-		return ret;
+		finally {
+			// 释放读锁
+			readLock.unlock();
+		}
 	}
 
 	public void add( final Session session ) {
+
+		// debug log
+		logger.debug( "Adding a session. uid:{}, id:{}", session.getUid(), session.getId() );
+
 		// check
 		if ( session == null
 				|| StringUtils.isEmpty( session.getUid() )
@@ -61,72 +111,134 @@ public class DefaultSessionManager implements SessionManager {
 			throw new IllegalArgumentException();
 		}
 
-		// info log
-		logger.info( "Add a session to session manager. uid:{}, id:{}", session.getUid(), session.getId() );
+		// 获取写锁
+		writeLock.lock();
 
 		long sequence = -1;
 
-		UIDSessionList uidsessionList = sessions.get( session.getUid() );
-		if ( uidsessionList == null ) {
+		try {
 
-			uidsessionList = new UIDSessionList();
+			UIDSessionList uidsessionList = sessions.get( session.getUid() );
+			if ( uidsessionList == null ) {
 
-			// 发放UID的序列号，只有新的UID被增加时才发放
-			sequence = tuidSequence.incrementAndGet();
-			uidsessionList.setSequence( sequence );
+				// debug log
+				logger.debug( "Session list of uid:{} is not exist.", session.getUid() );
 
-			List<Session> sessionList = new ArrayList<Session>();
-			uidsessionList.setSessions( sessionList );
-			sessionList.add( session );
+				uidsessionList = new UIDSessionList();
 
-			// 放到Map中
-			sessions.put( session.getUid(), uidsessionList );
+				// 发放UID的序列号，只有新的UID被增加时才发放
+				sequence = uidSequence.incrementAndGet();
+				uidsessionList.setSequence( sequence );
+
+				List<Session> sessionList = new ArrayList<Session>();
+				uidsessionList.setSessions( sessionList );
+				sessionList.add( session );
+
+				// 放到Map中
+				sessions.put( session.getUid(), uidsessionList );
+			}
+			else {
+				// 使用已发放的序列号
+				sequence = uidsessionList.getSequence();
+
+				// debug log
+				logger.debug( "Session list of uid:{} is exist", session.getUid() );
+
+				// 添加到即存数组中
+				if ( !uidsessionList.getSessions().contains( session ) )
+					uidsessionList.getSessions().add( session );
+			}
+
+			// debug log
+			logger.debug( "uid:{}, sequence of uid:{}", session.getUid(), sequence );
+
+			// 增加会话总数
+			long total = sessionTotal.incrementAndGet();
+
+			// info log
+			logger.info( "a session was added to session manager. uid:{}, id:{}, total:{}",
+					session.getUid(), session.getId(), total );
+
+			int remain = uidsessionList.getSessions().size();
+			for ( SessionListener listener : sessionListeners ) {
+				listener.onCreated( session, sequence, remain );
+			}
+
+			// debug log
+			logger.debug( "send onCreated event to all session listeners." );
 		}
-		else {
-			// 使用已发放的序列号
-			sequence = uidsessionList.getSequence();
+		finally {
 
-			// 添加到即存数组中
-			uidsessionList.getSessions().add( session );
-		}
-
-		// 增加会话总数
-		long total = sessionTotal.incrementAndGet();
-
-		// info log
-		logger.info( "Total of session:{}, sequence of tuid:{}", total, sequence );
-
-		int remain = uidsessionList.getSessions().size();
-		for ( SessionListener listener : sessionListeners ) {
-			listener.onCreated( session, sequence, remain );
+			// 释放写锁
+			writeLock.unlock();
 		}
 	}
 
 	public Session remove( final String uid, final String id ) {
+
+		// debug log
+		logger.debug( "removing a session from session manager. uid:{}, id:{}", uid, id );
 
 		// check
 		if ( StringUtils.isEmpty( uid ) || StringUtils.isEmpty( id ) ) {
 			return null;
 		}
 
-		// info log
-		logger.info( "Remove a session from session manager. tuid:{}, id:{}", uid, id );
+		// 获取写锁
+		writeLock.lock();
 
-		UIDSessionList sessionList = sessions.get( uid );
-		if ( sessionList == null || sessionList.getSessions() == null
-				|| sessionList.getSessions().size() == 0 )
-			return null;
+		try {
 
-		for ( Session session : sessionList.getSessions() ) {
-			if ( StringUtils.equals( id, session.getId() ) ) {
-				sessionList.getSessions().remove( session );
+			UIDSessionList sessionList = sessions.get( uid );
 
-				for ( SessionListener listener : sessionListeners ) {
-					listener.onRemoved( session, sessionList.getSequence(),
-							sessionList.getSessions().size() );
-				}
-				return session;
+			if ( sessionList == null || sessionList.getSessions() == null
+					|| sessionList.getSessions().size() == 0 ) {
+				// debug log
+				logger.debug( "session is not exist, return null." );
+				return null;
 			}
+
+			for ( Session session : sessionList.getSessions() ) {
+				if ( StringUtils.equals( id, session.getId() ) ) {
+
+					// debug log
+					logger.debug( "session is exist, remove it." );
+
+					// 删除会话
+					sessionList.getSessions().remove( session );
+
+					// 减少会话总数
+					long total = sessionTotal.decrementAndGet();
+
+					// info log
+					logger.info( "a session was removed from session manager. uid:{}, id:{}, remain:{}",
+							session.getUid(), session.getId(), total );
+
+					// 当前UID对应剩余的会话数
+					int remain = sessionList.getSessions().size();
+					for ( SessionListener listener : sessionListeners ) {
+						listener.onRemoved( session, sessionList.getSequence(), remain );
+					}
+
+					// debug log
+					logger.debug( "send onRemoved event to all session listeners." );
+
+					// 如果UID对应的会话数为0，则删除MAP映射
+					if ( remain == 0 ) {
+
+						// debug log
+						logger.debug( "list of session is empty, remove the list." );
+
+						sessions.remove( uid );
+					}
+
+					return session;
+				}
+			}
+		}
+		finally {
+			// 释放写锁
+			writeLock.unlock();
 		}
 
 		return null;

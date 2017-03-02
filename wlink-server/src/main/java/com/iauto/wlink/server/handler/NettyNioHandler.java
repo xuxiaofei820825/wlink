@@ -132,8 +132,9 @@ public class NettyNioHandler extends SimpleChannelInboundHandler<CommunicationMe
 
 	@Override
 	protected void channelRead0( ChannelHandlerContext ctx, CommunicationMessage message ) throws Exception {
-		// log
-		logger.info( "Receive a communication message. type:{}", message.type() );
+
+		// info log
+		logger.info( "A communication message received. type:{}", message.type() );
 
 		// 如果是心跳消息，就不要再提交到后端去处理了
 		if ( StringUtils.equals( MessageType.Heartbeat, message.type() ) ) {

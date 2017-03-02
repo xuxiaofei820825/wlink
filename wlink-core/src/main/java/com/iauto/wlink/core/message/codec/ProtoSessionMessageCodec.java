@@ -17,12 +17,12 @@ public class ProtoSessionMessageCodec implements MessageCodec<SessionMessage> {
 
 	public byte[] encode( SessionMessage message ) {
 		String id = message.getId();
-		long expireTime = message.getExpireTime();
+		long expireTime = message.getExpiredTime();
 
 		// 编码
 		return com.iauto.wlink.core.message.proto.SessionMessageProto.SessionMessage.newBuilder()
 			.setId( id )
-			.setTuid( message.getTuid() )
+			.setTuid( message.getUid() )
 			.setExpireTime( expireTime )
 			.setSignature( message.getSignature() )
 			.build().toByteArray();
@@ -37,8 +37,8 @@ public class ProtoSessionMessageCodec implements MessageCodec<SessionMessage> {
 
 			sessionMsg = new SessionMessage();
 			sessionMsg.setId( msg.getId() );
-			sessionMsg.setTuid( msg.getTuid() );
-			sessionMsg.setExpireTime( msg.getExpireTime() );
+			sessionMsg.setUid( msg.getTuid() );
+			sessionMsg.setExpiredTime( msg.getExpireTime() );
 			sessionMsg.setSignature( msg.getSignature() );
 		} catch ( InvalidProtocolBufferException e ) {
 			throw new RuntimeException( e );

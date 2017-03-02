@@ -1,4 +1,4 @@
-package com.iauto.wlink.client.channel.handler;
+package com.iauto.wlink.client.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;

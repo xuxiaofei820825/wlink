@@ -33,6 +33,9 @@ public class TerminalMessageHandler extends AbstractMessageHandler {
 	@Override
 	public void handleMessage( Session session, CommunicationMessage message ) {
 
+		// debug log
+		logger.debug( "starting to process the message. type:{}", message.type() );
+
 		if ( !StringUtils.equals( message.type(), MessageType.Terminal ) ) {
 			// 判断是否为终端消息
 
@@ -48,11 +51,12 @@ public class TerminalMessageHandler extends AbstractMessageHandler {
 		if ( terminalMessageRouter == null )
 			throw new IllegalArgumentException( "Terminal message router is required." );
 
-		// info log
-		logger.info( "Starting to process a terminal message." );
-
 		// 解码终端消息
 		TerminalMessage terminalMessage = terminalMessageCodec.decode( message.payload() );
+
+		// info log
+		logger.info( "information of the decoded terminal message. type:{}, from:{}, to:{}, payload:{}bytes",
+				terminalMessage.type(), terminalMessage.from(), terminalMessage.to(), terminalMessage.payload().length );
 
 		// 转发终端消息
 		terminalMessageRouter.send( terminalMessage.type(),

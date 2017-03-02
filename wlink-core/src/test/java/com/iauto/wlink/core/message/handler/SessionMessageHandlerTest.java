@@ -79,8 +79,8 @@ public class SessionMessageHandlerTest {
 
 		sessionMessage.setId( id );
 		sessionMessage.setSignature( signature );
-		sessionMessage.setTuid( tuid );
-		sessionMessage.setExpireTime( expireTime );
+		sessionMessage.setUid( tuid );
+		sessionMessage.setExpiredTime( expireTime );
 
 		// 模拟MessageCodec，返回指定的SessionMessage
 		when( sessionMessageCodec.decode( commMessage.payload() ) )
@@ -109,7 +109,7 @@ public class SessionMessageHandlerTest {
 		// 会话过期的测试
 
 		// 模拟过期
-		sessionMessage.setExpireTime( System.currentTimeMillis() - 10000 );
+		sessionMessage.setExpiredTime( System.currentTimeMillis() - 10000 );
 
 		// Test
 		sessionMessageHandler.handleMessage( session, commMessage );

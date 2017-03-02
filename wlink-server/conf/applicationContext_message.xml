@@ -40,10 +40,16 @@
 	<!-- <constructor-arg value="${server.qpid.url}" /> -->
 	<!-- <constructor-arg value="${server.message.router.nthread}" /> -->
 	<!-- </bean> -->
+	
+	<bean id="consumer"
+		class="com.iauto.wlink.core.integration.rabbitmq.TerminalMessageConsumer">
+		<property name="sessionManager" ref="sessionManager" />
+	</bean>
 
 	<bean id="messageRouter"
 		class="com.iauto.wlink.core.integration.rabbitmq.RabbitMQMessageRouter"
 		init-method="init">
+		<property name="consumer" ref="consumer" />
 	</bean>
 
 	<!-- 默认的终端消息处理器 -->

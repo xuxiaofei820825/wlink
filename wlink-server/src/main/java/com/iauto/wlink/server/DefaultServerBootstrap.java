@@ -21,7 +21,7 @@ import org.springframework.util.Assert;
 public class DefaultServerBootstrap implements InitializingBean {
 
 	/** logger */
-	private final Logger logger = LoggerFactory.getLogger( getClass() );
+	private static final Logger logger = LoggerFactory.getLogger( DefaultServerBootstrap.class );
 
 	/** Acceptor Reactor */
 	private final EventLoopGroup bossGroup;
@@ -57,9 +57,9 @@ public class DefaultServerBootstrap implements InitializingBean {
 
 			ServerBootstrap b = new ServerBootstrap();
 			b.group( bossGroup, workerGroup )
-				.channel( NioServerSocketChannel.class )
-				.handler( new LoggingHandler( LogLevel.INFO ) )
-				.childHandler( channelInitializer );
+					.channel( NioServerSocketChannel.class )
+					.handler( new LoggingHandler( LogLevel.INFO ) )
+					.childHandler( channelInitializer );
 
 			// 绑定监听端口
 			ChannelFuture future = b.bind( port ).sync();
@@ -75,9 +75,10 @@ public class DefaultServerBootstrap implements InitializingBean {
 
 			// 等待关闭
 			future.channel()
-				.closeFuture()
-				.sync();
-		} finally {
+					.closeFuture()
+					.sync();
+		}
+		finally {
 			// 关闭
 			bossGroup.shutdownGracefully();
 			workerGroup.shutdownGracefully();

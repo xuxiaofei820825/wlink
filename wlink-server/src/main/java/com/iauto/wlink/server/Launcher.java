@@ -32,7 +32,8 @@ public class Launcher {
 			DefaultServerBootstrap bootstrap = (DefaultServerBootstrap) appContext.getBean( "bootstrap" );
 			bootstrap.start();
 
-		} catch ( Exception ex ) {
+		}
+		catch ( Exception ex ) {
 			// warn
 			logger.warn( "Failed to start wlink service." );
 		}

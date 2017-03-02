@@ -26,7 +26,7 @@ public class MessageEventHandler implements EventHandler<MessageEvent> {
 	/** logger */
 	private final static Logger logger = LoggerFactory.getLogger( MessageEventHandler.class );
 
-	private final ExecutorService exectors = Executors.newFixedThreadPool( 10,
+	private final ExecutorService exectors = Executors.newFixedThreadPool( 8,
 			new DefaultThreadFactory( "comm-message-handler" ) );
 
 	/** 处理责任链 */
@@ -47,8 +47,8 @@ public class MessageEventHandler implements EventHandler<MessageEvent> {
 		final Session session = event.getSession();
 		final CommunicationMessage message = event.getMessage();
 
-		// info log
-		logger.info( "processing a communication message. type:{}, sequence:{}, endOfBatch:{}",
+		// debug log
+		logger.debug( "processing a communication message. type:{}, sequence:{}, endOfBatch:{}",
 				message.type(), sequence, endOfBatch );
 
 		// 提交给线程池处理。
@@ -62,7 +62,7 @@ public class MessageEventHandler implements EventHandler<MessageEvent> {
 				}
 				catch ( MessageProcessException ex ) {
 					// info log
-					logger.info( "A message process error occured. Code:{}", ex.getErrorCode() );
+					logger.info( "A message process error occured. ErrorCode:{}", ex.getErrorCode() );
 
 					ErrorMessage errorMsg = new ErrorMessage( ex.getErrorCode() );
 					CommunicationMessage commMessage = new CommunicationMessage(

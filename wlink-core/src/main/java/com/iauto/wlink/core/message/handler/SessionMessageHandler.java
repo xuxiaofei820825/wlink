@@ -23,7 +23,7 @@ import com.iauto.wlink.core.session.SessionSignHandler;
 public class SessionMessageHandler extends AbstractMessageHandler {
 
 	/** logger */
-	private final Logger logger = LoggerFactory.getLogger( SessionMessageHandler.class );
+	private static final Logger logger = LoggerFactory.getLogger( SessionMessageHandler.class );
 
 	/** 错误消息编解码器 */
 	private MessageCodec<SessionMessage> sessionMessageCodec = new ProtoSessionMessageCodec();
@@ -40,8 +40,8 @@ public class SessionMessageHandler extends AbstractMessageHandler {
 			return;
 		}
 
-		// log
-		logger.info( "Starting to process a session message." );
+		// debug log
+		logger.debug( "starting to process a session message......" );
 
 		// check
 		if ( sessionSignHandler == null )
@@ -50,20 +50,28 @@ public class SessionMessageHandler extends AbstractMessageHandler {
 		// 解码
 		SessionMessage sessionMsg = sessionMessageCodec.decode( message.payload() );
 
+		// debug log
+		logger.debug( "information of decoded session message: id:{}, uid:{}, expiredTime:{}, signature:{}",
+				sessionMsg.getId(), sessionMsg.getUid(), sessionMsg.getExpiredTime(), sessionMsg.getSignature() );
+
 		// 验证会话的签名
-		sessionSignHandler.validate(
-			sessionMsg.getId(), sessionMsg.getTuid(), sessionMsg.getExpireTime(),
-			sessionMsg.getSignature() );
+		sessionSignHandler.validate( sessionMsg.getId(), sessionMsg.getUid(),
+				sessionMsg.getExpiredTime(), sessionMsg.getSignature() );
 
 		// 验证会话的有效期
-		if ( System.currentTimeMillis() > sessionMsg.getExpireTime() )
+		if ( System.currentTimeMillis() > sessionMsg.getExpiredTime() ) {
+
+			// debug log
+			logger.debug( "session is expired. id:{}, uid:{}", sessionMsg.getId(), sessionMsg.getUid() );
+
+			// 过期异常
 			throw new ExpiredSessionException();
+		}
 
 		// 恢复会话内容
 		session.setId( sessionMsg.getId() );
-		session.setUid( sessionMsg.getTuid() );
-		session.setExpiredTime( sessionMsg.getExpireTime() );
-
+		session.setUid( sessionMsg.getUid() );
+		session.setExpiredTime( sessionMsg.getExpiredTime() );
 	}
 
 	// ================================================================================================

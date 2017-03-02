@@ -8,16 +8,20 @@ public class MutipleClients {
 
 	public static final String TEXT_MESSAGE = "It is a static message!!";
 	public static final long MIN_USER_ID = 1;
-	public static final long MAX_USER_ID = 100;
+	public static final long MAX_USER_ID = 2;
+	public static final long MAX_REPEAT = 1;
 
 	public static void main( String[] args ) throws Exception {
 
-		// 创建用户线程
-		for ( int idx = 1; idx <= MAX_USER_ID; idx++ ) {
-			Thread thread = new Thread( new ClientRunnable( idx ) );
-			thread.start();
+		for ( int repeat = 0; repeat < MAX_REPEAT; repeat++ ) {
+			// 创建用户线程
+			for ( int idx = 1; idx <= MAX_USER_ID; idx++ ) {
+				Thread thread = new Thread( new ClientRunnable( idx ) );
+				// Thread thread = new Thread( new ClientRunnable( 10000 ) );
+				thread.start();
 
-			//Thread.sleep( 500 );
+				// Thread.sleep( 500 );
+			}
 		}
 	}
 
@@ -42,15 +46,18 @@ public class MutipleClients {
 					long receiver = random.nextInt( (int) MAX_USER_ID ) % ( MAX_USER_ID - MIN_USER_ID + 1 ) + MIN_USER_ID;
 
 					client.sendMessage( String.valueOf( receiver ), "text", TEXT_MESSAGE.getBytes() );
-					Thread.sleep( 1000 );
+					Thread.sleep( 500 );
 				}
 				//*/
-			} catch ( Exception ex ) {
+			}
+			catch ( Exception ex ) {
 				throw new RuntimeException( ex );
-			} finally {
+			}
+			finally {
 				try {
 					// client.disconnect();
-				} catch ( Exception e ) {
+				}
+				catch ( Exception e ) {
 					// ignore
 				}
 			}

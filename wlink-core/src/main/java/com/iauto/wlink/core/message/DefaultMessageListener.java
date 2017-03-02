@@ -13,7 +13,7 @@ import com.lmax.disruptor.dsl.Disruptor;
 public class DefaultMessageListener implements MessageListener {
 
 	/** logger */
-	private final Logger logger = LoggerFactory.getLogger( DefaultMessageListener.class );
+	private static final Logger logger = LoggerFactory.getLogger( DefaultMessageListener.class );
 
 	/** size of ring buffer */
 	private static final int size = 2048;
@@ -24,7 +24,7 @@ public class DefaultMessageListener implements MessageListener {
 	@SuppressWarnings("unchecked")
 	public DefaultMessageListener( EventHandler<MessageEvent> eventHandler ) {
 		Disruptor<MessageEvent> disruptor = new Disruptor<MessageEvent>( new MessageEventFactory(), size,
-			new DefaultThreadFactory( "disruptor-consumer" ) );
+				new DefaultThreadFactory( "disruptor-consumer" ) );
 
 		if ( eventHandler == null ) {
 			throw new IllegalArgumentException( "MessageEvent handler is required." );
@@ -38,8 +38,8 @@ public class DefaultMessageListener implements MessageListener {
 
 	public void onMessage( Session session, CommunicationMessage message ) {
 
-		// info log
-		logger.info( "Push communication message to ring buffer. type:{}", message.type() );
+		// debug log
+		logger.debug( "push communication message to ring buffer. type:{}", message.type() );
 
 		// 获取下一个序列号
 		long sequence = ringBuffer.next();
@@ -48,7 +48,8 @@ public class DefaultMessageListener implements MessageListener {
 			MessageEvent event = ringBuffer.get( sequence );
 			event.setSession( session );
 			event.setMessage( message );
-		} finally {
+		}
+		finally {
 			ringBuffer.publish( sequence );
 		}
 	}

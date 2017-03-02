@@ -7,9 +7,9 @@
 		<!-- 服务名 -->
 		<property name="SERVICE_NAME">WLINK</property>
 		<!-- 默认消息格式 -->
-		<property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss} [%5p] ${SERVICE_NAME} [%t] %F:%L "%m"%n</property>
+		<property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss} [%5p] ${SERVICE_NAME} [%t] %c{1} "%m"%n</property>
 		<!-- SYSLOG消息格式 -->
-		<property name="SYSLOG_PATTERN">Java[%X{pid}]:OTH ${SERVICE_NAME} %c %F:%L "%m"%n</property>
+		<property name="SYSLOG_PATTERN">Java[%X{pid}]:OTH ${SERVICE_NAME} %c{1.} "%m"%n</property>
 	</properties>
 
 	<appenders>
@@ -22,6 +22,26 @@
 		<RollingFile name="DailyRollingFileInfo" 
 			fileName="${LOG_HOME}/wlink-server_info.log"
 			filePattern="${LOG_HOME}/wlink-server_info_%d{yyyy-MM-dd}_%i.log" 
+			immediateFlush="false" append="true">
+			
+			<Filters>
+				<ThresholdFilter level="WARN" onMatch="DENY" onMismatch="NEUTRAL" />
+				<ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY" />
+			</Filters>
+			
+			<PatternLayout pattern="${LOG_PATTERN}" />
+			<Policies>
+				<!-- 每24小时更新一次 -->
+				<TimeBasedTriggeringPolicy modulate="true" interval="24" />
+				<!-- 限制文件大小 -->
+				<SizeBasedTriggeringPolicy size="100MB" />
+			</Policies>
+		</RollingFile>
+		
+		<!-- 记录会话日志(INFO级别) -->
+		<RollingFile name="SessionInfo" 
+			fileName="${LOG_HOME}/wlink-server_session.log"
+			filePattern="${LOG_HOME}/wlink-server_session_%d{yyyy-MM-dd}_%i.log" 
 			immediateFlush="false" append="true">
 			
 			<Filters>
@@ -59,6 +79,13 @@
 	</appenders>
 
 	<loggers>
+	
+		<!--  -->
+		<AsyncLogger name="com.iauto.wlink.core.session.DefaultSessionManager" level="info" additivity="false">
+			<appender-ref ref="SessionInfo" />
+			<appender-ref ref="Console" />
+		</AsyncLogger>
+		
 		<AsyncRoot level="INFO">
 			<appender-ref ref="Console" />
 			<appender-ref ref="DailyRollingFileInfo" />
