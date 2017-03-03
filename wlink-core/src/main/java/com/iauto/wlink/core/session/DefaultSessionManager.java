@@ -1,6 +1,7 @@
 package com.iauto.wlink.core.session;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,6 +100,21 @@ public class DefaultSessionManager implements SessionManager {
 		}
 	}
 
+	@Override
+	public Collection<UIDSessionList> getAll() {
+
+		// 获取读锁
+		readLock.lock();
+
+		try {
+			return sessions.values();
+		}
+		finally {
+			// 释放读锁
+			readLock.unlock();
+		}
+	}
+
 	public void add( final Session session ) {
 
 		// debug log
@@ -129,6 +145,7 @@ public class DefaultSessionManager implements SessionManager {
 				// 发放UID的序列号，只有新的UID被增加时才发放
 				sequence = uidSequence.incrementAndGet();
 				uidsessionList.setSequence( sequence );
+				uidsessionList.setUid( session.getUid() );
 
 				List<Session> sessionList = new ArrayList<Session>();
 				uidsessionList.setSessions( sessionList );

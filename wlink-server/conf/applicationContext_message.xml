@@ -50,6 +50,7 @@
 		class="com.iauto.wlink.core.integration.rabbitmq.RabbitMQMessageRouter"
 		init-method="init">
 		<property name="consumer" ref="consumer" />
+		<property name="sessionManager" ref="sessionManager" />
 	</bean>
 
 	<!-- 默认的终端消息处理器 -->

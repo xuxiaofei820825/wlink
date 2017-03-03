@@ -1,26 +1,35 @@
 package com.iauto.wlink.core.integration.rabbitmq;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.iauto.wlink.core.DefaultThreadFactory;
 import com.iauto.wlink.core.exception.MessageRouteException;
 import com.iauto.wlink.core.message.MessageReceivedHandler;
 import com.iauto.wlink.core.message.TerminalMessageRouter;
 import com.iauto.wlink.core.session.Session;
 import com.iauto.wlink.core.session.SessionListener;
+import com.iauto.wlink.core.session.SessionManager;
+import com.iauto.wlink.core.session.UIDSessionList;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Consumer;
+import com.rabbitmq.client.Recoverable;
+import com.rabbitmq.client.RecoverableConnection;
+import com.rabbitmq.client.RecoveryListener;
+import com.rabbitmq.client.impl.DefaultExceptionHandler;
 
 public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionListener {
 
@@ -39,15 +48,21 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 	/** 与Broker的连接 */
 	private Connection conn;
 
+	/** 已发送的消息数 */
 	private AtomicLong messageTotal = new AtomicLong( 0 );
 
 	/** RabbitMQ消息监听器 */
 	private Consumer consumer;
 
+	/** 会话管理器 */
+	private SessionManager sessionManager;
+
+	private AtomicBoolean isConnected = new AtomicBoolean( false );
+
 	@Override
 	public void init() {
 		// info log
-		logger.info( "Initializing the rabbitMQ message router......" );
+		logger.info( "initializing the RabbitMQ message router......" );
 
 		ConnectionFactory factory = new ConnectionFactory();
 		factory.setUsername( "guest" );
@@ -56,9 +71,62 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 		factory.setHost( "172.26.188.165" );
 		factory.setPort( 5672 );
 
+		// 禁止恢复Consumer
+		factory.setTopologyRecoveryEnabled( false );
+		factory.setThreadFactory( new DefaultThreadFactory( "rabbitmq-handler" ) );
+
+		factory.setExceptionHandler( new DefaultExceptionHandler() {
+			public void handleUnexpectedConnectionDriverException( Connection conn, Throwable exception ) {
+
+				// 状态设置为未连接
+				isConnected.compareAndSet( true, false );
+
+				// error log
+				if ( logger.isErrorEnabled() )
+					logger.error( "Unexpected connection driver exception occured. Caused by:" + exception.getMessage(),
+							exception );
+			}
+		} );
+
 		try {
 			// 创建一个新连接
 			conn = factory.newConnection();
+
+			if ( conn instanceof RecoverableConnection ) {
+				RecoverableConnection recoverableConn = (RecoverableConnection) conn;
+				recoverableConn.addRecoveryListener( new RecoveryListener() {
+
+					@Override
+					public void handleRecovery( Recoverable recoverable ) {
+						// info log
+						logger.info( "connection recovery is completed." );
+
+						// TODO 这里存在竟态条件，Session有可能被其他线程删除
+						Collection<UIDSessionList> sessionList = sessionManager.getAll();
+						for ( UIDSessionList session : sessionList ) {
+							final long seq = session.getSequence();
+							final String uid = session.getUid();
+
+							// info log
+							logger.info( "creating message consumer for uid:{}", uid );
+
+							createQueueAndConsumer( uid, seq );
+						}
+
+						// 状态设置为已连接
+						isConnected.compareAndSet( false, true );
+					}
+
+					@Override
+					public void handleRecoveryStarted( Recoverable recoverable ) {
+						// info log
+						logger.info( "starting to handle connection recovery......" );
+					}
+				} );
+			}
+
+			// 状态设置为已连接
+			isConnected.compareAndSet( false, true );
 
 			// 创建固定数目的Channel
 			for ( int idx = 0; idx < CHANNELS_SIZE; idx++ ) {
@@ -79,8 +147,13 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 
 	@Override
 	public ListenableFuture<?> send( String type, String from, String to, byte[] message ) throws MessageRouteException {
+
+		if ( !isConnected.get() )
+			// TODO 这里应该返回个错误吧
+			return null;
+
 		// debug log
-		logger.debug( "starting to route a terminal message. type:{}, from:{}, to:{}, payload:{}bytes",
+		logger.debug( "starting to route a terminal message. type:{}, from:{}, to:{}, payload:{} bytes",
 				type, from, to, message.length );
 
 		final long sequence = messageTotal.incrementAndGet();
@@ -103,7 +176,7 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 					properties, message );
 
 			// info log
-			logger.info( "succeed to route a terminal message. type:{}, from:{}, to:{}, payload:{}bytes",
+			logger.info( "succeed to route a terminal message. type:{}, from:{}, to:{}, payload:{} bytes",
 					type, from, to, message.length );
 		}
 		catch ( IOException e ) {
@@ -130,10 +203,20 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 	@Override
 	public void onCreated( final Session session, final long sequence, final int remain ) {
 
+		if ( !isConnected.get() )
+			// TODO 这里应该返回个错误吧
+			return;
+
 		if ( remain > 1 )
 			return;
 
 		final String uid = session.getUid();
+
+		createQueueAndConsumer( uid, sequence );
+	}
+
+	private void createQueueAndConsumer( final String uid, final long sequence ) {
+
 		final int idx = calculateIndex( sequence );
 		final Channel channel = this.channels[idx];
 
@@ -161,6 +244,10 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 
 	@Override
 	public void onRemoved( Session session, long sequence, int remain ) {
+
+		if ( !isConnected.get() )
+			return;
+
 		if ( remain > 0 )
 			return;
 
@@ -187,5 +274,9 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 
 	public void setConsumer( Consumer consumer ) {
 		this.consumer = consumer;
+	}
+
+	public void setSessionManager( SessionManager sessionManager ) {
+		this.sessionManager = sessionManager;
 	}
 }

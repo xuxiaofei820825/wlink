@@ -40,7 +40,7 @@ public class TerminalMessageConsumer implements Consumer {
 		String type = headers.get( "type" ).toString();
 
 		// info log
-		logger.info( "A terminal message received. type:{}, from:{}, to:{}, message:{}bytes",
+		logger.info( "a terminal message received. type:{}, from:{}, to:{}, message:{}bytes",
 				type, from, to, body.length );
 
 		// check

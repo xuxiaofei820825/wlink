@@ -1,14 +1,20 @@
 package com.iauto.wlink.client.channel;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
 
 import java.util.concurrent.TimeUnit;
 
+import com.iauto.wlink.client.CommunicationMessageListener;
+import com.iauto.wlink.client.ConnectionListener;
 import com.iauto.wlink.client.handler.HeartbeatHandler;
 import com.iauto.wlink.core.comm.protocol.CommunicationMessageCodec;
+import com.iauto.wlink.core.message.CommunicationMessage;
 
 /**
  * 实现一个默认的客户端通道初始化器
@@ -18,6 +24,12 @@ import com.iauto.wlink.core.comm.protocol.CommunicationMessageCodec;
  */
 public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel> {
 
+	/** 通讯消息监听器 */
+	private CommunicationMessageListener commMessageListener;
+
+	/** 连接监听器 */
+	private ConnectionListener connectionListener;
+
 	@Override
 	protected void initChannel( SocketChannel ch ) throws Exception {
 		ChannelPipeline pipeline = ch.pipeline();
@@ -25,37 +37,52 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 		// 设置通讯包编解码器
 		pipeline.addLast( "comm", new CommunicationMessageCodec() );
 
-		// ===========================================================================
-		// 1.心跳保活
+		// 心跳保活
 		pipeline.addLast( new IdleStateHandler( 0, 0, 50, TimeUnit.SECONDS ) )
-			.addLast( "heartbeat", new HeartbeatHandler() );
+				.addLast( "heartbeat", new HeartbeatHandler() );
 
-		// ===========================================================================
-		// 2.设置服务端响应的解码器
+		// 消息处理
+		pipeline.addLast( "message", new SimpleChannelInboundHandler<CommunicationMessage>() {
+			@Override
+			protected void channelRead0( ChannelHandlerContext ctx, CommunicationMessage msg ) throws Exception {
 
-		// 设置错误响应解码器
-		// pipeline.addLast( "error", new ErrorMessageCodec() );
+				// 通知消息监听器
+				if ( commMessageListener != null )
+					commMessageListener.onMessage( msg );
+			}
+		} );
 
-		// 设置会话响应解码器
-		// pipeline.addLast( "session", new SessionContextCodec() );
+		// 消息处理
+		pipeline.addLast( "conn_monitor", new ChannelInboundHandlerAdapter() {
+			@Override
+			public void channelInactive( ChannelHandlerContext ctx ) throws Exception {
 
-		// 设置消息确认响应解码器
-		// pipeline.addLast( "msg_send_ack_decoder", new MessageAcknowledgeCodec() );
+				// 通知连接监听器
+				if ( connectionListener != null )
+					connectionListener.onClosed();
 
-		// ===========================================================================
-		// 3.设置请求编码器
+				ctx.fireChannelInactive();
+			}
+			
+			@Override
+	    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
+	            throws Exception {
+				//
+				System.out.println("AAAAAAAAA");
+				
+	        ctx.fireExceptionCaught(cause);
+	    }
+		} );
+	}
 
-		// 设置消息推送请求编码器
-//		pipeline.addLast( "message", new CommMessageCodec( new MessageWorker() {
-//
-//			public void process( ChannelHandlerContext ctx, byte[] header, byte[] body ) throws Exception {
-//				CommMessageHeader commHeader = CommMessageHeader.parseFrom( header );
-//
-//				System.err.println( "Type: " + commHeader.getType() );
-//				System.err.println( "From: " + commHeader.getFrom() );
-//				System.err.println( "To: " + commHeader.getTo() );
-//				System.err.println( "Content: " + new String( body, "UTF-8" ) );
-//			}
-//		} ) );
+	// ============================================================================
+	// setter/getter
+
+	public void setCommMessageListener( CommunicationMessageListener commMessageListener ) {
+		this.commMessageListener = commMessageListener;
+	}
+
+	public void setConnectionListener( ConnectionListener connectionListener ) {
+		this.connectionListener = connectionListener;
 	}
 }

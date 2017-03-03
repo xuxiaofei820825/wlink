@@ -3,13 +3,14 @@ package com.iauto.wlink.client;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.AttributeKey;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -21,16 +22,25 @@ import com.iauto.wlink.core.Constant;
 import com.iauto.wlink.core.Constant.MessageType;
 import com.iauto.wlink.core.message.CommunicationMessage;
 import com.iauto.wlink.core.message.DefaultTerminalMessage;
+import com.iauto.wlink.core.message.MessageCodec;
 import com.iauto.wlink.core.message.SessionMessage;
+import com.iauto.wlink.core.message.TerminalMessage;
 import com.iauto.wlink.core.message.TicketAuthMessage;
 import com.iauto.wlink.core.message.codec.ProtoSessionMessageCodec;
 import com.iauto.wlink.core.message.codec.ProtoTerminalMessageCodec;
 import com.iauto.wlink.core.message.codec.ProtoTicketAuthMessageCodec;
 
-public class DefaultWlinkClient implements WlinkClient {
+public class DefaultWlinkClient implements WlinkClient, CommunicationMessageListener,
+		ConnectionListener {
 
 	/** logger */
 	private final static Logger logger = LoggerFactory.getLogger( DefaultWlinkClient.class );
+
+	/** 重连时间间隔 */
+	private final static long Reconnect_interval_seconds = 10 * 1000;
+
+	/** 是否已建立连接 */
+	private AtomicBoolean isConnected = new AtomicBoolean( false );
 
 	/** 服务端地址 */
 	private String host;
@@ -42,6 +52,7 @@ public class DefaultWlinkClient implements WlinkClient {
 	private Channel channel;
 
 	/** IO线程组 */
+	private Bootstrap boss;
 	private EventLoopGroup group;
 
 	/** 会话键值 */
@@ -72,55 +83,94 @@ public class DefaultWlinkClient implements WlinkClient {
 	 * @param port
 	 *          端口号
 	 */
-	public static DefaultWlinkClient newInstance( final String host, final int port ) {
-		return new DefaultWlinkClient( host, port );
+	public synchronized static DefaultWlinkClient newInstance( final String host, final int port ) {
+		final DefaultWlinkClient instance = new DefaultWlinkClient( host, port );
+		instance.init();
+		return instance;
+	}
+
+	public void init() {
+		// 建立主线程与IO线程
+		group = new NioEventLoopGroup();
+		boss = new Bootstrap();
+
+		// 设置通道初始化器
+		DefaultChannelInitializer channelInitializer = new DefaultChannelInitializer();
+		channelInitializer.setCommMessageListener( this );
+		channelInitializer.setConnectionListener( this );
+
+		boss.group( group )
+				.channel( NioSocketChannel.class )
+				.option( ChannelOption.SO_KEEPALIVE, true )
+				.remoteAddress( this.host, this.port )
+				.handler( channelInitializer );
 	}
 
 	/**
 	 * 建立与服务端的连接
 	 * 
-	 * @throws Exception
-	 *           发生连接异常
 	 */
-	public void connect() throws Exception {
-
-		// 建立主线程与IO线程
-		group = new NioEventLoopGroup();
-		Bootstrap boss = new Bootstrap();
-
-		boss.group( group )
-			.channel( NioSocketChannel.class )
-			.option( ChannelOption.SO_KEEPALIVE, true )
-			.remoteAddress( this.host, this.port )
-			.handler( new DefaultChannelInitializer() );
-
+	public void connect() {
 		// info
-		logger.info( "Connecting to wlink server. host:{}, port:{}", this.host, this.port );
+		logger.info( "connecting to wlink server. host:{}, port:{}", this.host, this.port );
 
-		// 连接服务端(等待直到连接成功)
-		ChannelFuture future = boss.connect( this.host, this.port )
-			.sync();
+		while ( !isConnected.get() ) {
 
-		if ( future.isDone() ) {
+			// 连接到服务器(异步请求)
+			ChannelFuture future = boss.connect( this.host, this.port );
 
-			// 连接被取消
-			if ( future.isCancelled() ) {
-				throw new RuntimeException( "Connection operation is cancelled!!!" );
+			// 设置监听器
+			future.addListener( new ChannelFutureListener() {
+
+				@Override
+				public void operationComplete( ChannelFuture future ) throws Exception {
+
+					// 连接被取消
+					if ( future.isCancelled() ) {
+						throw new RuntimeException( "connection operation is cancelled." );
+					}
+
+					// 连接未成功
+					if ( !future.isSuccess() ) {
+						// error log
+						if ( logger.isErrorEnabled() )
+							logger.error( "Failed to connect wlink server. " + future.cause().getMessage(), future.cause() );
+					}
+					else {
+
+						// 设置状态为已连接
+						isConnected.compareAndSet( false, true );
+
+						// log
+						logger.info( "Succeed to connect wlink server. host:{}, port:{}", host, port );
+
+						// 缓存已建立的Channel
+						channel = future.channel();
+					}
+
+					// 唤醒主线程
+					synchronized ( lock ) {
+						lock.notifyAll();
+					}
+				}
+			} );
+
+			// 主线程等待结果
+			synchronized ( lock ) {
+				try {
+					lock.wait();
+
+					if ( !isConnected.get() ) {
+						// info log
+						logger.info( "{} seconds later, try to reconnect......", Reconnect_interval_seconds / 1000 );
+
+						Thread.sleep( Reconnect_interval_seconds );
+					}
+				}
+				catch ( InterruptedException e ) {
+					// ignore
+				}
 			}
-
-			// 连接未成功
-			if ( !future.isSuccess() ) {
-				throw new RuntimeException( future.cause() );
-			}
-
-			// log
-			logger.info( "Succeed to connect wlink server!!!" );
-
-			// 缓存已建立的Channel
-			this.channel = future.channel();
-		} else {
-			// 连接未完成
-			throw new RuntimeException( "Connection operation is uncompleted!!!" );
 		}
 	}
 
@@ -132,39 +182,14 @@ public class DefaultWlinkClient implements WlinkClient {
 	 */
 	public void auth( String ticket ) throws AuthenticationException {
 
-		// log
+		// 检查是否已建立连接
+		if ( !isConnected.get() )
+			return;
+
+		// info
 		logger.info( "Authenticate user with authentication ticket. ticket:{}", ticket );
 
 		try {
-
-			channel.pipeline().addLast( new SimpleChannelInboundHandler<CommunicationMessage>() {
-				@Override
-				protected void channelRead0( ChannelHandlerContext ctx, CommunicationMessage msg ) throws Exception {
-
-					// 解码
-					boolean isSession = StringUtils.equals( msg.type(), MessageType.Session );
-
-					if ( isSession ) {
-						ProtoSessionMessageCodec codec = new ProtoSessionMessageCodec();
-						SessionMessage sessionMsg = codec.decode( msg.payload() );
-
-						Session session = new Session();
-						session.setId( sessionMsg.getId() );
-						session.settUId( sessionMsg.getUid() );
-						session.setExpireTime( sessionMsg.getExpiredTime() );
-						session.setSignature( sessionMsg.getSignature() );
-
-						ctx.channel().attr( SessionKey ).set( session );
-
-						// 通知已收到认证响应
-						synchronized ( lock ) {
-							lock.notifyAll();
-						}
-
-						channel.pipeline().removeLast();
-					}
-				}
-			} );
 
 			TicketAuthMessage ticketAuthMessage = new TicketAuthMessage( ticket );
 			ProtoTicketAuthMessageCodec authCodec = new ProtoTicketAuthMessageCodec();
@@ -178,7 +203,7 @@ public class DefaultWlinkClient implements WlinkClient {
 			channel.writeAndFlush( comm );
 
 			// info
-			logger.info( "Waiting for authentication response......" );
+			logger.info( "waiting for authentication response......" );
 
 			// 锁定当前线程，等待认证响应
 			synchronized ( lock ) {
@@ -186,15 +211,16 @@ public class DefaultWlinkClient implements WlinkClient {
 			}
 
 			// info
-			logger.info( "Receive authentication response message." );
+			logger.info( "authentication response message received." );
 
 			Session sctx = channel.attr( SessionKey ).get();
 
 			// info
-			logger.info( "Succeed to process authentication. [session:{}, userId:{}, signature:{}]",
-				sctx.getId(), sctx.gettUId(), sctx.getSignature() );
+			logger.info( "succeed to process authentication. session:[id:{}, uid:{}, expiredTime:{}, signature:{}]",
+					sctx.getId(), sctx.gettUId(), sctx.getExpireTime(), sctx.getSignature() );
 
-		} catch ( Exception ex ) {
+		}
+		catch ( Exception ex ) {
 			throw new AuthenticationException( ex );
 		}
 	}
@@ -212,6 +238,10 @@ public class DefaultWlinkClient implements WlinkClient {
 	 *          服务端返回的签名
 	 */
 	public void auth( String id, String userId, long expireTime, String signature ) throws AuthenticationException {
+
+		// 检查是否已建立连接
+		if ( !isConnected.get() )
+			return;
 
 		try {
 
@@ -236,13 +266,22 @@ public class DefaultWlinkClient implements WlinkClient {
 			}
 
 			// info
-			logger.info( "Waiting for authentication response......" );
-		} catch ( Exception ex ) {
+			logger.info( "waiting for authentication response......" );
+		}
+		catch ( Exception ex ) {
 			throw new AuthenticationException( ex );
 		}
 	}
 
 	public void sendMessage( String receiver, String type, byte[] body ) {
+
+		// 检查是否已建立连接
+		if ( !isConnected.get() )
+			return;
+
+		// info log
+		logger.info( "send a message. receiver:{}, type:{}, payload:{} bytes", receiver, type, body.length );
+
 		Session sctx = channel.attr( SessionKey ).get();
 		String userId = sctx.gettUId();
 		DefaultTerminalMessage terminalMsg = new DefaultTerminalMessage( type, userId, receiver, body );
@@ -260,5 +299,59 @@ public class DefaultWlinkClient implements WlinkClient {
 	public void disconnect() {
 		channel.disconnect();
 		group.shutdownGracefully();
+	}
+
+	// ===================================================================================
+	// implement of CommunicationMessageListener
+
+	@Override
+	public void onMessage( CommunicationMessage commMessage ) {
+
+		// 解码
+		boolean isSession = StringUtils.equals( commMessage.type(), MessageType.Session );
+
+		if ( isSession ) {
+			ProtoSessionMessageCodec codec = new ProtoSessionMessageCodec();
+			SessionMessage sessionMsg = codec.decode( commMessage.payload() );
+
+			Session session = new Session();
+			session.setId( sessionMsg.getId() );
+			session.settUId( sessionMsg.getUid() );
+			session.setExpireTime( sessionMsg.getExpiredTime() );
+			session.setSignature( sessionMsg.getSignature() );
+
+			channel.attr( SessionKey ).set( session );
+
+			// 通知已收到认证响应
+			synchronized ( lock ) {
+				lock.notifyAll();
+			}
+		}
+
+		boolean isTerminal = StringUtils.equals( commMessage.type(), MessageType.Terminal );
+
+		if ( isTerminal ) {
+			MessageCodec<TerminalMessage> codec = new ProtoTerminalMessageCodec();
+			TerminalMessage tmMessage = codec.decode( commMessage.payload() );
+
+			// info
+			logger.info( "a terminal message received. type:{}, from:{}", tmMessage.type(), tmMessage.from() );
+		}
+	}
+
+	// ===================================================================================
+	// implement of ConnectionListener
+
+	@Override
+	public void onOpened() {
+
+	}
+
+	@Override
+	public void onClosed() {
+		// info log
+		logger.info( "Connection is closed, try to reconnect." );
+
+		this.connect();
 	}
 }

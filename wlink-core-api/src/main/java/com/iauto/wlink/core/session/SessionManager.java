@@ -1,5 +1,6 @@
 package com.iauto.wlink.core.session;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface SessionManager {
@@ -25,6 +26,8 @@ public interface SessionManager {
 	 * @return 匹配的会话实例
 	 */
 	List<Session> get( String uid );
+	
+	Collection<UIDSessionList> getAll();
 
 	/**
 	 * 添加会话到会话容器

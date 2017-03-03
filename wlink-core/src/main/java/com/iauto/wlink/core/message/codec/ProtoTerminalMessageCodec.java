@@ -32,7 +32,6 @@ public class ProtoTerminalMessageCodec implements MessageCodec<TerminalMessage> 
 
 			return terminalMsg;
 		} catch ( InvalidProtocolBufferException e ) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
