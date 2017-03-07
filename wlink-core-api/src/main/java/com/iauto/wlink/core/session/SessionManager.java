@@ -2,6 +2,7 @@ package com.iauto.wlink.core.session;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.locks.ReadWriteLock;
 
 public interface SessionManager {
 
@@ -26,7 +27,12 @@ public interface SessionManager {
 	 * @return 匹配的会话实例
 	 */
 	List<Session> get( String uid );
-	
+
+	/**
+	 * 获取所有UID
+	 * 
+	 * @return 所有UID
+	 */
 	Collection<UIDSessionList> getAll();
 
 	/**
@@ -55,4 +61,11 @@ public interface SessionManager {
 	 *          会话监听器
 	 */
 	void addListener( SessionListener listener );
+
+	/**
+	 * 获取读写锁
+	 * 
+	 * @return 读写锁
+	 */
+	ReadWriteLock getLock();
 }

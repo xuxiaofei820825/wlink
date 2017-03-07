@@ -47,25 +47,33 @@ public class TerminalMessageConsumer implements Consumer {
 		if ( sessionManager == null || terminalMessageCodec == null )
 			throw new IllegalArgumentException();
 
-		// TODO 这里会产生竟态条件，不能保证send时，session还未被其他线程编辑后改变
-		List<Session> sessions = sessionManager.get( to );
-		if ( sessions == null || sessions.isEmpty() )
-			return;
+		// 设置读锁
+		sessionManager.getLock().readLock().lock();
 
-		// info log
-		logger.info( "send termianl message to receiver. receiver:{}", to );
+		try {
 
-		// 创建终端消息并编码
-		TerminalMessage tmsg = new DefaultTerminalMessage( type, from, to, body );
-		byte[] payload = terminalMessageCodec.encode( tmsg );
+			List<Session> sessions = sessionManager.get( to );
+			if ( sessions == null || sessions.isEmpty() )
+				return;
 
-		// 创建通讯消息，并返回给终端
-		CommunicationMessage msg = new CommunicationMessage();
-		msg.setType( MessageType.Terminal );
-		msg.setPayload( payload );
+			// info log
+			logger.info( "send termianl message to receiver. receiver:{}", to );
 
-		for ( Session session : sessions ) {
-			session.send( msg );
+			// 创建终端消息并编码
+			TerminalMessage tmsg = new DefaultTerminalMessage( type, from, to, body );
+			byte[] payload = terminalMessageCodec.encode( tmsg );
+
+			// 创建通讯消息，并返回给终端
+			CommunicationMessage msg = new CommunicationMessage();
+			msg.setType( MessageType.Terminal );
+			msg.setPayload( payload );
+
+			for ( Session session : sessions ) {
+				session.send( msg );
+			}
+		}
+		finally {
+			sessionManager.getLock().readLock().unlock();
 		}
 	}
 

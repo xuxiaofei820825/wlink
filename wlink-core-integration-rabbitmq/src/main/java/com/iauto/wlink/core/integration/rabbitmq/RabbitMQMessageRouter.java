@@ -7,12 +7,14 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.iauto.wlink.core.DefaultThreadFactory;
+import com.iauto.wlink.core.exception.InvalidMessageRouterException;
 import com.iauto.wlink.core.exception.MessageRouteException;
 import com.iauto.wlink.core.message.MessageReceivedHandler;
 import com.iauto.wlink.core.message.TerminalMessageRouter;
@@ -43,13 +45,13 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 	private final static int CHANNELS_SIZE = 8;
 
 	/** Channel数组 */
-	private Channel[] channels = new Channel[CHANNELS_SIZE];
+	private final Channel[] channels = new Channel[CHANNELS_SIZE];
 
 	/** 与Broker的连接 */
 	private Connection conn;
 
 	/** 已发送的消息数 */
-	private AtomicLong messageTotal = new AtomicLong( 0 );
+	private final AtomicLong messageTotal = new AtomicLong( 0 );
 
 	/** RabbitMQ消息监听器 */
 	private Consumer consumer;
@@ -57,7 +59,8 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 	/** 会话管理器 */
 	private SessionManager sessionManager;
 
-	private AtomicBoolean isConnected = new AtomicBoolean( false );
+	/** 是否与Broker连接 */
+	private final AtomicBoolean isConnected = new AtomicBoolean( false );
 
 	@Override
 	public void init() {
@@ -101,20 +104,29 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 						// info log
 						logger.info( "connection recovery is completed." );
 
-						// TODO 这里存在竟态条件，Session有可能被其他线程删除
-						Collection<UIDSessionList> sessionList = sessionManager.getAll();
-						for ( UIDSessionList session : sessionList ) {
-							final long seq = session.getSequence();
-							final String uid = session.getUid();
+						// 设置读锁
+						final Lock rLock = sessionManager.getLock().readLock();
+						rLock.lock();
 
-							// info log
-							logger.info( "creating message consumer for uid:{}", uid );
+						try {
+							Collection<UIDSessionList> sessionList = sessionManager.getAll();
+							for ( UIDSessionList session : sessionList ) {
+								final long seq = session.getSequence();
+								final String uid = session.getUid();
 
-							createQueueAndConsumer( uid, seq );
+								// info log
+								logger.info( "creating message consumer for uid:{}", uid );
+
+								createQueueAndConsumer( uid, seq );
+							}
+
+							// 状态设置为已连接
+							isConnected.compareAndSet( false, true );
 						}
-
-						// 状态设置为已连接
-						isConnected.compareAndSet( false, true );
+						finally {
+							// 释放读锁
+							rLock.unlock();
+						}
 					}
 
 					@Override
@@ -149,8 +161,7 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 	public ListenableFuture<?> send( String type, String from, String to, byte[] message ) throws MessageRouteException {
 
 		if ( !isConnected.get() )
-			// TODO 这里应该返回个错误吧
-			return null;
+			throw new InvalidMessageRouterException();
 
 		// debug log
 		logger.debug( "starting to route a terminal message. type:{}, from:{}, to:{}, payload:{} bytes",
@@ -204,15 +215,13 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 	public void onCreated( final Session session, final long sequence, final int remain ) {
 
 		if ( !isConnected.get() )
-			// TODO 这里应该返回个错误吧
-			return;
+			throw new InvalidMessageRouterException();
 
 		if ( remain > 1 )
 			return;
 
-		final String uid = session.getUid();
-
-		createQueueAndConsumer( uid, sequence );
+		// 创建UID对应的队列，并绑定routingKey到Exchange
+		createQueueAndConsumer( session.getUid(), sequence );
 	}
 
 	private void createQueueAndConsumer( final String uid, final long sequence ) {

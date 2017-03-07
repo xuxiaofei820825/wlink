@@ -80,7 +80,7 @@
 
 	<loggers>
 	
-		<!--  -->
+		<!-- 会话监控 -->
 		<AsyncLogger name="com.iauto.wlink.core.session.DefaultSessionManager" level="info" additivity="false">
 			<appender-ref ref="SessionInfo" />
 			<appender-ref ref="Console" />

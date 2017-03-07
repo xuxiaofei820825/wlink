@@ -26,10 +26,12 @@ public class DefaultMessageListener implements MessageListener {
 		Disruptor<MessageEvent> disruptor = new Disruptor<MessageEvent>( new MessageEventFactory(), size,
 				new DefaultThreadFactory( "disruptor-consumer" ) );
 
+		// check
 		if ( eventHandler == null ) {
 			throw new IllegalArgumentException( "MessageEvent handler is required." );
 		}
 
+		// 设置事件处理器
 		disruptor.handleEventsWith( eventHandler );
 
 		// start

@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.exception.MessageProcessException;
+import com.iauto.wlink.core.exception.NoCommMessageHandlerException;
 import com.iauto.wlink.core.message.handler.AbstractMessageHandler;
 import com.iauto.wlink.core.message.handler.MessageHandler;
 import com.iauto.wlink.core.session.Session;
@@ -27,6 +28,8 @@ public class MessageHandlerChain implements MessageHandler {
 			public void handleMessage( Session session, CommunicationMessage message ) throws MessageProcessException {
 				// warn log
 				logger.warn( "No matched message handler for type: {}.", message.type() );
+
+				throw new NoCommMessageHandlerException();
 			}
 		} );
 
@@ -34,7 +37,8 @@ public class MessageHandlerChain implements MessageHandler {
 		for ( int cnt = 0; cnt < handlers.size(); cnt++ ) {
 			if ( cnt == 0 ) {
 				this.chain = handlers.get( 0 );
-			} else {
+			}
+			else {
 				handlers.get( cnt - 1 ).setNextHandler( handlers.get( cnt ) );
 			}
 		}

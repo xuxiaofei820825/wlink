@@ -30,6 +30,12 @@ import com.iauto.wlink.core.message.codec.ProtoSessionMessageCodec;
 import com.iauto.wlink.core.message.codec.ProtoTerminalMessageCodec;
 import com.iauto.wlink.core.message.codec.ProtoTicketAuthMessageCodec;
 
+/**
+ * WlinkClient基于NETTY的默认实现。
+ * 
+ * @author xiaofei.xu
+ * 
+ */
 public class DefaultWlinkClient implements WlinkClient, CommunicationMessageListener,
 		ConnectionListener {
 
@@ -40,24 +46,27 @@ public class DefaultWlinkClient implements WlinkClient, CommunicationMessageList
 	private final static long Reconnect_interval_seconds = 10 * 1000;
 
 	/** 是否已建立连接 */
-	private AtomicBoolean isConnected = new AtomicBoolean( false );
+	private final AtomicBoolean isConnected = new AtomicBoolean( false );
 
 	/** 服务端地址 */
-	private String host;
+	private final String host;
 
 	/** 服务端端口号 */
-	private int port;
-
-	/** 当前用户终端连接通道 */
-	private Channel channel;
+	private final int port;
 
 	/** IO线程组 */
-	private Bootstrap boss;
-	private EventLoopGroup group;
+	private final Bootstrap boss;
+	private final EventLoopGroup group;
 
 	/** 会话键值 */
 	public static final AttributeKey<Session> SessionKey =
 			AttributeKey.newInstance( "session" );
+
+	/** 保存认证后获取的Session值，可用于重新连接登录 */
+	private Session session;
+
+	/** 当前用户终端连接通道 */
+	private Channel channel;
 
 	/** 线程锁 */
 	private final Object lock = new Object();
@@ -73,6 +82,10 @@ public class DefaultWlinkClient implements WlinkClient, CommunicationMessageList
 	private DefaultWlinkClient( final String host, final int port ) {
 		this.host = host;
 		this.port = port;
+
+		// 建立主线程与IO线程
+		group = new NioEventLoopGroup( 1 );
+		boss = new Bootstrap();
 	}
 
 	/**
@@ -90,9 +103,6 @@ public class DefaultWlinkClient implements WlinkClient, CommunicationMessageList
 	}
 
 	public void init() {
-		// 建立主线程与IO线程
-		group = new NioEventLoopGroup();
-		boss = new Bootstrap();
 
 		// 设置通道初始化器
 		DefaultChannelInitializer channelInitializer = new DefaultChannelInitializer();
@@ -111,13 +121,14 @@ public class DefaultWlinkClient implements WlinkClient, CommunicationMessageList
 	 * 
 	 */
 	public void connect() {
-		// info
-		logger.info( "connecting to wlink server. host:{}, port:{}", this.host, this.port );
 
 		while ( !isConnected.get() ) {
 
 			// 连接到服务器(异步请求)
 			ChannelFuture future = boss.connect( this.host, this.port );
+
+			// info
+			logger.info( "connecting to wlink server. host:{}, port:{}", this.host, this.port );
 
 			// 设置监听器
 			future.addListener( new ChannelFutureListener() {
@@ -138,6 +149,9 @@ public class DefaultWlinkClient implements WlinkClient, CommunicationMessageList
 					}
 					else {
 
+						// log
+						logger.info( "AAAAAAAAAAAAAAAAAAAAAAAAAAA" );
+
 						// 设置状态为已连接
 						isConnected.compareAndSet( false, true );
 
@@ -157,8 +171,15 @@ public class DefaultWlinkClient implements WlinkClient, CommunicationMessageList
 
 			// 主线程等待结果
 			synchronized ( lock ) {
+
 				try {
+					// info log
+					logger.info( "waiting for connect to wlink server......" );
+
 					lock.wait();
+
+					// info log
+					logger.info( "BBBBBBBBBBBBBB" );
 
 					if ( !isConnected.get() ) {
 						// info log
@@ -167,8 +188,11 @@ public class DefaultWlinkClient implements WlinkClient, CommunicationMessageList
 						Thread.sleep( Reconnect_interval_seconds );
 					}
 				}
-				catch ( InterruptedException e ) {
+				catch ( Exception e ) {
 					// ignore
+
+					// error
+					logger.error( "Error occured.", e );
 				}
 			}
 		}
@@ -314,11 +338,11 @@ public class DefaultWlinkClient implements WlinkClient, CommunicationMessageList
 			ProtoSessionMessageCodec codec = new ProtoSessionMessageCodec();
 			SessionMessage sessionMsg = codec.decode( commMessage.payload() );
 
-			Session session = new Session();
-			session.setId( sessionMsg.getId() );
-			session.settUId( sessionMsg.getUid() );
-			session.setExpireTime( sessionMsg.getExpiredTime() );
-			session.setSignature( sessionMsg.getSignature() );
+			this.session = new Session();
+			this.session.setId( sessionMsg.getId() );
+			this.session.settUId( sessionMsg.getUid() );
+			this.session.setExpireTime( sessionMsg.getExpiredTime() );
+			this.session.setSignature( sessionMsg.getSignature() );
 
 			channel.attr( SessionKey ).set( session );
 
@@ -337,6 +361,13 @@ public class DefaultWlinkClient implements WlinkClient, CommunicationMessageList
 			// info
 			logger.info( "a terminal message received. type:{}, from:{}", tmMessage.type(), tmMessage.from() );
 		}
+
+		boolean isError = StringUtils.equals( commMessage.type(), MessageType.Error );
+
+		if ( isError ) {
+			// info
+			logger.info( "a error message received." );
+		}
 	}
 
 	// ===================================================================================
@@ -350,8 +381,14 @@ public class DefaultWlinkClient implements WlinkClient, CommunicationMessageList
 	@Override
 	public void onClosed() {
 		// info log
-		logger.info( "Connection is closed, try to reconnect." );
+		logger.info( "Connection to wlink server is closed, try to reconnect." );
 
-		this.connect();
+		// 设置状态为已连接
+		isConnected.compareAndSet( true, false );
+
+		// 关闭
+		this.group.shutdownGracefully();
+
+		// this.connect();
 	}
 }

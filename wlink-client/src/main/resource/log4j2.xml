@@ -35,7 +35,7 @@
 	</appenders>
 
 	<loggers>
-		<asyncRoot level="INFO">
+		<asyncRoot level="DEBUG">
 			<appender-ref ref="Console" />
 		</asyncRoot>
 	</loggers>

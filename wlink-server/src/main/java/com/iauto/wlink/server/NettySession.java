@@ -1,9 +1,11 @@
 package com.iauto.wlink.server;
 
-import org.apache.commons.lang.StringUtils;
-
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
+
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.iauto.wlink.core.message.CommunicationMessage;
 import com.iauto.wlink.core.session.AbstractSession;
@@ -16,6 +18,9 @@ import com.iauto.wlink.core.session.Session;
  * 
  */
 public final class NettySession extends AbstractSession {
+
+	/** logger */
+	private final static Logger logger = LoggerFactory.getLogger( NettySession.class );
 
 	/** 会话键值 */
 	public static final AttributeKey<Session> SessionKey =
@@ -50,7 +55,14 @@ public final class NettySession extends AbstractSession {
 	public void send( CommunicationMessage message ) {
 		// check
 		if ( this.channel == null )
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException( "channel is null." );
+
+		// check
+		if ( message == null || message.payload() == null )
+			throw new IllegalArgumentException( "invalid communication message." );
+
+		// debug log
+		logger.debug( "type:{}, payload:{}", message.type(), message.payload().length );
 
 		this.channel.writeAndFlush( message );
 	}

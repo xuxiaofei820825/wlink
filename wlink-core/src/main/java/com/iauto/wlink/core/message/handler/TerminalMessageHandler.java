@@ -55,7 +55,7 @@ public class TerminalMessageHandler extends AbstractMessageHandler {
 		TerminalMessage terminalMessage = terminalMessageCodec.decode( message.payload() );
 
 		// info log
-		logger.info( "information of the decoded terminal message. type:{}, from:{}, to:{}, payload:{}bytes",
+		logger.info( "information of the decoded terminal message. type:{}, from:{}, to:{}, payload:{} bytes",
 				terminalMessage.type(), terminalMessage.from(), terminalMessage.to(), terminalMessage.payload().length );
 
 		// 转发终端消息

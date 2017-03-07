@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.commons.lang.StringUtils;
@@ -31,7 +32,7 @@ public class DefaultSessionManager implements SessionManager {
 	private List<SessionListener> sessionListeners = new ArrayList<SessionListener>();
 
 	/** 读写锁 */
-	private final ReentrantReadWriteLock readwritelock = new ReentrantReadWriteLock();
+	private final ReadWriteLock readwritelock = new ReentrantReadWriteLock();
 	private final Lock readLock = readwritelock.readLock();
 	private final Lock writeLock = readwritelock.writeLock();
 
@@ -43,6 +44,10 @@ public class DefaultSessionManager implements SessionManager {
 
 	@Override
 	public List<Session> get( String uid ) {
+
+		// debug log
+		logger.debug( "UID: {}", uid );
+
 		// check
 		if ( StringUtils.isEmpty( uid ) ) {
 			return null;
@@ -261,9 +266,17 @@ public class DefaultSessionManager implements SessionManager {
 		return null;
 	}
 
+	@Override
+	public ReadWriteLock getLock() {
+		return this.readwritelock;
+	}
+
 	public void addListener( final SessionListener listener ) {
 		this.sessionListeners.add( listener );
 	}
+
+	// ===========================================================================
+	// setter/getter
 
 	public void setSessionListeners( List<SessionListener> sessionListeners ) {
 		this.sessionListeners = sessionListeners;

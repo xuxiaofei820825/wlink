@@ -6,17 +6,17 @@
              http://www.springframework.org/schema/context 
              http://www.springframework.org/schema/context/spring-context-4.3.xsd">
 
-	<!-- 会话管理器 -->
+	<!-- 会话管理器(添加，删除，获取) -->
 	<bean id="sessionManager" class="com.iauto.wlink.core.session.DefaultSessionManager">
+		<!-- 设置会话事件监听器 -->
 		<property name="sessionListeners">
 			<list>
-				<!-- 设置会话监听器 -->
 				<ref bean="messageRouter" />
 			</list>
 		</property>
 	</bean>
 
-	<!-- 会话签名处理器 -->
+	<!-- 会话签名处理器(HMAC256算法) -->
 	<bean id="sessionSignHandler" class="com.iauto.wlink.core.session.HMacSessionSignHandler">
 		<constructor-arg value="${server.hmac.sha256.key}" />
 	</bean>
@@ -40,7 +40,7 @@
 	<!-- <constructor-arg value="${server.qpid.url}" /> -->
 	<!-- <constructor-arg value="${server.message.router.nthread}" /> -->
 	<!-- </bean> -->
-	
+
 	<bean id="consumer"
 		class="com.iauto.wlink.core.integration.rabbitmq.TerminalMessageConsumer">
 		<property name="sessionManager" ref="sessionManager" />

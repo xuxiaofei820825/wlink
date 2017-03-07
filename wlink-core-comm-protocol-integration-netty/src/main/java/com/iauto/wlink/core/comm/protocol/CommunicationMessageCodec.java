@@ -52,16 +52,19 @@ public class CommunicationMessageCodec extends ByteToMessageCodec<CommunicationM
 	@Override
 	protected void encode( ChannelHandlerContext ctx, CommunicationMessage msg, ByteBuf out ) throws Exception {
 		byte[] bytesType = msg.type()
-			.getBytes( Charset.forName( "UTF-8" ) );
+				.getBytes( Charset.forName( "UTF-8" ) );
+
+		// debug log
+		logger.debug( "type:{}, payload:{} bytes", msg.type(), msg.payload().length );
 
 		// 输出各部分的长度
 		out.writeShort( bytesType.length );
-		//out.writeShort( msg.getProperties().length );
+		// out.writeShort( msg.getProperties().length );
 		out.writeShort( msg.payload().length );
 
 		// 输出各部分
 		out.writeBytes( bytesType );
-		//out.writeBytes( msg.getProperties() );
+		// out.writeBytes( msg.getProperties() );
 		out.writeBytes( msg.payload() );
 	}
 
@@ -78,7 +81,7 @@ public class CommunicationMessageCodec extends ByteToMessageCodec<CommunicationM
 
 			// 获取通讯包各部分的字节数
 			this.typeLen = in.readShort();
-			//this.propertiesLen = in.readShort();
+			// this.propertiesLen = in.readShort();
 			this.payloadLen = in.readShort();
 
 			// 否则状态迁移到解析PAYLOAD_TYPE

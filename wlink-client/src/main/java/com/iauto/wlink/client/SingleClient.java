@@ -13,6 +13,8 @@ public class SingleClient {
 
 	private static final int port = 2391;
 	private static final String TEXT_MESSAGE = "xxxxx";
+	public static final long MAX_MESSAGES = 50;
+	public static final long MESSAGE_INTERVAL = 1000;
 
 	public static void main( String[] args ) throws Exception {
 
@@ -36,12 +38,15 @@ public class SingleClient {
 
 		// 连接并认证客户端身份
 		client.connect();
+		
+		//client.sendMessage( receiver, "text", TEXT_MESSAGE.getBytes() );
+		
 		client.auth( ReserveAccountTool.generate( loginUser ) );
 
 		if ( !StringUtils.isEmpty( receiver ) ) {
-			for ( int idx = 1; idx <= 10000; idx++ ) {
+			for ( int idx = 1; idx <= MAX_MESSAGES; idx++ ) {
 				client.sendMessage( receiver, "text", TEXT_MESSAGE.getBytes() );
-				Thread.sleep( 5000 );
+				Thread.sleep( MESSAGE_INTERVAL );
 			}
 		}
 	}

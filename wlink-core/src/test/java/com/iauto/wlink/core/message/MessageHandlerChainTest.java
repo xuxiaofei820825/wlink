@@ -18,6 +18,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.iauto.wlink.core.exception.MessageProcessException;
+import com.iauto.wlink.core.exception.NoCommMessageHandlerException;
 import com.iauto.wlink.core.message.handler.AbstractMessageHandler;
 import com.iauto.wlink.core.session.Session;
 
@@ -67,7 +68,7 @@ public class MessageHandlerChainTest {
 		AbstractMessageHandler handler3 = new AbstractMessageHandler() {
 			@Override
 			public void handleMessage( Session session, CommunicationMessage message ) throws MessageProcessException {
-				this.getNextHandler().handleMessage( session, message );
+				// 不传递给下一个处理器，模拟被处理了
 			}
 		};
 
@@ -96,6 +97,7 @@ public class MessageHandlerChainTest {
 
 	@Test
 	public void testMessageEventHandler() {
+		// 测试通讯消息进过了所有的处理器，直到找到合适的处理器(spyHandler3)
 
 		chain = new MessageHandlerChain( handlers );
 
@@ -103,10 +105,25 @@ public class MessageHandlerChainTest {
 		verify( spyHandler1 ).setNextHandler( spyHandler2 );
 		verify( spyHandler2 ).setNextHandler( spyHandler3 );
 
+		// 测试
 		chain.handleMessage( session, commMessage );
 
 		verify( spyHandler1 ).handleMessage( session, commMessage );
 		verify( spyHandler2 ).handleMessage( session, commMessage );
 		verify( spyHandler3 ).handleMessage( session, commMessage );
+	}
+
+	@Test(expected = NoCommMessageHandlerException.class)
+	public void testNoCommMessageHandlerException() {
+		// 测试没有合适通讯消息处理器处理消息，抛出对应的异常
+
+		handlers.clear();
+		handlers.add( spyHandler1 );
+		handlers.add( spyHandler2 );
+
+		chain = new MessageHandlerChain( handlers );
+
+		// 测试
+		chain.handleMessage( session, commMessage );
 	}
 }
