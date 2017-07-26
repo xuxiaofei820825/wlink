@@ -177,7 +177,7 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 		headers.put( "type", type );
 
 		BasicProperties properties = new AMQP.BasicProperties.Builder()
-				.deliveryMode( 2 )
+				.deliveryMode( 1 )
 				.priority( 0 )
 				.headers( headers )
 				.build();
@@ -235,6 +235,7 @@ public class RabbitMQMessageRouter implements TerminalMessageRouter, SessionList
 			// exclusive:false 不被当前连接独占
 			// autoDelete:true 没有监听者时就自动删除
 			channel.queueDeclare( uid, false, false, true, null );
+			channel.basicQos( 100 );
 			// 队列接收用户的所有消息
 			channel.queueBind( uid, EXCHANGE_NAME, "user." + uid + ".*" );
 

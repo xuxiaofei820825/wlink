@@ -5,7 +5,7 @@
 		<!-- 日志文件的输出目录 -->
 		<property name="LOG_HOME">/Users/xuxiaofei/log</property>
 		<!-- 服务名 -->
-		<property name="SERVICE_NAME">WLINK</property>
+		<property name="SERVICE_NAME">wlink-client</property>
 		<!-- 默认消息格式 -->
 		<property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss} [%5p] ${SERVICE_NAME} [%t] - %m%n</property>
 		<!-- SYSLOG消息格式 -->
@@ -27,15 +27,10 @@
 					modulate="true" />
 			</Policies>
 		</RollingRandomAccessFile>
-		
-		<!-- SYSLOG -->
-    <Syslog name="SysLog" host="localhost" port="514" protocol="UDP" facility="LOCAL1" newLine="true">
-    	<PatternLayout pattern="${SYSLOG_PATTERN}" />
-    </Syslog>
 	</appenders>
 
 	<loggers>
-		<asyncRoot level="DEBUG">
+		<asyncRoot level="ERROR">
 			<appender-ref ref="Console" />
 		</asyncRoot>
 	</loggers>

@@ -97,12 +97,12 @@ public class NettyNioHandler extends SimpleChannelInboundHandler<CommunicationMe
 				Session session = ctx.channel().attr( NettySession.SessionKey ).get();
 				ctx.channel().attr( NettySession.SessionKey ).set( null );
 
-				final String tuid = session.getUid();
+				final String uid = session.getUid();
 				final String id = session.getId();
 
 				if ( this.sessionManager != null ) {
 					// 删除会话
-					sessionManager.remove( tuid, id );
+					sessionManager.remove( uid, id );
 				}
 
 				// info log
@@ -116,7 +116,7 @@ public class NettyNioHandler extends SimpleChannelInboundHandler<CommunicationMe
 					@Override
 					public void operationComplete( ChannelFuture future ) throws Exception {
 						if ( future.isSuccess() ) {
-							logger.info( "Succeed to close channel of terminal. tuid:{}, id:{}", tuid, id );
+							logger.info( "Succeed to close channel of terminal. uid:{}, id:{}", uid, id );
 						}
 					}
 				} );

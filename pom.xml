@@ -45,6 +45,7 @@
 		<module>wlink-core-integration-rabbitmq</module>
 		<module>wlink-core-integration-activemq</module>
     <module>wlink-core-comm-protocol-integration-netty</module>
+    <module>wlink-core-integration-kafka</module>
   </modules>
 
 	<dependencies>

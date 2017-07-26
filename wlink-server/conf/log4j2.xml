@@ -32,10 +32,12 @@
 			<PatternLayout pattern="${LOG_PATTERN}" />
 			<Policies>
 				<!-- 每24小时更新一次 -->
-				<TimeBasedTriggeringPolicy modulate="true" interval="24" />
+				<TimeBasedTriggeringPolicy modulate="true" interval="1" />
 				<!-- 限制文件大小 -->
-				<SizeBasedTriggeringPolicy size="100MB" />
+				<SizeBasedTriggeringPolicy size="500MB" />
 			</Policies>
+			<!-- 最大文件数，默认是：7 -->
+			<DefaultRolloverStrategy max="10" />
 		</RollingFile>
 		
 		<!-- 记录会话日志(INFO级别) -->
@@ -52,10 +54,12 @@
 			<PatternLayout pattern="${LOG_PATTERN}" />
 			<Policies>
 				<!-- 每24小时更新一次 -->
-				<TimeBasedTriggeringPolicy modulate="true" interval="24" />
+				<TimeBasedTriggeringPolicy modulate="true" interval="1" />
 				<!-- 限制文件大小 -->
-				<SizeBasedTriggeringPolicy size="100MB" />
+				<SizeBasedTriggeringPolicy size="300MB" />
 			</Policies>
+			<!-- 最大文件数，默认是：7 -->
+			<DefaultRolloverStrategy max="10" />
 		</RollingFile>
 		
 		<!-- 只记录WARN以上级别的日志 -->
@@ -71,23 +75,25 @@
 			<PatternLayout pattern="${LOG_PATTERN}" />
 			<Policies>
 				<!-- 每24小时更新一次 -->
-				<TimeBasedTriggeringPolicy modulate="true" interval="24" />
+				<TimeBasedTriggeringPolicy modulate="true" interval="1" />
 				<!-- 限制文件大小 -->
-				<SizeBasedTriggeringPolicy size="100MB" />
+				<SizeBasedTriggeringPolicy size="500MB" />
 			</Policies>
+			<!-- 最大文件数，默认是：7 -->
+			<DefaultRolloverStrategy max="10" />
 		</RollingFile>
 	</appenders>
 
 	<loggers>
 	
 		<!-- 会话监控 -->
-		<AsyncLogger name="com.iauto.wlink.core.session.DefaultSessionManager" level="info" additivity="false">
+		<Logger name="com.iauto.wlink.core.session.DefaultSessionManager" level="info" additivity="false">
 			<appender-ref ref="SessionInfo" />
-			<appender-ref ref="Console" />
-		</AsyncLogger>
+<!-- 			<appender-ref ref="Console" /> -->
+		</Logger>
 		
 		<AsyncRoot level="INFO">
-			<appender-ref ref="Console" />
+<!-- 			<appender-ref ref="Console" /> -->
 			<appender-ref ref="DailyRollingFileInfo" />
 			<appender-ref ref="DailyRollingFileError" />
 		</AsyncRoot>

@@ -29,7 +29,10 @@ public class SessionSignatureTool {
 		Mac mac = Mac.getInstance( HMAC_SHA256 );
 		mac.init( signingKey );
 		byte[] rawHmac = mac.doFinal( sessionContent.getBytes() );
+		
+		System.out.println( "Base64 of content: " + Base64.encodeBase64String( "a85911cf3bef4c8f96eff2d77d0c9091,1490169154466".getBytes() ));
 
 		System.out.println( "Signature: " + Base64.encodeBase64URLSafeString( rawHmac ) );
+		System.out.println( "Signature: " + Base64.encodeBase64String( rawHmac ) );
 	}
 }

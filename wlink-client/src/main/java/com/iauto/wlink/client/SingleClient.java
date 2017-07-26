@@ -34,7 +34,8 @@ public class SingleClient {
 		logger.info( "sender:{}, receiver:{}", loginUser, receiver );
 
 		// 创建一个客户端实例
-		WlinkClient client = DefaultWlinkClient.newInstance( "localhost", port );
+		//WlinkClient client = DefaultWlinkClient.newInstance( "localhost", port );
+		WlinkClient client = DefaultWlinkClient.newInstance( "172.26.188.165", port );
 
 		// 连接并认证客户端身份
 		client.connect();

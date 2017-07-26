@@ -16,7 +16,7 @@ public class DefaultMessageListener implements MessageListener {
 	private static final Logger logger = LoggerFactory.getLogger( DefaultMessageListener.class );
 
 	/** size of ring buffer */
-	private static final int size = 2048;
+	private static final int size = 8192;
 
 	/** ring buffer */
 	private final RingBuffer<MessageEvent> ringBuffer;
@@ -33,7 +33,7 @@ public class DefaultMessageListener implements MessageListener {
 
 		// 设置事件处理器
 		disruptor.handleEventsWith( eventHandler );
-
+		
 		// start
 		ringBuffer = disruptor.start();
 	}
@@ -64,4 +64,8 @@ public class DefaultMessageListener implements MessageListener {
 			return new MessageEvent();
 		}
 	}
+	
+	// ==========================================================================
+	// setter/getter
+	
 }

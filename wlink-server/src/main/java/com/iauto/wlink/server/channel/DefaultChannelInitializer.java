@@ -20,7 +20,6 @@ import org.springframework.stereotype.Component;
 
 import com.iauto.wlink.core.comm.protocol.CommunicationMessageCodec;
 import com.iauto.wlink.core.message.CommunicationMessage;
-import com.iauto.wlink.server.ServerStateStatistics;
 import com.iauto.wlink.server.handler.StateStatisticsHandler;
 
 @Component
@@ -32,17 +31,14 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 	/** SSL Context */
 	private SslContext sslCtx;
 
-	/** 服务器状态统计 */
-	private static final ServerStateStatistics statistics = new ServerStateStatistics();
-
 	/** SSL相关配置 */
 	private boolean isSSLEnabled = false; // true:使用SSL，false:不使用
 	private String crtFileName; // 证书文件
-	private String pkFileName; // 密匙对文件
-	private String keyPassword; // 密匙对文件加密密码
+	private String pkFileName; // 秘钥对文件
+	private String keyPassword; // 秘钥对文件加密密码
 
 	/** 心跳保活间隔(默认30秒) */
-	private int heartbeatInterval = 30000;
+	private int heartbeatInterval = 60;
 
 	@Autowired
 	private SimpleChannelInboundHandler<CommunicationMessage> commMessageHandler;
@@ -62,7 +58,7 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 				logger.warn( "Failed to load key file." );
 
 			sslCtx = SslContextBuilder.forServer(
-				new File( crtFileUrl.toURI() ), new File( keyFileUrl.toURI() ), keyPassword ).build();
+					new File( crtFileUrl.toURI() ), new File( keyFileUrl.toURI() ), keyPassword ).build();
 		}
 	}
 
@@ -89,14 +85,14 @@ public class DefaultChannelInitializer extends ChannelInitializer<SocketChannel>
 
 		// 1.心跳检测处理器
 		IdleStateHandler idleStateHandler = new IdleStateHandler(
-			heartbeatInterval, 0, 0, TimeUnit.SECONDS );
+				heartbeatInterval, 0, 0, TimeUnit.SECONDS );
 		pipeline.addLast( "idle", idleStateHandler );
 
 		// 2.设置消息处理器
 		pipeline.addLast( "comm_message", commMessageHandler );
 
 		// 3.设置服务器监控处理器
-		pipeline.addLast( "statistics", new StateStatisticsHandler( statistics ) );
+		pipeline.addLast( "statistics", new StateStatisticsHandler() );
 	}
 
 	// ===========================================================================
